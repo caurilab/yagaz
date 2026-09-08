@@ -1,11 +1,13 @@
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BadgeEtat } from '../../components/BadgeEtat';
 import { BandeauSync } from '../../components/BandeauSync';
 import { Bouton } from '../../components/Bouton';
+import { BouteilleGaz } from '../../components/BouteilleGaz';
 import { EncartTemperature } from '../../components/EncartTemperature';
 import { SelecteurSite } from '../../components/SelecteurSite';
 import { useAuth } from '../../auth/AuthContext';
@@ -25,6 +27,7 @@ export default function EcranAccueilFoyer() {
     bouteilles,
     bouteilleActive,
     marques,
+    alertes,
     statutSync,
     chargementInitial,
     rafraichir,
@@ -33,6 +36,7 @@ export default function EcranAccueilFoyer() {
   const autresBouteilles = bouteilles.filter((b) => b.uuid !== bouteilleActive?.uuid);
   const couleurAmbiance = bouteilleActive ? couleurPourFormat(bouteilleActive.format, marques) : null;
   const { temperature } = useTemperatureSite(siteActif?.uuid);
+  const alertesActives = alertes.filter((a) => a.statut !== 'resolue').length;
 
   return (
     <View style={styles.conteneur}>
@@ -43,8 +47,33 @@ export default function EcranAccueilFoyer() {
         style={styles.entete}>
         <SafeAreaView edges={['top']}>
           <View style={styles.ligneBonjour}>
-            <Text style={styles.texteBonjour}>Bonjour{user ? `, ${prenomDe(user.nom)}` : ''}</Text>
-            {couleurAmbiance ? <View style={[styles.pastilleAmbiance, { backgroundColor: couleurAmbiance }]} /> : null}
+            <View style={styles.blocBonjour}>
+              <Text style={styles.texteBonjour} numberOfLines={1}>
+                Bonjour{user ? `, ${prenomDe(user.nom)}` : ''}
+              </Text>
+              {couleurAmbiance ? (
+                <View style={[styles.pastilleAmbiance, { backgroundColor: couleurAmbiance }]} />
+              ) : null}
+            </View>
+            <View style={styles.ligneActionsEntete}>
+              <Pressable
+                onPress={() => router.push('/analyse')}
+                hitSlop={12}
+                style={styles.boutonCloche}
+                accessibilityRole="button"
+                accessibilityLabel="Voir mes statistiques">
+                <Ionicons name="stats-chart-outline" size={22} color={couleurs.blanc} />
+              </Pressable>
+              <Pressable
+                onPress={() => router.push('/alertes')}
+                hitSlop={12}
+                style={styles.boutonCloche}
+                accessibilityRole="button"
+                accessibilityLabel="Voir les alertes">
+                <Ionicons name="notifications-outline" size={22} color={couleurs.blanc} />
+                {alertesActives > 0 ? <View style={styles.pastilleAlerte} /> : null}
+              </Pressable>
+            </View>
           </View>
           <View style={styles.selecteurZone}>
             <SelecteurSite sites={sites} siteActif={siteActif} onChoisir={definirSiteActif} />
@@ -71,6 +100,11 @@ export default function EcranAccueilFoyer() {
             ) : null}
 
             <CarteBouteilleActive bouteille={bouteilleActive} nomSite={siteActif?.nom} marques={marques} />
+
+            <Pressable style={styles.lienGererBouteilles} onPress={() => router.push('/bouteilles')}>
+              <Text style={styles.texteLienGererBouteilles}>Gérer mes bouteilles</Text>
+              <Ionicons name="chevron-forward" size={18} color={couleurs.rouge} />
+            </Pressable>
 
             <View style={styles.blocTemperature}>
               <EncartTemperature temperature={temperature} />
@@ -103,6 +137,9 @@ function prenomDe(nomComplet: string): string {
 function EtatVide() {
   return (
     <View style={styles.carteVide}>
+      <View style={styles.iconeVide}>
+        <Ionicons name="flame-outline" size={28} color={couleurs.rouge} />
+      </View>
       <Text style={styles.titreVide}>Aucune bouteille enregistrée</Text>
       <Text style={styles.texteVide}>
         Enregistrez votre première bouteille pour suivre son autonomie en heures.
@@ -124,9 +161,7 @@ function CarteBouteilleActive({
   const { niveau } = bouteille;
   const couleurMarqueBouteille = couleurPourFormat(bouteille.format, marques);
   return (
-    <Pressable
-      style={[styles.carteActive, { borderLeftColor: couleurMarqueBouteille }]}
-      onPress={() => router.push(`/bouteille/${bouteille.uuid}`)}>
+    <Pressable style={styles.carteActive} onPress={() => router.push(`/bouteille/${bouteille.uuid}`)}>
       <View style={styles.enTeteCarteActive}>
         <View style={styles.libelleAvecPastille}>
           <View style={[styles.pastilleMarque, { backgroundColor: couleurMarqueBouteille }]} />
@@ -139,9 +174,17 @@ function CarteBouteilleActive({
 
       {!niveau.frais ? <BandeauSync texte="Dernière valeur connue - hors ligne" variante="alerte" /> : null}
 
-      <View style={styles.blocAutonomie}>
-        <Text style={styles.chiffreAutonomie}>{formaterAutonomie(niveau.autonomie_heures)}</Text>
-        <Text style={styles.libelleAutonomie}>d'autonomie restante</Text>
+      <View style={styles.heroNiveau}>
+        <BouteilleGaz
+          couleur={couleurMarqueBouteille}
+          code={bouteille.format.code}
+          niveauPct={niveau.niveau_pct}
+          taille={132}
+        />
+        <View style={styles.blocAutonomie}>
+          <Text style={styles.chiffreAutonomie}>{formaterAutonomie(niveau.autonomie_heures)}</Text>
+          <Text style={styles.libelleAutonomie}>d'autonomie restante</Text>
+        </View>
       </View>
 
       <View style={styles.barreNiveau}>
@@ -159,15 +202,17 @@ function CarteBouteilleActive({
 function CarteMiniature({ bouteille, marques }: { bouteille: Bouteille; marques: Marque[] }) {
   const couleurMarqueBouteille = couleurPourFormat(bouteille.format, marques);
   return (
-    <Pressable
-      style={[styles.carteMiniature, { borderTopColor: couleurMarqueBouteille, borderTopWidth: 3 }]}
-      onPress={() => router.push(`/bouteille/${bouteille.uuid}`)}>
-      <View style={styles.libelleAvecPastille}>
-        <View style={[styles.pastilleMarque, { backgroundColor: couleurMarqueBouteille }]} />
-        <Text style={styles.libelleMiniature} numberOfLines={1}>
-          {bouteille.format.code} - {bouteille.role_bouteille === 'active' ? 'Active' : 'Secours'}
-        </Text>
-      </View>
+    <Pressable style={styles.carteMiniature} onPress={() => router.push(`/bouteille/${bouteille.uuid}`)}>
+      <BouteilleGaz
+        couleur={couleurMarqueBouteille}
+        code={bouteille.format.code}
+        niveauPct={bouteille.niveau.niveau_pct}
+        taille={72}
+        reflet={false}
+      />
+      <Text style={styles.libelleMiniature} numberOfLines={1}>
+        {bouteille.role_bouteille === 'active' ? 'Active' : 'Secours'}
+      </Text>
       <Text style={styles.pourcentMiniature}>{bouteille.niveau.niveau_pct} %</Text>
       <Text style={styles.autonomieMiniature}>{formaterAutonomie(bouteille.niveau.autonomie_heures)}</Text>
       <BadgeEtat etat={bouteille.niveau.etat} compact />
@@ -189,8 +234,14 @@ const styles = StyleSheet.create({
   ligneBonjour: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: espacements.sm,
+    justifyContent: 'space-between',
     marginTop: espacements.sm,
+  },
+  blocBonjour: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espacements.sm,
+    flexShrink: 1,
   },
   texteBonjour: {
     fontSize: 26,
@@ -203,6 +254,30 @@ const styles = StyleSheet.create({
     borderRadius: rayons.rond,
     borderWidth: 2,
     borderColor: 'rgba(255,255,255,0.7)',
+  },
+  ligneActionsEntete: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espacements.sm,
+  },
+  boutonCloche: {
+    width: 40,
+    height: 40,
+    borderRadius: rayons.rond,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  pastilleAlerte: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 9,
+    height: 9,
+    borderRadius: rayons.rond,
+    backgroundColor: couleurs.danger,
+    borderWidth: 1.5,
+    borderColor: couleurs.degradeDebut,
   },
   selecteurZone: {
     marginTop: espacements.md,
@@ -225,10 +300,24 @@ const styles = StyleSheet.create({
   },
   carteVide: {
     backgroundColor: couleurs.carte,
-    borderRadius: rayons.lg,
+    borderRadius: rayons.xl,
     padding: espacements.lg,
     marginTop: -espacements.xl,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 4,
+  },
+  iconeVide: {
+    width: 56,
+    height: 56,
+    borderRadius: rayons.rond,
+    backgroundColor: couleurs.rougeClair,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: espacements.md,
   },
   titreVide: {
     fontSize: 18,
@@ -248,14 +337,13 @@ const styles = StyleSheet.create({
   },
   carteActive: {
     backgroundColor: couleurs.carte,
-    borderRadius: rayons.lg,
-    borderLeftWidth: 6,
+    borderRadius: rayons.xl,
     padding: espacements.lg,
     marginTop: -espacements.xl,
     shadowColor: '#000',
     shadowOpacity: 0.08,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 10 },
     elevation: 4,
   },
   enTeteCarteActive: {
@@ -281,9 +369,15 @@ const styles = StyleSheet.create({
     color: couleurs.texteDoux,
     flexShrink: 1,
   },
+  heroNiveau: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: espacements.lg,
+    marginVertical: espacements.lg,
+  },
   blocAutonomie: {
     alignItems: 'center',
-    marginVertical: espacements.lg,
   },
   chiffreAutonomie: {
     fontSize: 72,
@@ -320,6 +414,19 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '600',
   },
+  lienGererBouteilles: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: espacements.xs,
+    marginTop: espacements.md,
+    paddingVertical: espacements.sm,
+  },
+  texteLienGererBouteilles: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: couleurs.rouge,
+  },
   blocTemperature: {
     marginTop: espacements.md,
   },
@@ -336,13 +443,16 @@ const styles = StyleSheet.create({
   },
   carteMiniature: {
     backgroundColor: couleurs.carte,
-    borderRadius: rayons.md,
-    borderWidth: 1,
-    borderColor: couleurs.bordure,
+    borderRadius: rayons.lg,
     padding: espacements.md,
     width: 130,
     alignItems: 'center',
     gap: espacements.xs,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   libelleMiniature: {
     fontSize: 12,

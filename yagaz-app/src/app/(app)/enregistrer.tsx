@@ -4,6 +4,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Bouton } from '../../components/Bouton';
+import { BouteilleGaz } from '../../components/BouteilleGaz';
 import { Champ } from '../../components/Champ';
 import { useDonnees } from '../../data/DonneesContext';
 import { couleurs, espacements, rayons } from '../../../theme/couleurs';
@@ -78,10 +79,18 @@ export default function EcranEnregistrerBouteille() {
           {formatsDuCode.map((format) => (
             <Pressable
               key={format.id}
-              style={[styles.chip, styles.chipAvecPastille, formatChoisi?.id === format.id && styles.chipActif]}
+              style={[styles.tuileFormat, formatChoisi?.id === format.id && styles.tuileFormatActive]}
               onPress={() => setFormatChoisi(format)}>
-              <View style={[styles.pastille, { backgroundColor: couleurPourFormat(format, marques) }]} />
-              <Text style={[styles.chipTexte, formatChoisi?.id === format.id && styles.chipTexteActif]}>
+              <BouteilleGaz
+                couleur={couleurPourFormat(format, marques)}
+                code={format.code}
+                niveauPct={100}
+                taille={62}
+                reflet={false}
+              />
+              <Text
+                style={[styles.tuileTexte, formatChoisi?.id === format.id && styles.tuileTexteActive]}
+                numberOfLines={1}>
                 {format.marque}
               </Text>
             </Pressable>
@@ -155,15 +164,28 @@ const styles = StyleSheet.create({
     borderColor: couleurs.bordure,
     backgroundColor: couleurs.carte,
   },
-  chipAvecPastille: {
-    flexDirection: 'row',
+  tuileFormat: {
+    width: 88,
+    paddingVertical: espacements.sm,
     alignItems: 'center',
     gap: espacements.xs,
+    borderRadius: rayons.lg,
+    borderWidth: 1,
+    borderColor: couleurs.bordure,
+    backgroundColor: couleurs.carte,
   },
-  pastille: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+  tuileFormatActive: {
+    borderWidth: 2,
+    borderColor: couleurs.rouge,
+  },
+  tuileTexte: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: couleurs.texteDoux,
+  },
+  tuileTexteActive: {
+    color: couleurs.rouge,
+    fontWeight: '700',
   },
   chipActif: {
     backgroundColor: couleurs.rouge,

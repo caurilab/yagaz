@@ -16,7 +16,7 @@ export const couleurs = {
   rougeClair: '#FFE7D1', // orange clair
   texte: '#1F2430',
   texteDoux: '#6B7280',
-  fond: '#FFF8F2', // fond crème
+  fond: '#F6F7F9', // gris très léger neutre (léger contraste avec les cartes blanches, sans teinte orange "vintage")
   carte: '#FFFFFF',
   vertOk: '#22C55E',
   bordure: '#F0E6DD',

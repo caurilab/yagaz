@@ -43,14 +43,16 @@ export function EncartTemperature({ temperature }: { temperature: TemperatureSit
 const styles = StyleSheet.create({
   carte: {
     backgroundColor: couleurs.carte,
-    borderRadius: rayons.md,
-    borderWidth: 1,
-    borderColor: couleurs.bordure,
+    borderRadius: rayons.lg,
     padding: espacements.md,
     gap: espacements.xs,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   carteAlerte: {
-    borderColor: couleurs.danger,
     backgroundColor: '#FDECEC',
   },
   ligneEntete: {

@@ -128,9 +128,14 @@ const styles = StyleSheet.create({
   },
   carteCompte: {
     backgroundColor: couleurs.carte,
-    borderRadius: rayons.lg,
+    borderRadius: rayons.xl,
     padding: espacements.lg,
     marginBottom: espacements.lg,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
   },
   nomUtilisateur: {
     fontSize: 18,
@@ -150,9 +155,14 @@ const styles = StyleSheet.create({
   },
   carte: {
     backgroundColor: couleurs.carte,
-    borderRadius: rayons.lg,
+    borderRadius: rayons.xl,
     padding: espacements.lg,
     marginBottom: espacements.lg,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
   },
   ligneCanal: {
     flexDirection: 'row',

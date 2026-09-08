@@ -7,6 +7,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
 import { couleurs, espacements } from '../../../theme/couleurs';
+import { BouteilleGaz } from '../BouteilleGaz';
 import type { RepartitionEntree } from '../../api/types';
 
 interface Props {
@@ -74,13 +75,26 @@ export function Donut({ donnees, taille = 152, epaisseur = 20, libelleCentre, so
   );
 }
 
-/** Légende associée au donut (pastille + libellé + valeur), en colonne. */
-export function LegendeDonut({ donnees, formaterValeur }: { donnees: RepartitionEntree[]; formaterValeur?: (v: number) => string }) {
+/** Légende associée au donut (pastille ou mini bouteille + libellé + valeur), en colonne. */
+export function LegendeDonut({
+  donnees,
+  formaterValeur,
+  iconeBouteille = false,
+}: {
+  donnees: RepartitionEntree[];
+  formaterValeur?: (v: number) => string;
+  /** Affiche une mini bouteille SVG teintée au lieu de la pastille (répartition par bouteille). */
+  iconeBouteille?: boolean;
+}) {
   return (
     <View style={styles.legende}>
       {donnees.map((entree, index) => (
         <View key={index} style={styles.ligneLegende}>
-          <View style={[styles.pastille, { backgroundColor: entree.couleur }]} />
+          {iconeBouteille ? (
+            <BouteilleGaz couleur={entree.couleur} niveauPct={100} taille={28} reflet={false} />
+          ) : (
+            <View style={[styles.pastille, { backgroundColor: entree.couleur }]} />
+          )}
           <Text style={styles.libelleLegende} numberOfLines={1}>
             {entree.libelle}
           </Text>

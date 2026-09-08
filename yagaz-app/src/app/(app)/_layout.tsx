@@ -14,10 +14,13 @@ function BoutonRetour() {
 }
 
 /**
- * Navigation foyer : 4 onglets principaux (accueil / bouteilles / alertes /
- * réglages) ; "enregistrer" et le détail bouteille sont des routes de la
- * même famille, sans onglet dédié (href: null), ouvertes avec un bouton
- * retour explicite.
+ * Navigation foyer : barre du bas ultra-light, 4 onglets visibles
+ * (accueil / commandes / historique / réglages). "bouteilles", "alertes" et
+ * "analyse" restent des routes accessibles (href: null) mais sortent de la
+ * barre - accès garantis depuis le haut de l'accueil (carte bouteille, accès
+ * statistiques et cloche d'alertes). "enregistrer", le détail bouteille et
+ * "nouvelle-commande" sont eux aussi des routes de la même famille, sans
+ * onglet dédié (href: null), ouvertes avec un bouton retour explicite.
  */
 export default function LayoutApp() {
   return (
@@ -40,6 +43,7 @@ export default function LayoutApp() {
       <Tabs.Screen
         name="bouteilles"
         options={{
+          href: null,
           title: 'Bouteilles',
           tabBarIcon: ({ color }) => <IconeOnglet lib="material-community" nom="propane-tank" color={color} />,
         }}
@@ -54,6 +58,7 @@ export default function LayoutApp() {
       <Tabs.Screen
         name="alertes"
         options={{
+          href: null,
           title: 'Alertes',
           tabBarIcon: ({ color }) => <IconeOnglet nom="notifications" color={color} />,
         }}
@@ -68,6 +73,7 @@ export default function LayoutApp() {
       <Tabs.Screen
         name="analyse"
         options={{
+          href: null,
           title: 'Analyse',
           tabBarIcon: ({ color }) => <IconeOnglet nom="stats-chart-outline" color={color} />,
         }}

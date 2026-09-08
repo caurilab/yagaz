@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { BadgeEtat } from '../../../components/BadgeEtat';
 import { BandeauSync } from '../../../components/BandeauSync';
 import { Bouton } from '../../../components/Bouton';
+import { BouteilleGaz } from '../../../components/BouteilleGaz';
 import { Champ } from '../../../components/Champ';
 import { EncartTemperature } from '../../../components/EncartTemperature';
 import { useDonnees } from '../../../data/DonneesContext';
@@ -133,9 +134,19 @@ export default function EcranDetailBouteille() {
 
         {!niveau.frais ? <BandeauSync texte="Dernière valeur connue - hors ligne" variante="alerte" /> : null}
 
-        <View style={[styles.carte, { borderLeftColor: couleurBouteille }]}>
-          <Text style={styles.chiffreAutonomie}>{formaterAutonomie(niveau.autonomie_heures)}</Text>
-          <Text style={styles.libelle}>d'autonomie restante</Text>
+        <View style={styles.carte}>
+          <View style={styles.heroNiveau}>
+            <BouteilleGaz
+              couleur={couleurBouteille}
+              code={bouteille.format.code}
+              niveauPct={niveau.niveau_pct}
+              taille={150}
+            />
+            <View style={styles.blocAutonomie}>
+              <Text style={styles.chiffreAutonomie}>{formaterAutonomie(niveau.autonomie_heures)}</Text>
+              <Text style={styles.libelle}>d'autonomie restante</Text>
+            </View>
+          </View>
 
           <View style={styles.barreNiveau}>
             <View style={[styles.barreNiveauRemplie, { width: `${Math.max(0, Math.min(100, niveau.niveau_pct))}%` }]} />
@@ -177,6 +188,7 @@ export default function EcranDetailBouteille() {
 
             <Text style={styles.sectionTitre}>Courbe de niveau</Text>
             <View style={styles.placeholderCourbe}>
+              <Ionicons name="trending-up-outline" size={26} color={couleurs.grisNeutre} />
               <Text style={styles.texteVide}>Courbe de niveau bientôt disponible</Text>
             </View>
           </>
@@ -333,11 +345,25 @@ const styles = StyleSheet.create({
   },
   carte: {
     backgroundColor: couleurs.carte,
-    borderRadius: rayons.lg,
-    borderLeftWidth: 6,
+    borderRadius: rayons.xl,
     padding: espacements.lg,
     alignItems: 'center',
     marginBottom: espacements.lg,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 4,
+  },
+  heroNiveau: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: espacements.lg,
+    marginBottom: espacements.md,
+  },
+  blocAutonomie: {
+    alignItems: 'center',
   },
   chiffreAutonomie: {
     fontSize: 56,
@@ -347,7 +373,6 @@ const styles = StyleSheet.create({
   libelle: {
     fontSize: 15,
     color: couleurs.texteDoux,
-    marginBottom: espacements.md,
   },
   barreNiveau: {
     alignSelf: 'stretch',
@@ -383,10 +408,15 @@ const styles = StyleSheet.create({
   },
   carteInfo: {
     backgroundColor: couleurs.carte,
-    borderRadius: rayons.md,
+    borderRadius: rayons.lg,
     padding: espacements.lg,
     marginBottom: espacements.lg,
     gap: espacements.sm,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   texteInfo: {
     fontSize: 15,
@@ -482,6 +512,7 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: espacements.xs,
     backgroundColor: couleurs.carte,
   },
   texteVide: {

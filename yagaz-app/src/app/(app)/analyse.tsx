@@ -103,6 +103,7 @@ export default function EcranAnalyse() {
           </View>
         ) : !analyse ? (
           <View style={styles.chargement}>
+            <Ionicons name="bar-chart-outline" size={30} color={couleurs.grisNeutre} style={styles.iconeVide} />
             <Text style={styles.texteVide}>Aucune analyse disponible.</Text>
           </View>
         ) : (
@@ -146,10 +147,14 @@ export default function EcranAnalyse() {
                   <LegendeDonut
                     donnees={analyse.repartition.par_bouteille}
                     formaterValeur={(v) => `${v} kg`}
+                    iconeBouteille
                   />
                 </View>
               ) : (
-                <Text style={styles.texteVide}>Pas de répartition sur cette période.</Text>
+                <View style={styles.videSection}>
+                  <Ionicons name="pie-chart-outline" size={26} color={couleurs.grisNeutre} />
+                  <Text style={styles.texteVide}>Pas de répartition sur cette période.</Text>
+                </View>
               )}
             </View>
 
@@ -271,6 +276,14 @@ const styles = StyleSheet.create({
     paddingVertical: espacements.xxl,
     alignItems: 'center',
   },
+  iconeVide: {
+    marginBottom: espacements.sm,
+  },
+  videSection: {
+    alignItems: 'center',
+    gap: espacements.xs,
+    paddingVertical: espacements.md,
+  },
   texteVide: {
     color: couleurs.texteDoux,
     fontSize: 13,
@@ -286,10 +299,13 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     backgroundColor: couleurs.carte,
     borderRadius: rayons.lg,
-    borderWidth: 1,
-    borderColor: couleurs.bordure,
     padding: espacements.md,
     gap: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   libelleStat: {
     fontSize: 12,
@@ -321,11 +337,14 @@ const styles = StyleSheet.create({
   },
   carte: {
     backgroundColor: couleurs.carte,
-    borderRadius: rayons.lg,
-    borderWidth: 1,
-    borderColor: couleurs.bordure,
+    borderRadius: rayons.xl,
     padding: espacements.lg,
     marginBottom: espacements.md,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
   },
   sectionTitre: {
     fontSize: 15,

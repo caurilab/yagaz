@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { router } from 'expo-router';
 import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 
 import { BadgeEtat } from '../../components/BadgeEtat';
 import { Bouton } from '../../components/Bouton';
+import { BouteilleGaz } from '../../components/BouteilleGaz';
 import { useDonnees } from '../../data/DonneesContext';
 import { couleurs, espacements, rayons } from '../../../theme/couleurs';
 import { formaterAutonomie } from '../../utils/niveau';
@@ -39,33 +41,43 @@ export default function EcranBouteilles() {
         contentContainerStyle={styles.liste}
         ListEmptyComponent={
           <View style={styles.vide}>
+            <Ionicons name="flame-outline" size={32} color={couleurs.grisNeutre} style={styles.iconeVide} />
             <Text style={styles.texteVide}>Aucune bouteille pour ce site pour l'instant.</Text>
           </View>
         }
         renderItem={({ item }) => (
-          <View style={[styles.carte, item.role_bouteille === 'active' && styles.carteActive]}>
-            <View style={styles.ligneEntete}>
-              <View style={styles.roleZone}>
-                <Text style={styles.role}>{item.role_bouteille === 'active' ? 'Active' : 'Secours'}</Text>
-                <View style={styles.ligneFormat}>
-                  <View style={[styles.pastille, { backgroundColor: couleurPourFormat(item.format, marques) }]} />
-                  <Text style={styles.format}>
-                    {item.format.code} - {item.format.marque}
-                  </Text>
+          <View style={styles.carte}>
+            <View style={styles.carteLigne}>
+              <BouteilleGaz
+                couleur={couleurPourFormat(item.format, marques)}
+                code={item.format.code}
+                niveauPct={item.niveau.niveau_pct}
+                taille={86}
+                reflet={false}
+              />
+              <View style={styles.carteContenu}>
+                <View style={styles.ligneEntete}>
+                  <View style={styles.roleZone}>
+                    <View style={styles.ligneRole}>
+                      {item.role_bouteille === 'active' ? <View style={styles.pastilleActive} /> : null}
+                      <Text style={styles.role}>{item.role_bouteille === 'active' ? 'Active' : 'Secours'}</Text>
+                    </View>
+                    <Text style={styles.format}>{item.format.marque}</Text>
+                  </View>
+                  <BadgeEtat etat={item.niveau.etat} />
                 </View>
+
+                <View style={styles.ligneChiffres}>
+                  <Text style={styles.autonomie}>{formaterAutonomie(item.niveau.autonomie_heures)}</Text>
+                  <Text style={styles.pourcent}>{item.niveau.niveau_pct} %</Text>
+                </View>
+
+                {item.niveau.estimation ? (
+                  <Text style={styles.texteEstimation}>Estimation en cours d'affinage</Text>
+                ) : null}
+                {!item.niveau.frais ? <Text style={styles.texteHorsLigne}>Dernière valeur connue</Text> : null}
               </View>
-              <BadgeEtat etat={item.niveau.etat} />
             </View>
-
-            <View style={styles.ligneChiffres}>
-              <Text style={styles.autonomie}>{formaterAutonomie(item.niveau.autonomie_heures)}</Text>
-              <Text style={styles.pourcent}>{item.niveau.niveau_pct} %</Text>
-            </View>
-
-            {item.niveau.estimation ? (
-              <Text style={styles.texteEstimation}>Estimation en cours d'affinage</Text>
-            ) : null}
-            {!item.niveau.frais ? <Text style={styles.texteHorsLigne}>Dernière valeur connue</Text> : null}
 
             <View style={styles.actions}>
               {item.role_bouteille !== 'active' ? (
@@ -122,20 +134,30 @@ const styles = StyleSheet.create({
     paddingVertical: espacements.xxl,
     alignItems: 'center',
   },
+  iconeVide: {
+    marginBottom: espacements.sm,
+  },
   texteVide: {
     color: couleurs.texteDoux,
   },
   carte: {
     backgroundColor: couleurs.carte,
-    borderRadius: rayons.lg,
+    borderRadius: rayons.xl,
     padding: espacements.lg,
-    borderWidth: 1,
-    borderColor: couleurs.bordure,
     marginBottom: espacements.md,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
   },
-  carteActive: {
-    borderColor: couleurs.rouge,
-    borderWidth: 2,
+  carteLigne: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espacements.md,
+  },
+  carteContenu: {
+    flex: 1,
   },
   ligneEntete: {
     flexDirection: 'row',
@@ -146,25 +168,26 @@ const styles = StyleSheet.create({
   roleZone: {
     flex: 1,
   },
+  ligneRole: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espacements.xs,
+  },
+  pastilleActive: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: couleurs.rouge,
+  },
   role: {
     fontSize: 16,
     fontWeight: '700',
     color: couleurs.texte,
   },
-  ligneFormat: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: espacements.xs,
-    marginTop: 2,
-  },
-  pastille: {
-    width: 9,
-    height: 9,
-    borderRadius: 5,
-  },
   format: {
     fontSize: 13,
     color: couleurs.texteDoux,
+    marginTop: 2,
   },
   ligneChiffres: {
     flexDirection: 'row',

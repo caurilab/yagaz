@@ -47,7 +47,15 @@ export default function EcranAlertes() {
           return (
             <View style={[styles.carte, item.statut === 'resolue' && styles.carteResolue]}>
               <View style={styles.ligneEntete}>
-                <Text style={styles.type}>{LIBELLES_TYPE[item.type]}</Text>
+                <View style={styles.libelleAvecPastille}>
+                  <View
+                    style={[
+                      styles.pastilleStatut,
+                      { backgroundColor: item.statut === 'resolue' ? couleurs.vertOk : couleurs.danger },
+                    ]}
+                  />
+                  <Text style={styles.type}>{LIBELLES_TYPE[item.type]}</Text>
+                </View>
                 <Text style={styles.statut}>{libelleStatut(item.statut)}</Text>
               </View>
               {nomSite ? <Text style={styles.site}>{nomSite}</Text> : null}
@@ -120,20 +128,31 @@ const styles = StyleSheet.create({
   carte: {
     backgroundColor: couleurs.carte,
     borderRadius: rayons.lg,
-    borderWidth: 1,
-    borderColor: couleurs.bordure,
-    borderLeftWidth: 4,
-    borderLeftColor: couleurs.danger,
     padding: espacements.lg,
     marginBottom: espacements.md,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   carteResolue: {
-    borderLeftColor: couleurs.vertOk,
     opacity: 0.7,
   },
   ligneEntete: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  libelleAvecPastille: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espacements.xs,
+  },
+  pastilleStatut: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   type: {
     fontSize: 13,
