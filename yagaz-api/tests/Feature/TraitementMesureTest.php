@@ -14,6 +14,7 @@ use App\Models\NiveauCourant;
 use App\Models\Plateau;
 use App\Models\Site;
 use App\Services\Mesure\TraitementMesure;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -113,15 +114,43 @@ class TraitementMesureTest extends TestCase
         $this->assertSame(1, Mesure::where('plateau_id', $plateau->id)->count());
     }
 
-    public function test_un_seq_en_regression_est_traite_comme_un_doublon(): void
+    /**
+     * Audit sécurité, correctif #2 : la dédup ne se base plus sur `max(seq)`
+     * du plateau (sinon un plateau qui redémarre et repart à un `seq` bas se
+     * retrouve avec toutes ses mesures rejetées en doublon). Un `seq` en
+     * régression mais jamais vu auparavant pour ce plateau est donc accepté.
+     */
+    public function test_un_seq_en_regression_jamais_vu_est_accepte_pas_traite_comme_un_doublon(): void
     {
         $plateau = $this->plateauActif();
 
         $this->service->traiter($this->message($plateau, 15000, 5));
         $regression = $this->service->traiter($this->message($plateau, 15000, 3));
 
-        $this->assertSame(StatutIngestionMesure::Doublon, $regression->statut);
-        $this->assertSame(1, Mesure::where('plateau_id', $plateau->id)->count());
+        $this->assertSame(StatutIngestionMesure::Rangee, $regression->statut);
+        $this->assertSame(2, Mesure::where('plateau_id', $plateau->id)->count());
+    }
+
+    /**
+     * Audit sécurité, correctif #2 (test obligatoire #2) : après une série
+     * normale, un plateau qui redémarre repart avec un `seq` bas (nouveau
+     * `mesure_at` postérieur) — cette mesure doit être rangée, pas rejetée
+     * comme doublon.
+     */
+    public function test_un_redemarrage_de_plateau_avec_reset_de_seq_est_accepte(): void
+    {
+        $plateau = $this->plateauActif();
+
+        foreach (range(100, 105) as $seq) {
+            $this->service->traiter($this->message($plateau, 15000, $seq));
+        }
+
+        $apresRedemarrage = $this->service->traiter($this->message($plateau, 15000, 1, [
+            'ts' => now()->addMinute()->timestamp,
+        ]));
+
+        $this->assertSame(StatutIngestionMesure::Rangee, $apresRedemarrage->statut);
+        $this->assertSame(7, Mesure::where('plateau_id', $plateau->id)->count());
     }
 
     public function test_un_poids_negatif_est_rejete(): void
@@ -171,7 +200,7 @@ class TraitementMesureTest extends TestCase
     public function test_le_calibrage_de_tare_converge_vers_le_plancher_observe_et_finit_fiable(): void
     {
         $plateau = $this->plateauActif();
-        $bouteille = $this->bouteillePosee($plateau); // tare_g null, nominale 13000, marge 2000.
+        $bouteille = $this->bouteillePosee($plateau); // tare_g null, nominale 13000, marge 1000.
 
         $seq = 1;
 
@@ -236,5 +265,134 @@ class TraitementMesureTest extends TestCase
 
         $this->assertSame(StatutIngestionMesure::Rangee, $resultat->statut);
         $this->assertNull(NiveauCourant::find($bouteille->id));
+    }
+
+    /**
+     * Audit sécurité, correctif #1 (test obligatoire #1a — LE test
+     * critique) : une bouteille active dont le poids brut approche la tare
+     * nominale déclenche une alerte seuil_bas même si sa tare calibrée est
+     * faussée basse, au point que le niveau_pct calculé avec cette tare
+     * reste au-dessus du seuil. Le filet de sécurité absolu
+     * (`securite_marge_plancher_g`) ne dépend jamais de la tare calibrée.
+     */
+    public function test_une_tare_faussee_basse_ne_masque_pas_une_bouteille_physiquement_quasi_vide(): void
+    {
+        $plateau = $this->plateauActif();
+        $bouteille = $this->bouteillePosee($plateau, [
+            'tare_g' => 10000, // Tare empoisonnée, bien en dessous de la vraie tare (13000).
+            'tare_fiable' => true,
+            'seuil_bas_pct' => 15,
+        ]);
+
+        // Poids physique quasi vide (à 100g de la tare nominale 13000g), mais
+        // avec la tare faussée le niveau calculé reste artificiellement haut.
+        $resultat = $this->service->traiter($this->message($plateau, 13100, 1));
+
+        $niveauCourant = NiveauCourant::find($bouteille->id);
+
+        $this->assertNotNull($niveauCourant);
+        $this->assertGreaterThan(15, $niveauCourant->niveau_pct); // Le niveau calculé masque le vide réel.
+        $this->assertSame(1, Alerte::where('type', TypeAlerte::SeuilBas)->count()); // Le filet déclenche quand même.
+        $this->assertNotNull($resultat->alerte);
+    }
+
+    /**
+     * Audit sécurité, correctif #1 (test obligatoire #1b) : une série de
+     * poids stables sous la tare nominale ne fait jamais descendre la tare
+     * en dessous de `nominale − marge_tare` (borne plausible respectée).
+     */
+    public function test_une_serie_de_poids_stables_sous_la_tare_nominale_ne_fait_pas_descendre_la_tare_sous_la_borne(): void
+    {
+        $plateau = $this->plateauActif();
+        $bouteille = $this->bouteillePosee($plateau); // tare_g null, nominale 13000.
+
+        $margeTare = (int) config('mesure.marge_tare');
+        $borneBasse = 13000 - $margeTare;
+
+        $seq = 1;
+
+        // Établit un plancher légitime, pile à la borne basse plausible.
+        for ($i = 0; $i < 6; $i++) {
+            $this->service->traiter($this->message($plateau, $borneBasse, $seq++));
+        }
+
+        // Poids nettement sous la tare nominale, hors plage plausible :
+        // ignorés, ne doivent jamais faire descendre la tare sous la borne.
+        for ($i = 0; $i < 10; $i++) {
+            $this->service->traiter($this->message($plateau, $borneBasse - 3000, $seq++));
+        }
+
+        $bouteille->refresh();
+
+        $this->assertNotNull($bouteille->tare_g);
+        $this->assertGreaterThanOrEqual($borneBasse, $bouteille->tare_g);
+    }
+
+    /**
+     * Audit sécurité, correctif #4 (test obligatoire #4a) : un `seq` hors
+     * plage plausible est rejeté plutôt que rangé.
+     */
+    public function test_un_seq_gigantesque_est_rejete(): void
+    {
+        $plateau = $this->plateauActif();
+
+        $resultat = $this->service->traiter($this->message($plateau, 15000, 1, [
+            'seq' => 1_000_000_000_000_000_000,
+        ]));
+
+        $this->assertSame(StatutIngestionMesure::Rejetee, $resultat->statut);
+        $this->assertSame(0, Mesure::count());
+    }
+
+    /**
+     * Audit sécurité, correctif #4 (test obligatoire #4b) : un `ts` aberrant
+     * (trop ancien ou trop futur) est rejeté — distinct du simple bornage de
+     * dérive d'horloge qui recale les petites dérives sans rejeter.
+     */
+    public function test_un_ts_de_l_an_2000_est_rejete(): void
+    {
+        $plateau = $this->plateauActif();
+
+        $resultat = $this->service->traiter($this->message($plateau, 15000, 1, [
+            'ts' => CarbonImmutable::parse('2000-01-01', 'UTC')->timestamp,
+        ]));
+
+        $this->assertSame(StatutIngestionMesure::Rejetee, $resultat->statut);
+        $this->assertSame(0, Mesure::count());
+    }
+
+    public function test_un_ts_de_l_an_3000_est_rejete(): void
+    {
+        $plateau = $this->plateauActif();
+
+        $resultat = $this->service->traiter($this->message($plateau, 15000, 1, [
+            'ts' => CarbonImmutable::parse('3000-01-01', 'UTC')->timestamp,
+        ]));
+
+        $this->assertSame(StatutIngestionMesure::Rejetee, $resultat->statut);
+        $this->assertSame(0, Mesure::count());
+    }
+
+    /**
+     * Invariant de sécurité (audit, test obligatoire #Q1) : l'uid réel est
+     * celui du topic MQTT, résolu par `IngestionMesures` avant d'appeler ce
+     * service — qui écrase tout `uid` présent dans le payload JSON lui-même
+     * (ADR 0003). Au niveau du service, seul le champ `uid` du message fait
+     * foi pour résoudre le plateau ; un identifiant usurpé ailleurs dans le
+     * payload est ignoré.
+     */
+    public function test_le_champ_uid_du_message_fait_foi_pour_resoudre_le_plateau(): void
+    {
+        $plateauReel = $this->plateauActif();
+        $plateauUsurpe = $this->plateauActif();
+
+        $message = $this->message($plateauReel, 15000, 1, [
+            'uid_dans_le_payload' => $plateauUsurpe->uid,
+        ]);
+
+        $resultat = $this->service->traiter($message);
+
+        $this->assertSame(StatutIngestionMesure::Rangee, $resultat->statut);
+        $this->assertSame($plateauReel->id, $resultat->mesure->plateau_id);
     }
 }

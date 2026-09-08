@@ -31,6 +31,20 @@ use App\Models\Bouteille;
  *   plancher sur des mesures/cycles distincts qui rend la tare fiable.
  * - Après ≥ `n_calibrage` observations (nouvelles ou confirmées), la tare est
  *   marquée fiable (`tare_fiable = true`, `tare_source = calibree`).
+ *
+ * Réversibilité d'une tare fiable (audit sécurité, correctif #1) : une tare
+ * `tare_fiable = true` n'est plus figée à vie. Si un nouveau plancher plus
+ * bas, observé à partir d'un poids lissé plausible, contredit nettement (de
+ * ≥ `SEUIL_CONTRADICTION_G`) la tare verrouillée, on relance un cycle de
+ * calibrage complet sur ce nouveau plancher (`tare_fiable` repasse à false le
+ * temps de reconfirmer ce plancher sur `n_calibrage` observations, exactement
+ * comme un premier calibrage) — c'est la correction légitime d'un plancher
+ * initialement mal calibré. Un candidat au-dessus du plancher verrouillé
+ * (bouteille non vide) ou un écart isolé sous ce seuil ne modifie rien :
+ * c'est l'hystérésis qui empêche la tare fiable d'osciller à chaque léger
+ * bruit de mesure. Ce mécanisme reste borné par la plage plausible
+ * [nominale − marge_tare, nominale + marge_tare] vérifiée en amont : une tare
+ * ne peut donc jamais dériver, fiable ou non, sous `nominale − marge_tare`.
  */
 final class TareCalibrage
 {
@@ -43,17 +57,20 @@ final class TareCalibrage
     private const int TOLERANCE_CONFIRMATION_G = 500;
 
     /**
+     * Écart (en grammes), en dessous de la tare verrouillée, à partir duquel
+     * un nouveau plancher observé est jugé la contredire nettement. En deçà,
+     * ou si le candidat est au-dessus du plancher verrouillé (bouteille non
+     * vide, sans information sur le plancher), on ne touche à rien —
+     * hystérésis anti-oscillation (audit sécurité, correctif #1).
+     */
+    private const int SEUIL_CONTRADICTION_G = 750;
+
+    /**
      * Affine la tare de la bouteille à partir d'un nouveau poids lissé.
      * Modifie et sauvegarde la bouteille si un plancher pertinent est observé.
      */
     public function affiner(Bouteille $bouteille, float $poidsLisse, int $tareNominale): void
     {
-        if ($bouteille->tare_fiable) {
-            // La tare est déjà jugée fiable : on ne la fait plus bouger, pour
-            // éviter qu'un plancher aberrant tardif ne la dégrade.
-            return;
-        }
-
         $marge = (int) config('mesure.marge_tare');
         $borneBasse = $tareNominale - $marge;
         $borneHaute = $tareNominale + $marge;
@@ -63,8 +80,15 @@ final class TareCalibrage
             return;
         }
 
-        $tareCalibree = $bouteille->tare_g;
         $plancherCandidat = (int) round($poidsLisse);
+
+        if ($bouteille->tare_fiable) {
+            $this->reconsidererTareFiable($bouteille, $plancherCandidat);
+
+            return;
+        }
+
+        $tareCalibree = $bouteille->tare_g;
 
         if ($tareCalibree === null || $plancherCandidat < $tareCalibree) {
             $bouteille->tare_g = $plancherCandidat;
@@ -83,6 +107,27 @@ final class TareCalibrage
             $bouteille->tare_fiable = true;
         }
 
+        $bouteille->save();
+    }
+
+    /**
+     * Ré-évalue une tare déjà fiable face à un nouveau candidat plancher (cf.
+     * PHPDoc de classe). Ne fait rien si l'écart avec la tare verrouillée
+     * reste sous `SEUIL_CONTRADICTION_G` (hystérésis) ; sinon relance un
+     * cycle de calibrage complet sur ce nouveau plancher.
+     */
+    private function reconsidererTareFiable(Bouteille $bouteille, int $plancherCandidat): void
+    {
+        $tareCalibree = (int) $bouteille->tare_g;
+
+        if ($plancherCandidat >= $tareCalibree - self::SEUIL_CONTRADICTION_G) {
+            return;
+        }
+
+        $bouteille->tare_g = $plancherCandidat;
+        $bouteille->tare_source = TareSource::Calibree;
+        $bouteille->tare_fiable = false;
+        $bouteille->calibrage_observations = 1;
         $bouteille->save();
     }
 }

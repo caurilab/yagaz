@@ -12,7 +12,9 @@ use App\Models\Bouteille;
 use App\Models\Mesure;
 use App\Models\NiveauCourant;
 use App\Models\Plateau;
+use App\Traits\TronqueLesLogs;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -21,9 +23,22 @@ use Illuminate\Support\Facades\Log;
  * `uid` extrait du topic) et applique successivement la résolution/auth, la
  * validation, la déduplication, le rangement, le lissage, le calibrage de la
  * tare, le calcul du niveau/autonomie, et le déclenchement d'alerte.
+ *
+ * Concurrence (audit sécurité, correctif #5) : `traiter()` suppose un
+ * traitement **séquentiel par plateau** — un seul worker consommant le flux
+ * MQTT, ou à défaut une file sérialisée par `plateau_id`. La déduplication
+ * par `seq` (cf. `estDoublon()`) et le calibrage incrémental de la tare (cf.
+ * `TareCalibrage`) lisent puis écrivent l'état d'un plateau/bouteille sans
+ * verrou explicite : deux appels concurrents pour le même plateau peuvent
+ * produire une lecture obsolète (double rangement, calibrage incohérent). En
+ * scale-out (plusieurs workers), entourer l'appel d'un verrou ou d'une
+ * transaction par `plateau_id` (ex. `Cache::lock("plateau:{$id}")` ou
+ * `SELECT … FOR UPDATE`) avant d'invoquer `traiter()`.
  */
 final class TraitementMesure
 {
+    use TronqueLesLogs;
+
     /**
      * Nombre de mesures brutes (les plus récentes) utilisées pour la moyenne
      * mobile exponentielle qui lisse le poids affiché (doc 08 §4).
@@ -48,7 +63,7 @@ final class TraitementMesure
 
         if (! $plateau instanceof Plateau || $plateau->statut !== StatutPlateau::Actif) {
             Log::warning('yagaz.ingestion: plateau inconnu ou non actif, message rejeté', [
-                'uid' => $message['uid'] ?? null,
+                'uid' => is_string($message['uid'] ?? null) ? $this->tronquerPourLog($message['uid']) : null,
             ]);
 
             return ResultatIngestionMesure::rejetee('plateau inconnu ou non actif');
@@ -60,7 +75,7 @@ final class TraitementMesure
             Log::warning('yagaz.ingestion: message invalide, rejeté', [
                 'plateau_id' => $plateau->id,
                 'raison' => $raisonValidation,
-                'message' => $message,
+                'message' => $this->tronquerPourLog((string) json_encode($message)),
             ]);
 
             return ResultatIngestionMesure::rejetee($raisonValidation);
@@ -80,18 +95,28 @@ final class TraitementMesure
         $tareConnue = $bouteille?->tare_g;
         $gazBrut = $tareConnue !== null ? max(0, $poidsG - $tareConnue) : null;
 
-        $mesure = Mesure::create([
-            'plateau_id' => $plateau->id,
-            'bouteille_id' => $bouteille?->id,
-            'mesure_at' => $mesureAt,
-            'recu_at' => now(),
-            'poids_g' => $poidsG,
-            'gaz_g' => $gazBrut,
-            'seq' => $seq,
-            'batt_mv' => $message['batt_mv'] ?? null,
-            'rssi' => $message['rssi'] ?? null,
-            'temp_c' => $message['temp_c'] ?? null,
-        ]);
+        try {
+            $mesure = Mesure::create([
+                'plateau_id' => $plateau->id,
+                'bouteille_id' => $bouteille?->id,
+                'mesure_at' => $mesureAt,
+                'recu_at' => now(),
+                'poids_g' => $poidsG,
+                'gaz_g' => $gazBrut,
+                'seq' => $seq,
+                'batt_mv' => $message['batt_mv'] ?? null,
+                'rssi' => $message['rssi'] ?? null,
+                'temp_c' => $message['temp_c'] ?? null,
+            ]);
+        } catch (UniqueConstraintViolationException) {
+            // Filet dur contre l'insertion en double exacte (même
+            // plateau_id, mesure_at, seq) : la dédup par fenêtre récente
+            // (cf. estDoublon()) a pu laisser passer un doublon rare (fenêtre
+            // expirée, course entre deux traitements…) ; la contrainte
+            // d'unicité de la table le rattrape ici sans remonter d'erreur
+            // (audit sécurité, correctif #2).
+            return ResultatIngestionMesure::doublon("seq {$seq} déjà rangé (contrainte d'unicité)");
+        }
 
         $plateau->dernier_vu_at = now();
         $plateau->save();
@@ -112,9 +137,12 @@ final class TraitementMesure
     }
 
     /**
-     * Vérifie la présence et le typage des champs requis (ADR 0003) et
-     * l'absence d'aberration physique sur le poids (doc 08 §3). Retourne la
-     * raison de rejet, ou null si le message est valide.
+     * Vérifie la présence et le typage des champs requis (ADR 0003), l'absence
+     * d'aberration physique sur le poids (doc 08 §3), et le bornage de `seq`
+     * et `ts` à une plage plausible (audit sécurité, correctif #4 — distinct
+     * du bornage de dérive d'horloge de `resoudreMesureAt()`, qui recale les
+     * petites dérives sans rejeter). Retourne la raison de rejet, ou null si
+     * le message est valide.
      */
     private function validerMessage(array $message): ?string
     {
@@ -130,18 +158,71 @@ final class TraitementMesure
             return "poids_g aberrant : {$poidsG}";
         }
 
+        $seq = (float) $message['seq'];
+
+        if ($seq < 0 || $seq > (float) config('mesure.seq_max')) {
+            return "seq hors plage : {$seq}";
+        }
+
+        $ts = (float) $message['ts'];
+        $tsMin = CarbonImmutable::parse((string) config('mesure.ts_min'), 'UTC')->timestamp;
+        $tsMax = CarbonImmutable::now()->addDay()->timestamp;
+
+        if ($ts < $tsMin || $ts > $tsMax) {
+            return "ts hors plage plausible : {$ts}";
+        }
+
         return null;
     }
 
     /**
-     * `seq` déjà rangé pour ce plateau, ou en régression par rapport au
-     * dernier `seq` connu (doc 08 §3).
+     * Une mesure est un doublon si une mesure de même couple
+     * `(plateau_id, seq)` existe déjà dans la fenêtre récente
+     * `mesure.dedup_fenetre_heures` (audit sécurité, correctif #2). On ne se
+     * base plus sur `max(seq)` du plateau : un plateau qui redémarre repart
+     * avec un `seq` bas (nouveau `mesure_at`), et doit être accepté plutôt
+     * que rejeté en bloc comme régression. Le filet dur contre le doublon
+     * exact (même plateau_id, mesure_at, seq) reste la clé primaire composite
+     * de la table `mesures`, rattrapée dans `traiter()`.
+     *
+     * Un saut de `seq` vers le haut est détecté et journalisé à titre
+     * purement informatif (trou de séquence) ; il ne provoque aucun rejet.
      */
     private function estDoublon(Plateau $plateau, int $seq): bool
     {
+        $fenetre = now()->subHours((int) config('mesure.dedup_fenetre_heures'));
+
+        $dejaRangeDansLaFenetre = Mesure::where('plateau_id', $plateau->id)
+            ->where('seq', $seq)
+            ->where('mesure_at', '>=', $fenetre)
+            ->exists();
+
+        if ($dejaRangeDansLaFenetre) {
+            return true;
+        }
+
+        $this->detecterTrouSeq($plateau, $seq);
+
+        return false;
+    }
+
+    /**
+     * Journalise, à titre purement informatif, un saut de `seq` vers le haut
+     * par rapport au dernier `seq` connu du plateau (trou de séquence
+     * possible — messages perdus). Ne rejette jamais la mesure (doc 08 §3,
+     * audit sécurité correctif #2).
+     */
+    private function detecterTrouSeq(Plateau $plateau, int $seq): void
+    {
         $dernierSeq = Mesure::where('plateau_id', $plateau->id)->max('seq');
 
-        return $dernierSeq !== null && $seq <= $dernierSeq;
+        if ($dernierSeq !== null && $seq > $dernierSeq + 1) {
+            Log::info('yagaz.ingestion: saut de seq détecté (informatif, trou possible)', [
+                'plateau_id' => $plateau->id,
+                'seq_precedent' => $dernierSeq,
+                'seq_recu' => $seq,
+            ]);
+        }
     }
 
     /**
@@ -226,27 +307,37 @@ final class TraitementMesure
             ]
         );
 
-        $alerte = $this->gererAlerteSeuilBas($bouteille, $niveauAvant, $niveauPct);
+        $alerte = $this->gererAlerteSeuilBas($bouteille, $niveauAvant, $niveauPct, $poidsLisse);
 
         return [$niveauCourant, $alerte];
     }
 
     /**
-     * Émet une alerte `seuil_bas` si le niveau d'une bouteille **active**
-     * vient de franchir son seuil à la baisse, sauf s'il en existe déjà une
-     * non résolue (anti-spam, doc 08 §8). Les bouteilles de secours ne
-     * déclenchent jamais cette alerte (sobriété, doc 08 §8).
+     * Émet une alerte `seuil_bas` pour une bouteille **active** dans deux cas
+     * (doc 08 §8, renforcé par l'audit sécurité correctif #1), sauf s'il en
+     * existe déjà une non résolue (anti-spam) :
+     * 1. le niveau calculé (`niveau_pct`, dépendant de la tare calibrée)
+     *    vient de franchir le seuil à la baisse ;
+     * 2. **indépendamment de la tare et du niveau calculé**, le poids brut
+     *    lissé approche le poids à vide nominal du format
+     *    (`tare_nominale_g + securite_marge_plancher_g`) — ce filet de
+     *    sécurité absolu détecte une bouteille physiquement quasi vide même
+     *    si la tare calibrée est faussée basse et masque le franchissement
+     *    de seuil via `niveau_pct`.
+     *
+     * Les bouteilles de secours ne déclenchent jamais cette alerte (sobriété,
+     * doc 08 §8).
      */
-    private function gererAlerteSeuilBas(Bouteille $bouteille, ?int $niveauAvant, int $niveauApres): ?Alerte
+    private function gererAlerteSeuilBas(Bouteille $bouteille, ?int $niveauAvant, int $niveauApres, float $poidsLisse): ?Alerte
     {
         if ($bouteille->role_bouteille !== RoleBouteille::Active) {
             return null;
         }
 
         $seuil = $bouteille->seuil_bas_pct;
-        $vientDeFranchir = $niveauApres < $seuil && ($niveauAvant === null || $niveauAvant >= $seuil);
+        $vientDeFranchirParNiveau = $niveauApres < $seuil && ($niveauAvant === null || $niveauAvant >= $seuil);
 
-        if (! $vientDeFranchir) {
+        if (! $vientDeFranchirParNiveau && ! $this->estPresDuPoidsAVide($bouteille, $poidsLisse)) {
             return null;
         }
 
@@ -265,5 +356,24 @@ final class TraitementMesure
             'statut' => StatutAlerte::Emise,
             'canal' => CanalAlerte::Push,
         ]);
+    }
+
+    /**
+     * Filet de sécurité absolu (audit sécurité, correctif #1) : vrai si le
+     * poids brut lissé est à `tare_nominale_g + securite_marge_plancher_g` ou
+     * en dessous. Ne dépend jamais de `tare_g` : une tare calibrée faussée
+     * basse ne peut donc pas masquer une bouteille physiquement quasi vide.
+     */
+    private function estPresDuPoidsAVide(Bouteille $bouteille, float $poidsLisse): bool
+    {
+        $tareNominale = $bouteille->format?->tare_nominale_g;
+
+        if ($tareNominale === null) {
+            return false;
+        }
+
+        $margePlancher = (int) config('mesure.securite_marge_plancher_g');
+
+        return $poidsLisse <= $tareNominale + $margePlancher;
     }
 }

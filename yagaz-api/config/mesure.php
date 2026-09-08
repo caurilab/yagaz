@@ -19,7 +19,39 @@ return [
 
     // Plage plausible autour de la tare nominale du format, dans laquelle un
     // plancher observé est retenu pour le calibrage (doc 08 §5).
-    'marge_tare' => (int) env('MESURE_MARGE_TARE', 2000),
+    //
+    // Resserrée de 2000 à 1000 g (audit sécurité, correctif #1) : à 2000 g,
+    // la tare pouvait être calibrée jusqu'à `nominale − 2000`, ce qui dépasse
+    // la masse de gaz correspondant au seuil d'alerte des petits formats
+    // (ex. B6 : 6000 g × 15 % = 900 g). Une tare sous-estimée dans cette
+    // marge pouvait donc afficher un niveau au-dessus du seuil alors que la
+    // bouteille est physiquement vide, sans jamais déclencher d'alerte. À
+    // 1000 g, ce risque persiste en théorie pour les formats les plus petits
+    // mais reste couvert, indépendamment de la marge de tare, par le filet
+    // de sécurité absolu `securite_marge_plancher_g` ci-dessous.
+    'marge_tare' => (int) env('MESURE_MARGE_TARE', 1000),
+
+    // Filet de sécurité absolu, indépendant de la tare calibrée (audit
+    // sécurité, correctif #1) : une bouteille active dont le poids brut
+    // lissé descend à `format.tare_nominale_g + cette marge` déclenche une
+    // alerte seuil_bas, même si la tare calibrée est faussée ou pas encore
+    // fiable — une bouteille physiquement quasi vide reste détectée.
+    'securite_marge_plancher_g' => (int) env('MESURE_SECURITE_MARGE_PLANCHER_G', 500),
+
+    // Fenêtre récente (en heures) sur laquelle la déduplication par couple
+    // (plateau_id, seq) est effectuée (audit sécurité, correctif #2) :
+    // au-delà, un `seq` déjà vu est accepté comme nouvelle mesure — c'est le
+    // cas d'un plateau qui redémarre et repart avec un `seq` bas. Le filet
+    // dur contre l'insertion en double exacte reste la clé primaire
+    // composite (plateau_id, mesure_at, seq) de la table `mesures`.
+    'dedup_fenetre_heures' => (int) env('MESURE_DEDUP_FENETRE_HEURES', 6),
+
+    // Bornes de plausibilité d'un message entrant (audit sécurité, correctif
+    // #4) : au-delà, le message est rejeté. Distinct du bornage de dérive
+    // d'horloge de `resoudreMesureAt()`, qui recale les petites dérives sans
+    // rejeter le message.
+    'seq_max' => (int) env('MESURE_SEQ_MAX', 9_000_000_000_000),
+    'ts_min' => env('MESURE_TS_MIN', '2020-01-01'),
 
     // Débit de flamme nominal utilisé tant que le débit observé n'est pas
     // estimable (ADR 0006).

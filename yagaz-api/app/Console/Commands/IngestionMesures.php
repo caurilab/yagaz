@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Services\Mesure\ResultatIngestionMesure;
 use App\Services\Mesure\TraitementMesure;
+use App\Traits\TronqueLesLogs;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use PhpMqtt\Client\ConnectionSettings;
@@ -18,6 +19,8 @@ use Throwable;
  */
 class IngestionMesures extends Command
 {
+    use TronqueLesLogs;
+
     /**
      * @var string
      */
@@ -93,7 +96,9 @@ class IngestionMesures extends Command
         $uid = $this->extraireUidDuTopic($topic);
 
         if ($uid === null) {
-            Log::warning('yagaz:ingest — topic inattendu, message ignoré', ['topic' => $topic]);
+            Log::warning('yagaz:ingest — topic inattendu, message ignoré', [
+                'topic' => $this->tronquerPourLog($topic),
+            ]);
 
             return;
         }
@@ -102,8 +107,8 @@ class IngestionMesures extends Command
 
         if (! is_array($donnees)) {
             Log::warning('yagaz:ingest — payload JSON invalide, message ignoré', [
-                'topic' => $topic,
-                'payload' => $payload,
+                'topic' => $this->tronquerPourLog($topic),
+                'payload' => $this->tronquerPourLog($payload),
             ]);
 
             return;
