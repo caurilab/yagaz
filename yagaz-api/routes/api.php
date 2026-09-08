@@ -12,6 +12,7 @@ use App\Http\Controllers\FormatBouteilleController;
 use App\Http\Controllers\LivraisonController;
 use App\Http\Controllers\LivreurController;
 use App\Http\Controllers\MandataireController;
+use App\Http\Controllers\MarqueController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PaiementController;
 use App\Http\Controllers\RoleController;
@@ -68,6 +69,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // === Formats (contrat API, §« Formats ») ============================
     Route::get('/formats', [FormatBouteilleController::class, 'index']);
+
+    // === Marques (contrat API, §« Marques ») ============================
+    // Référentiel pour le sélecteur de marque à l'enregistrement d'une
+    // bouteille.
+    Route::get('/marques', [MarqueController::class, 'index']);
 
     // === Bouteilles (contrat API, §« Bouteilles ») ======================
     Route::get('/sites/{site:uuid}/bouteilles', [BouteilleController::class, 'index']);

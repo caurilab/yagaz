@@ -13,6 +13,8 @@ class FormatBouteilleController extends Controller
 {
     public function index(): AnonymousResourceCollection
     {
-        return FormatBouteilleResource::collection(FormatBouteille::orderBy('marque')->orderBy('code')->get());
+        return FormatBouteilleResource::collection(
+            FormatBouteille::with('marqueRef')->orderBy('marque')->orderBy('code')->get()
+        );
     }
 }

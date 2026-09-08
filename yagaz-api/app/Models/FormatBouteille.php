@@ -6,6 +6,7 @@ use Database\Factories\FormatBouteilleFactory;
 use Illuminate\Database\Eloquent\Attributes\Guarded;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
@@ -19,6 +20,19 @@ class FormatBouteille extends Model
     use HasFactory;
 
     protected $table = 'formats_bouteille';
+
+    /**
+     * Marque référentielle (couleur, etc). Nommée `marqueRef` — et non
+     * `marque` — pour ne pas entrer en collision avec la colonne `marque`
+     * (string, conservée pour compat) : Eloquent ferait toujours primer
+     * l'attribut de colonne sur la relation pour un accès magique `->marque`.
+     *
+     * @return BelongsTo<Marque, $this>
+     */
+    public function marqueRef(): BelongsTo
+    {
+        return $this->belongsTo(Marque::class, 'marque_id');
+    }
 
     /**
      * @return HasMany<Bouteille, $this>

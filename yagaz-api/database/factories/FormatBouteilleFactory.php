@@ -18,8 +18,15 @@ class FormatBouteilleFactory extends Factory
     public function definition(): array
     {
         return [
-            'code' => fake()->unique()->randomElement(['B6', 'B12', 'B24']),
-            'marque' => fake()->randomElement(['Total', 'Oryx']),
+            // `marque` (et non `code`) porte l'unicité Faker : `code` est
+            // fréquemment surchargé par les tests/états (b6/b12/b24) sans
+            // que la valeur générée par défaut soit « consommée » dans le
+            // suivi d'unicité de Faker, ce qui peut faire coïncider deux
+            // formats sur le même (code, marque) et violer l'unique
+            // composite. Une `marque` par défaut toujours unique élimine
+            // structurellement ce risque de collision.
+            'code' => fake()->randomElement(['B6', 'B12', 'B24']),
+            'marque' => fake()->unique()->company(),
             'tare_nominale_g' => 13000,
             'contenance_gaz_g' => 12500,
         ];

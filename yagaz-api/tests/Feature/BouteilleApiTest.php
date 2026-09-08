@@ -6,6 +6,7 @@ use App\Enums\NiveauAcces;
 use App\Enums\RoleBouteille;
 use App\Models\Bouteille;
 use App\Models\FormatBouteille;
+use App\Models\Marque;
 use App\Models\NiveauCourant;
 use App\Models\Plateau;
 use App\Models\Site;
@@ -256,6 +257,65 @@ class BouteilleApiTest extends TestCase
         $this->postJson("/api/bouteilles/{$bouteille->uuid}/plateau", [
             'plateau_uid' => $plateauInactif->uid,
         ])->assertUnprocessable();
+    }
+
+    public function test_la_bouteille_expose_la_couleur_de_la_marque_de_son_format(): void
+    {
+        [$foyer, $site] = $this->foyerAvecSite();
+        $marque = Marque::factory()->create(['nom' => 'Oryx', 'couleur' => '#1E63B8']);
+        $format = FormatBouteille::factory()->create(['marque' => 'Oryx', 'marque_id' => $marque->id]);
+        $bouteille = Bouteille::factory()->create(['site_id' => $site->id, 'format_id' => $format->id]);
+
+        Sanctum::actingAs($foyer);
+
+        $reponse = $this->getJson("/api/bouteilles/{$bouteille->uuid}");
+
+        $reponse->assertOk();
+        $reponse->assertJsonPath('data.format.couleur', '#1E63B8');
+    }
+
+    public function test_patch_format_id_change_le_format_de_la_bouteille(): void
+    {
+        [$foyer, $site] = $this->foyerAvecSite();
+        $ancienFormat = FormatBouteille::factory()->create();
+        $nouveauFormat = FormatBouteille::factory()->create();
+        $bouteille = Bouteille::factory()->create(['site_id' => $site->id, 'format_id' => $ancienFormat->id]);
+
+        Sanctum::actingAs($foyer);
+
+        $reponse = $this->patchJson("/api/bouteilles/{$bouteille->uuid}", [
+            'format_id' => $nouveauFormat->id,
+        ]);
+
+        $reponse->assertOk();
+        $reponse->assertJsonPath('data.format.id', $nouveauFormat->id);
+        $this->assertSame($nouveauFormat->id, $bouteille->fresh()->format_id);
+    }
+
+    public function test_patch_format_id_inexistant_est_refuse(): void
+    {
+        [$foyer, $site] = $this->foyerAvecSite();
+        $bouteille = Bouteille::factory()->create(['site_id' => $site->id]);
+
+        Sanctum::actingAs($foyer);
+
+        $this->patchJson("/api/bouteilles/{$bouteille->uuid}", [
+            'format_id' => 999999,
+        ])->assertUnprocessable();
+    }
+
+    public function test_patch_format_id_reste_cloisonne_hors_perimetre(): void
+    {
+        [, $siteA] = $this->foyerAvecSite();
+        $bouteilleA = Bouteille::factory()->create(['site_id' => $siteA->id]);
+        $nouveauFormat = FormatBouteille::factory()->create();
+
+        [$foyerB] = $this->foyerAvecSite();
+        Sanctum::actingAs($foyerB);
+
+        $this->patchJson("/api/bouteilles/{$bouteilleA->uuid}", [
+            'format_id' => $nouveauFormat->id,
+        ])->assertNotFound();
     }
 
     public function test_supprime_une_bouteille(): void

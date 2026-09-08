@@ -14,6 +14,12 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class FormatBouteilleResource extends JsonResource
 {
     /**
+     * Gris neutre utilisé quand le format n'est rattaché à aucune marque
+     * référentielle (`marque_id` nul — formats hérités non backfillés).
+     */
+    private const string COULEUR_PAR_DEFAUT = '#6B7280';
+
+    /**
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
@@ -22,6 +28,7 @@ class FormatBouteilleResource extends JsonResource
             'id' => $this->id,
             'code' => $this->code,
             'marque' => $this->marque,
+            'couleur' => $this->marqueRef?->couleur ?? self::COULEUR_PAR_DEFAUT,
             'tare_nominale_g' => $this->tare_nominale_g,
             'contenance_gaz_g' => $this->contenance_gaz_g,
         ];

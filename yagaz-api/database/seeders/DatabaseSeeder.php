@@ -26,8 +26,10 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $this->call([
+            MarquesSeeder::class,
             FormatsBouteilleSeeder::class,
             DemoSeeder::class,
+            DepotsAbidjanSeeder::class,
         ]);
     }
 }

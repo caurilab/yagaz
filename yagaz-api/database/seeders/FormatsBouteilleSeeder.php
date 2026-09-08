@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\FormatBouteille;
+use App\Models\Marque;
 use Illuminate\Database\Seeder;
 
 /**
@@ -15,6 +16,10 @@ use Illuminate\Database\Seeder;
  * - B24 : bouteille 24 kg — tare ≈ 22 000 g, gaz ≈ 24 000 g
  * Les tares réelles varient légèrement selon le fabricant ; ce sont les
  * valeurs nominales gravées, affinées ensuite par calibrage (doc 07, §4).
+ *
+ * Doit être appelé APRÈS `MarquesSeeder` : chaque format est rattaché à sa
+ * marque référentielle (`marque_id`), matché sur le nom de la marque (la
+ * marque est créée à la volée si absente du référentiel).
  */
 class FormatsBouteilleSeeder extends Seeder
 {
@@ -28,16 +33,34 @@ class FormatsBouteilleSeeder extends Seeder
 
         $marques = ['Total', 'Oryx'];
 
-        foreach ($marques as $marque) {
+        foreach ($marques as $nomMarque) {
+            $marque = Marque::query()->firstOrCreate(
+                ['nom' => $nomMarque],
+                ['couleur' => '#6B7280']
+            );
+
             foreach ($formats as $format) {
                 FormatBouteille::query()->updateOrCreate(
-                    ['code' => $format['code'], 'marque' => $marque],
+                    ['code' => $format['code'], 'marque' => $nomMarque],
                     [
                         'tare_nominale_g' => $format['tare_nominale_g'],
                         'contenance_gaz_g' => $format['contenance_gaz_g'],
+                        'marque_id' => $marque->id,
                     ]
                 );
             }
         }
+
+        // Backfill : tout format préexistant non couvert par la boucle
+        // ci-dessus (marque hors référentiel connu) reste rattaché à sa
+        // marque via le nom de la colonne `marque` legacy.
+        FormatBouteille::query()->whereNull('marque_id')->get()->each(function (FormatBouteille $format): void {
+            $marque = Marque::query()->firstOrCreate(
+                ['nom' => $format->marque],
+                ['couleur' => '#6B7280']
+            );
+
+            $format->update(['marque_id' => $marque->id]);
+        });
     }
 }

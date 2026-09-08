@@ -27,7 +27,7 @@ class BouteilleController extends Controller
 {
     use AutoriseCloisonnement;
 
-    private const array RELATIONS = ['format', 'plateau', 'niveauCourant'];
+    private const array RELATIONS = ['format.marqueRef', 'plateau', 'niveauCourant'];
 
     public function index(Request $request, Site $site): AnonymousResourceCollection
     {
@@ -109,6 +109,10 @@ class BouteilleController extends Controller
         $validated = $request->validated();
 
         DB::transaction(function () use ($validated, $bouteille): void {
+            if (array_key_exists('format_id', $validated)) {
+                $bouteille->format_id = $validated['format_id'];
+            }
+
             if (array_key_exists('role_bouteille', $validated)) {
                 $role = RoleBouteille::from($validated['role_bouteille']);
 
