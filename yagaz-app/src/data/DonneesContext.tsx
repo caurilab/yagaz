@@ -65,6 +65,8 @@ interface ContexteDonneesValeur {
   enregistrerBouteille: (corps: CorpsCreationBouteille) => Promise<Bouteille>;
   /** Édition libre d'une bouteille (rôle, seuil, tare, format/marque - contrat PATCH). */
   modifierBouteille: (uuid: string, corps: CorpsMajBouteille) => Promise<Bouteille>;
+  /** Suppression d'une bouteille (contrat DELETE /bouteilles/{uuid}) - autorisation gérée côté API. */
+  supprimerBouteille: (uuid: string) => Promise<void>;
   majAlerteStatut: (id: number, statut: 'vue' | 'resolue') => Promise<void>;
 }
 
@@ -329,6 +331,23 @@ export function DonneesProvider({ children }: { children: ReactNode }) {
     [siteActifUuid, bouteillesParSite, formats, appliquerBouteillesSite]
   );
 
+  const supprimerBouteille = useCallback(
+    async (uuid: string) => {
+      if (!siteActifUuid) return;
+      const actuelles = bouteillesParSite[siteActifUuid] ?? [];
+      try {
+        await api.supprimerBouteille(uuid);
+      } catch (erreur) {
+        if (!MODE_DEMO) throw erreur;
+      }
+      appliquerBouteillesSite(
+        siteActifUuid,
+        actuelles.filter((b) => b.uuid !== uuid)
+      );
+    },
+    [siteActifUuid, bouteillesParSite, appliquerBouteillesSite]
+  );
+
   const majAlerteStatut = useCallback(async (id: number, statut: 'vue' | 'resolue') => {
     try {
       await api.majAlerte(id, { statut });
@@ -363,6 +382,7 @@ export function DonneesProvider({ children }: { children: ReactNode }) {
       activerBouteille,
       enregistrerBouteille,
       modifierBouteille,
+      supprimerBouteille,
       majAlerteStatut,
     }),
     [
@@ -382,6 +402,7 @@ export function DonneesProvider({ children }: { children: ReactNode }) {
       activerBouteille,
       enregistrerBouteille,
       modifierBouteille,
+      supprimerBouteille,
       majAlerteStatut,
     ]
   );

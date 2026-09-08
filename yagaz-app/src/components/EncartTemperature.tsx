@@ -1,9 +1,11 @@
 /**
  * Encart température de la cuisine (ADR 0011, doc 13 §3/§4) : accueil et
  * détail bouteille. Sobre - un chiffre, un badge cuisson, une alerte visuelle
- * si la température est élevée.
+ * si la température est élevée. Tappable dès qu'un `siteUuid` est fourni :
+ * ouvre l'écran d'analyse détaillée (`/temperature/{uuid}`, doc 13 §3).
  */
-import { StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { couleurs, espacements, rayons } from '../../theme/couleurs';
@@ -12,13 +14,20 @@ import type { TemperatureSite } from '../api/types';
 /** Seuil d'alerte visuelle - la sécurité (notification `temperature_elevee`) reste côté API. */
 export const SEUIL_TEMPERATURE_ELEVEE_C = 60;
 
-export function EncartTemperature({ temperature }: { temperature: TemperatureSite | null }) {
+export function EncartTemperature({
+  temperature,
+  siteUuid,
+}: {
+  temperature: TemperatureSite | null;
+  /** Site dont dépend cette température - présent, rend l'encart tappable vers le détail. */
+  siteUuid?: string | null;
+}) {
   if (!temperature) return null;
 
   const elevee = temperature.temp_courante_c >= SEUIL_TEMPERATURE_ELEVEE_C;
 
-  return (
-    <View style={[styles.carte, elevee && styles.carteAlerte]}>
+  const contenu = (
+    <>
       <View style={styles.ligneEntete}>
         <View style={styles.libelleAvecIcone}>
           <Ionicons name="thermometer-outline" size={18} color={elevee ? couleurs.danger : couleurs.rouge} />
@@ -36,7 +45,28 @@ export function EncartTemperature({ temperature }: { temperature: TemperatureSit
 
       {elevee ? <Text style={styles.texteAlerte}>Température élevée - vérifiez la cuisine</Text> : null}
       {!temperature.frais ? <Text style={styles.texteObsolete}>Dernière valeur connue - hors ligne</Text> : null}
-    </View>
+
+      {siteUuid ? (
+        <View style={styles.ligneVoirPlus}>
+          <Text style={styles.texteVoirPlus}>Voir le détail</Text>
+          <Ionicons name="chevron-forward" size={14} color={couleurs.texteDoux} />
+        </View>
+      ) : null}
+    </>
+  );
+
+  if (!siteUuid) {
+    return <View style={[styles.carte, elevee && styles.carteAlerte]}>{contenu}</View>;
+  }
+
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.carte, elevee && styles.carteAlerte, pressed && styles.cartePressee]}
+      onPress={() => router.push(`/temperature/${siteUuid}`)}
+      accessibilityRole="button"
+      accessibilityLabel="Voir le détail de la température">
+      {contenu}
+    </Pressable>
   );
 }
 
@@ -100,6 +130,21 @@ const styles = StyleSheet.create({
   },
   texteObsolete: {
     fontSize: 12,
+    color: couleurs.texteDoux,
+  },
+  cartePressee: {
+    opacity: 0.9,
+  },
+  ligneVoirPlus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 2,
+    marginTop: espacements.xs,
+  },
+  texteVoirPlus: {
+    fontSize: 12,
+    fontWeight: '600',
     color: couleurs.texteDoux,
   },
 });

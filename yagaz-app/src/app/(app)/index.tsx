@@ -107,7 +107,7 @@ export default function EcranAccueilFoyer() {
             </Pressable>
 
             <View style={styles.blocTemperature}>
-              <EncartTemperature temperature={temperature} />
+              <EncartTemperature temperature={temperature} siteUuid={siteActif?.uuid} />
             </View>
 
             {autresBouteilles.length > 0 ? (

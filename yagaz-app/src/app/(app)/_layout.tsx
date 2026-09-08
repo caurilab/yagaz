@@ -109,6 +109,14 @@ export default function LayoutApp() {
           headerLeft: () => <BoutonRetour />,
         }}
       />
+      <Tabs.Screen
+        name="temperature/[uuid]"
+        options={{
+          href: null,
+          title: 'Température',
+          headerLeft: () => <BoutonRetour />,
+        }}
+      />
     </Tabs>
   );
 }

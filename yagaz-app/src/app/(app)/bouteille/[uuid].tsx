@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,6 +10,7 @@ import { Bouton } from '../../../components/Bouton';
 import { BouteilleGaz } from '../../../components/BouteilleGaz';
 import { Champ } from '../../../components/Champ';
 import { EncartTemperature } from '../../../components/EncartTemperature';
+import { SelecteurFormat } from '../../../components/SelecteurFormat';
 import { useDonnees } from '../../../data/DonneesContext';
 import { useTemperatureSite } from '../../../data/useTemperatureSite';
 import { couleurs, espacements, rayons } from '../../../../theme/couleurs';
@@ -23,7 +24,7 @@ const SEUIL_MAX = 50;
 
 export default function EcranDetailBouteille() {
   const { uuid } = useLocalSearchParams<{ uuid: string }>();
-  const { bouteilles, formats, marques, modifierBouteille, rafraichir } = useDonnees();
+  const { bouteilles, formats, marques, modifierBouteille, supprimerBouteille, rafraichir } = useDonnees();
   const bouteille = bouteilles.find((b) => b.uuid === uuid);
   const { temperature } = useTemperatureSite(bouteille?.site_uuid);
 
@@ -111,6 +112,32 @@ export default function EcranDetailBouteille() {
     }
   }
 
+  function confirmerSuppression() {
+    Alert.alert(
+      'Supprimer la bouteille',
+      'Cette action est définitive. Voulez-vous vraiment supprimer cette bouteille ?',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Supprimer',
+          style: 'destructive',
+          onPress: async () => {
+            setEnCours(true);
+            try {
+              await supprimerBouteille(bouteille!.uuid);
+              await rafraichir();
+              router.back();
+            } catch {
+              Alert.alert('Erreur', 'Impossible de supprimer la bouteille.');
+            } finally {
+              setEnCours(false);
+            }
+          },
+        },
+      ]
+    );
+  }
+
   return (
     <SafeAreaView style={styles.conteneur} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.contenu}>
@@ -159,7 +186,7 @@ export default function EcranDetailBouteille() {
         </View>
 
         <View style={styles.blocTemperature}>
-          <EncartTemperature temperature={temperature} />
+          <EncartTemperature temperature={temperature} siteUuid={bouteille.site_uuid} />
         </View>
 
         {!modeEdition ? (
@@ -196,16 +223,7 @@ export default function EcranDetailBouteille() {
         ) : (
           <>
             <Text style={styles.sectionTitre}>Format et marque</Text>
-            <View style={styles.rangee}>
-              {codes.map((code) => (
-                <Pressable
-                  key={code}
-                  style={[styles.chip, codeEdit === code && styles.chipActif]}
-                  onPress={() => choisirCodeEdit(code)}>
-                  <Text style={[styles.chipTexte, codeEdit === code && styles.chipTexteActif]}>{code}</Text>
-                </Pressable>
-              ))}
-            </View>
+            <SelecteurFormat codes={codes} codeChoisi={codeEdit} onChoisir={choisirCodeEdit} />
             <View style={[styles.rangee, styles.rangeeMarques]}>
               {formatsDuCodeEdit.map((format) => (
                 <Pressable
@@ -279,6 +297,15 @@ export default function EcranDetailBouteille() {
                 style={styles.boutonMoitie}
               />
             </View>
+
+            <Pressable
+              style={styles.boutonSupprimer}
+              onPress={confirmerSuppression}
+              disabled={enCours}
+              accessibilityRole="button">
+              <Ionicons name="trash-outline" size={18} color={couleurs.danger} />
+              <Text style={styles.texteSupprimer}>Supprimer la bouteille</Text>
+            </Pressable>
           </>
         )}
       </ScrollView>
@@ -504,6 +531,19 @@ const styles = StyleSheet.create({
   },
   boutonMoitie: {
     flex: 1,
+  },
+  boutonSupprimer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: espacements.xs,
+    marginTop: espacements.lg,
+    paddingVertical: espacements.sm,
+  },
+  texteSupprimer: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: couleurs.danger,
   },
   placeholderCourbe: {
     height: 140,

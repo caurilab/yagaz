@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Bouton } from '../../components/Bouton';
 import { BouteilleGaz } from '../../components/BouteilleGaz';
 import { Champ } from '../../components/Champ';
+import { SelecteurFormat } from '../../components/SelecteurFormat';
 import { useDonnees } from '../../data/DonneesContext';
 import { couleurs, espacements, rayons } from '../../../theme/couleurs';
 import { couleurPourFormat } from '../../utils/marque';
@@ -63,16 +64,7 @@ export default function EcranEnregistrerBouteille() {
     <SafeAreaView style={styles.conteneur} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.contenu} keyboardShouldPersistTaps="handled">
         <Text style={styles.etapeTitre}>1. Format</Text>
-        <View style={styles.rangee}>
-          {codes.map((code) => (
-            <Pressable
-              key={code}
-              style={[styles.chip, codeChoisi === code && styles.chipActif]}
-              onPress={() => choisirCode(code)}>
-              <Text style={[styles.chipTexte, codeChoisi === code && styles.chipTexteActif]}>{code}</Text>
-            </Pressable>
-          ))}
-        </View>
+        <SelecteurFormat codes={codes} codeChoisi={codeChoisi} onChoisir={choisirCode} />
 
         <Text style={styles.etapeTitre}>2. Marque</Text>
         <View style={styles.rangee}>

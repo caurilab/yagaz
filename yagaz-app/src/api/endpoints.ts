@@ -46,6 +46,7 @@ import type {
   Notification,
   Paiement,
   Pagination,
+  PeriodeTemperature,
   PointMesure,
   Reappro,
   ReponseAuth,
@@ -54,6 +55,7 @@ import type {
   StatutLivraison,
   StatutNotification,
   StockFormat,
+  TemperatureAnalyse,
   TemperatureSite,
   Tournee,
   User,
@@ -348,4 +350,14 @@ export function analyse(params: CorpsAnalyse = {}) {
 /** Pas d'enveloppe `data` pour cet endpoint (contrat doc 13 §3). */
 export function temperatureSite(uuid: string) {
   return requeteApi<TemperatureSite>(`/sites/${uuid}/temperature`);
+}
+
+/**
+ * Analyse détaillée (drill-down) de la température du site : courbe horaire,
+ * histogramme des cuissons, heure de pointe, période dominante, fréquence
+ * (doc 13 §3). Pas d'enveloppe `data`, même convention que `temperatureSite`.
+ */
+export function temperatureAnalyse(uuid: string, periode?: PeriodeTemperature) {
+  const suffixe = periode ? `?periode=${periode}` : '';
+  return requeteApi<TemperatureAnalyse>(`/sites/${uuid}/temperature/analyse${suffixe}`);
 }

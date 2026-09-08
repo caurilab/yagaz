@@ -26,10 +26,14 @@ import type {
   Paiement,
   Pagination,
   PeriodeAnalyse,
+  PeriodeTemperature,
+  PointCuissonHoraire,
   PointSerieConsommation,
+  PointTemperatureHoraire,
   Reappro,
   Site,
   StockFormat,
+  TemperatureAnalyse,
   TemperatureSite,
   Tournee,
   User,
@@ -60,13 +64,13 @@ export const marquesDemo: Marque[] = [
   { id: 5, nom: 'Corlay', couleur: '#2FA84F' },
 ];
 
-/** Formats variés (B3/B6/B12/B24) pour bien voir les deux silhouettes (haute et trapue) en démo. */
+/** Formats réels CI (B6/B12/B32/B35) pour couvrir la silhouette trapue et les hautes en démo. */
 export const formatsDemo: Format[] = [
-  { id: 1, code: 'B6', marque: 'Total', tare_nominale_g: 5200, contenance_gaz_g: 6000, couleur: '#E4032E' },
-  { id: 2, code: 'B12', marque: 'Oryx', tare_nominale_g: 14800, contenance_gaz_g: 12500, couleur: '#29A9CE' },
-  { id: 3, code: 'B24', marque: 'Petro Ivoire', tare_nominale_g: 34000, contenance_gaz_g: 24000, couleur: '#26307A' },
-  { id: 4, code: 'B12', marque: 'Sodigaz', tare_nominale_g: 14700, contenance_gaz_g: 12500, couleur: '#F08A24' },
-  { id: 5, code: 'B3', marque: 'Corlay', tare_nominale_g: 3400, contenance_gaz_g: 3000, couleur: '#2FA84F' },
+  { id: 1, code: 'B6', marque: 'Total', tare_nominale_g: 7000, contenance_gaz_g: 6000, couleur: '#E4032E' },
+  { id: 2, code: 'B12', marque: 'Oryx', tare_nominale_g: 13000, contenance_gaz_g: 12500, couleur: '#29A9CE' },
+  { id: 3, code: 'B32', marque: 'Petro Ivoire', tare_nominale_g: 30000, contenance_gaz_g: 32000, couleur: '#26307A' },
+  { id: 4, code: 'B12', marque: 'Sodigaz', tare_nominale_g: 13000, contenance_gaz_g: 12500, couleur: '#F08A24' },
+  { id: 5, code: 'B35', marque: 'Corlay', tare_nominale_g: 33000, contenance_gaz_g: 35000, couleur: '#2FA84F' },
 ];
 
 export const sitesDemo: Site[] = [
@@ -418,14 +422,14 @@ export const notificationsLivreurDemo: Notification[] = [
     statut: 'emise',
     message: "Un foyer habituel a besoin d'une recharge.",
     created_at: ilYA(5),
-    contexte: { site_nom: 'Chez Maman', zone: 'Thiès', format_code: 'B24' },
+    contexte: { site_nom: 'Chez Maman', zone: 'Thiès', format_code: 'B32' },
   },
 ];
 
 /**
  * File actionnable du livreur habituel (ADR 0008, précision « maillon C »)
  * : cohérente avec `notificationsLivreurDemo` ci-dessus - même foyer
- * (« Chez Maman », Thiès, B24), pour que le rappel et la file pointent
+ * (« Chez Maman », Thiès, B32), pour que le rappel et la file pointent
  * démonstrativement vers la même proposition possible.
  */
 export const livreurFoyersEnTensionDemo: FoyerEnTensionLivreur[] = [
@@ -649,7 +653,7 @@ export const historiqueDemo: EvenementHistorique[] = [
     type: 'commande_confirmee',
     date: ilYA(60 * 24 * 8),
     titre: 'Commande confirmée',
-    detail: 'B24 - Petro Ivoire · 1 bouteille',
+    detail: 'B32 - Petro Ivoire · 1 bouteille',
     montant: 12000,
     statut: 'Confirmée',
     icone: 'commande',
@@ -783,7 +787,7 @@ export const analyseDemoParPeriode: Record<PeriodeAnalyse, Analyse> = {
       par_bouteille: [
         { libelle: 'B12 - Oryx', valeur: 10.1, couleur: '#1E63B8' },
         { libelle: 'B6 - Total', valeur: 2.3, couleur: '#E4032E' },
-        { libelle: 'B24 - Petro Ivoire', valeur: 1.2, couleur: '#26307A' },
+        { libelle: 'B32 - Petro Ivoire', valeur: 1.2, couleur: '#26307A' },
       ],
       par_site: [
         { libelle: 'Domicile', valeur: 11.4, couleur: couleurs.rouge },
@@ -805,7 +809,7 @@ export const analyseDemoParPeriode: Record<PeriodeAnalyse, Analyse> = {
       par_bouteille: [
         { libelle: 'B12 - Oryx', valeur: 96, couleur: '#1E63B8' },
         { libelle: 'B6 - Total', valeur: 28, couleur: '#E4032E' },
-        { libelle: 'B24 - Petro Ivoire', valeur: 18, couleur: '#26307A' },
+        { libelle: 'B32 - Petro Ivoire', valeur: 18, couleur: '#26307A' },
       ],
       par_site: [
         { libelle: 'Domicile', valeur: 118, couleur: couleurs.rouge },
@@ -833,6 +837,55 @@ export const temperatureDemoParSite: Record<string, TemperatureSite> = {
     frais: false,
     cuisson_en_cours: false,
     debut_cuisson_at: null,
+  },
+};
+
+/** Courbe horaire démo : deux pics (déjeuner ~13h, dîner ~20h), creux la nuit - pas de `Math.random`, motif stable. */
+function courbeHoraireDemo(base: number, amplitude: number): PointTemperatureHoraire[] {
+  const points: PointTemperatureHoraire[] = [];
+  for (let heure = 0; heure < 24; heure++) {
+    const picDejeuner = Math.exp(-((heure - 13) ** 2) / 8);
+    const picDiner = Math.exp(-((heure - 20) ** 2) / 6);
+    const valeur = base + amplitude * Math.max(picDejeuner, picDiner * 0.85);
+    points.push({ heure, temp_moy_c: Math.round(valeur * 10) / 10 });
+  }
+  return points;
+}
+
+/** Histogramme démo des cuissons par heure - concentré déjeuner/dîner. */
+function histogrammeCuissonsDemo(): PointCuissonHoraire[] {
+  const parHeure: Record<number, number> = { 7: 1, 12: 3, 13: 4, 14: 1, 19: 2, 20: 4, 21: 2 };
+  return Array.from({ length: 24 }, (_, heure) => ({ heure, nb_cuissons: parHeure[heure] ?? 0 }));
+}
+
+/** Repli démo de l'analyse détaillée température (doc 13 §3), une entrée par période. */
+export const temperatureAnalyseDemoParPeriode: Record<PeriodeTemperature, TemperatureAnalyse> = {
+  jour: {
+    temp_courante_c: 62,
+    cuisson_en_cours: true,
+    courbe_horaire: courbeHoraireDemo(26, 55),
+    histogramme_cuissons: histogrammeCuissonsDemo(),
+    heure_pointe: 13,
+    periode_dominante: { heure_debut: 12, heure_fin: 14, libelle: 'Déjeuner (12h-14h)' },
+    frequence: { jours_cuisine: 1, sessions_par_jour: 3, duree_moyenne_min: 28 },
+  },
+  semaine: {
+    temp_courante_c: 62,
+    cuisson_en_cours: true,
+    courbe_horaire: courbeHoraireDemo(25, 50),
+    histogramme_cuissons: histogrammeCuissonsDemo(),
+    heure_pointe: 13,
+    periode_dominante: { heure_debut: 12, heure_fin: 14, libelle: 'Déjeuner (12h-14h)' },
+    frequence: { jours_cuisine: 6, sessions_par_jour: 3, duree_moyenne_min: 26 },
+  },
+  mois: {
+    temp_courante_c: 62,
+    cuisson_en_cours: true,
+    courbe_horaire: courbeHoraireDemo(24, 48),
+    histogramme_cuissons: histogrammeCuissonsDemo(),
+    heure_pointe: 20,
+    periode_dominante: { heure_debut: 19, heure_fin: 21, libelle: 'Dîner (19h-21h)' },
+    frequence: { jours_cuisine: 24, sessions_par_jour: 3, duree_moyenne_min: 27 },
   },
 };
 

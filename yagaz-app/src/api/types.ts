@@ -618,3 +618,46 @@ export interface TemperatureSite {
   cuisson_en_cours: boolean;
   debut_cuisson_at: string | null;
 }
+
+// --- Analyse détaillée de température (drill-down, ADR 0011, doc 13 §3) ---
+
+export type PeriodeTemperature = 'jour' | 'semaine' | 'mois';
+
+/** Point de la courbe horaire : température moyenne observée pour cette heure de la journée (0-23). */
+export interface PointTemperatureHoraire {
+  heure: number;
+  temp_moy_c: number;
+}
+
+/** Point de l'histogramme des cuissons : nombre de sessions de cuisson démarrées à cette heure (0-23). */
+export interface PointCuissonHoraire {
+  heure: number;
+  nb_cuissons: number;
+}
+
+/** Plage horaire dominante d'utilisation de la cuisine (ex. déjeuner, dîner). */
+export interface PeriodeDominante {
+  heure_debut: number;
+  heure_fin: number;
+  libelle: string;
+}
+
+export interface FrequenceCuisson {
+  jours_cuisine: number;
+  sessions_par_jour: number;
+  duree_moyenne_min: number;
+}
+
+export interface TemperatureAnalyse {
+  temp_courante_c: number;
+  cuisson_en_cours: boolean;
+  courbe_horaire: PointTemperatureHoraire[];
+  histogramme_cuissons: PointCuissonHoraire[];
+  heure_pointe: number;
+  periode_dominante: PeriodeDominante;
+  frequence: FrequenceCuisson;
+}
+
+export interface CorpsTemperatureAnalyse {
+  periode?: PeriodeTemperature;
+}

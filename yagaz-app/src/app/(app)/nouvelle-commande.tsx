@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Bouton } from '../../components/Bouton';
+import { SelecteurFormat } from '../../components/SelecteurFormat';
 import { useCommandes } from '../../data/CommandesContext';
 import { useDonnees } from '../../data/DonneesContext';
 import { listerDepots } from '../../api/endpoints';
@@ -83,16 +84,7 @@ export default function EcranNouvelleCommande() {
     <SafeAreaView style={styles.conteneur} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.contenu} keyboardShouldPersistTaps="handled">
         <Text style={styles.etapeTitre}>1. Format</Text>
-        <View style={styles.rangee}>
-          {codes.map((code) => (
-            <Pressable
-              key={code}
-              style={[styles.chip, codeChoisi === code && styles.chipActif]}
-              onPress={() => choisirCode(code)}>
-              <Text style={[styles.chipTexte, codeChoisi === code && styles.chipTexteActif]}>{code}</Text>
-            </Pressable>
-          ))}
-        </View>
+        <SelecteurFormat codes={codes} codeChoisi={codeChoisi} onChoisir={choisirCode} />
 
         <Text style={styles.etapeTitre}>2. Quantité</Text>
         <View style={styles.rangeeQuantite}>
@@ -171,32 +163,6 @@ const styles = StyleSheet.create({
     color: couleurs.texte,
     marginTop: espacements.lg,
     marginBottom: espacements.sm,
-  },
-  rangee: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: espacements.sm,
-  },
-  chip: {
-    minHeight: 48,
-    paddingHorizontal: espacements.lg,
-    justifyContent: 'center',
-    borderRadius: rayons.rond,
-    borderWidth: 1,
-    borderColor: couleurs.bordure,
-    backgroundColor: couleurs.carte,
-  },
-  chipActif: {
-    backgroundColor: couleurs.rouge,
-    borderColor: couleurs.rouge,
-  },
-  chipTexte: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: couleurs.texte,
-  },
-  chipTexteActif: {
-    color: couleurs.blanc,
   },
   rangeeQuantite: {
     flexDirection: 'row',
