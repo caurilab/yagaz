@@ -40,7 +40,10 @@ Route::post('/auth/login', [AuthController::class, 'login'])->middleware('thrott
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
-    Route::patch('/me/reglages-alertes', [AlerteController::class, 'reglagesAlertes']);
+    // Throttle dédié (audit sécurité, [FAIBLE] throttle réglages d'alerte) :
+    // `livreur_habituel` valide `exists:users,telephone` (oracle
+    // d'énumération) — limiteur `reglages-alertes` (AppServiceProvider::boot()).
+    Route::patch('/me/reglages-alertes', [AlerteController::class, 'reglagesAlertes'])->middleware('throttle:reglages-alertes');
 
     // === Sites (contrat API, §« Sites ») ================================
     Route::get('/sites', [SiteController::class, 'index']);

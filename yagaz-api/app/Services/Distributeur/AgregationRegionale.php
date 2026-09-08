@@ -171,6 +171,13 @@ final class AgregationRegionale
             })
             ->whereBetween('created_at', [$depuis, $jusqua])
             ->with(['format', 'cibleOrg', 'demandeurOrg'])
+            // Filet de sécurité (audit sécurité, [MOYEN] anti-DoS agrégats
+            // distributeur) : la fenêtre `depuis`/`jusqua` est déjà bornée à
+            // 24 mois par `DistributeurPeriodeRequest`, mais une borne dure
+            // sur le nombre de lignes chargées protège aussi contre une
+            // branche anormalement volumineuse (beaucoup de dépôts/commandes
+            // sur la période) sans dépendre uniquement de la validation amont.
+            ->limit(100000)
             ->get();
     }
 

@@ -4,10 +4,13 @@ namespace Tests\Feature;
 
 use App\Enums\CanalAlerte;
 use App\Enums\NiveauAcces;
+use App\Enums\RoleMembership;
 use App\Enums\StatutAlerte;
 use App\Enums\TypeAlerte;
 use App\Models\Alerte;
 use App\Models\Bouteille;
+use App\Models\Membership;
+use App\Models\Organisation;
 use App\Models\Site;
 use App\Models\SiteAcces;
 use App\Models\User;
@@ -121,6 +124,12 @@ class AlerteApiTest extends TestCase
     {
         $foyer = User::factory()->create();
         $livreur = User::factory()->create(['telephone' => '+221770009999']);
+        Membership::forceCreate([
+            'user_id' => $livreur->id,
+            'organisation_id' => Organisation::factory()->depot()->create()->id,
+            'role' => RoleMembership::Livreur->value,
+            'actif' => true,
+        ]);
 
         Sanctum::actingAs($foyer);
 
@@ -136,5 +145,24 @@ class AlerteApiTest extends TestCase
         $foyer->refresh();
         $this->assertSame(['push', 'sms'], $foyer->canaux_alerte);
         $this->assertSame($livreur->id, $foyer->livreur_habituel_user_id);
+    }
+
+    public function test_livreur_habituel_ne_peut_pas_viser_un_utilisateur_qui_n_est_pas_livreur(): void
+    {
+        $foyer = User::factory()->create();
+        $autreFoyer = User::factory()->create(['telephone' => '+221770001111']);
+
+        Sanctum::actingAs($foyer);
+
+        $reponse = $this->patchJson('/api/me/reglages-alertes', [
+            'canaux' => ['push'],
+            'livreur_habituel' => '+221770001111',
+        ]);
+
+        $reponse->assertUnprocessable();
+        $reponse->assertJsonValidationErrors('livreur_habituel');
+
+        $foyer->refresh();
+        $this->assertNull($foyer->livreur_habituel_user_id);
     }
 }

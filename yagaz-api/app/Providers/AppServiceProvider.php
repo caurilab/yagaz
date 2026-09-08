@@ -47,5 +47,15 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
+
+        // Throttle dédié à `PATCH /me/reglages-alertes` (audit sécurité,
+        // [FAIBLE] throttle réglages d'alerte) : en plus du throttle global
+        // `api`, cette route valide `livreur_habituel` par
+        // `exists:users,telephone`, un oracle d'énumération de téléphones
+        // inscrits — une limite plus stricte que `api` freine le sondage
+        // répété d'un même compte authentifié.
+        RateLimiter::for('reglages-alertes', function (Request $request) {
+            return Limit::perMinute(10)->by($request->user()?->id ?: $request->ip());
+        });
     }
 }

@@ -202,4 +202,27 @@ class DistributeurApiTest extends TestCase
         Sanctum::actingAs($gerant);
         $this->getJson('/api/distributeurs/'.$distributeur->uuid.'/demande')->assertUnprocessable();
     }
+
+    public function test_une_periode_de_plus_de_24_mois_est_rejetee(): void
+    {
+        [$distributeur] = $this->brancheComplete();
+        $gerant = $this->distributeurDe($distributeur);
+
+        Sanctum::actingAs($gerant);
+        $reponse = $this->getJson('/api/distributeurs/'.$distributeur->uuid.'/demande?depuis=1900-01-01&jusqua=2100-01-01');
+
+        $reponse->assertUnprocessable();
+        $reponse->assertJsonValidationErrors('jusqua');
+    }
+
+    public function test_une_periode_de_24_mois_ou_moins_est_acceptee(): void
+    {
+        [$distributeur] = $this->brancheComplete();
+        $gerant = $this->distributeurDe($distributeur);
+
+        Sanctum::actingAs($gerant);
+        $reponse = $this->getJson('/api/distributeurs/'.$distributeur->uuid.'/demande?depuis='.now()->subMonths(24)->toDateString().'&jusqua='.now()->toDateString());
+
+        $reponse->assertOk();
+    }
 }
