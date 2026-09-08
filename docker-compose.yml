@@ -1,0 +1,52 @@
+# Infrastructure locale Yagaz — voir docs/decisions/0002-infra-locale-docker.md
+#
+# Démarrer :  docker compose up -d
+# Arrêter  :  docker compose down
+# Réinit   :  docker compose down -v   (efface les volumes)
+#
+# Les identifiants viennent de .env à la racine (copier .env.example -> .env).
+
+services:
+  # --- Base relationnelle + séries temporelles (une seule techno, deux usages) ---
+  db:
+    image: timescale/timescaledb:2.17.2-pg17
+    container_name: yagaz-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-yagaz}
+      POSTGRES_USER: ${DB_USERNAME:-yagaz}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-yagaz_local}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - ./ops/data/db:/var/lib/postgresql/data
+      - ./ops/timescale/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-yagaz} -d ${DB_DATABASE:-yagaz}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --- Broker MQTT : ingestion des mesures des plateaux, découplée du REST ---
+  mqtt:
+    image: eclipse-mosquitto:2
+    container_name: yagaz-mqtt
+    restart: unless-stopped
+    ports:
+      - "${MQTT_PORT:-1883}:1883"    # MQTT
+      - "${MQTT_WS_PORT:-9001}:9001" # MQTT over WebSocket
+    volumes:
+      - ./ops/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./ops/mosquitto/passwd:/mosquitto/config/passwd:ro
+      - ./ops/data/mqtt/data:/mosquitto/data
+      - ./ops/data/mqtt/log:/mosquitto/log
+
+  # --- Redis : files d'attente Laravel (alertes, propositions, agrégation) ---
+  redis:
+    image: redis:7-alpine
+    container_name: yagaz-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - ./ops/data/redis:/data

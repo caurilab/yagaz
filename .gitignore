@@ -1,0 +1,44 @@
+# === Secrets & env (jamais dans le dépôt) ===
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+ops/mosquitto/passwd
+
+# === OS ===
+.DS_Store
+Thumbs.db
+
+# === Éditeurs ===
+.idea/
+.vscode/
+*.swp
+
+# === Node / JS (web + app) ===
+node_modules/
+dist/
+.expo/
+.expo-shared/
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# === PHP / Laravel ===
+yagaz-api/vendor/
+yagaz-api/storage/*.key
+yagaz-api/storage/framework/cache/*
+yagaz-api/storage/framework/sessions/*
+yagaz-api/storage/framework/views/*
+yagaz-api/storage/logs/*
+yagaz-api/bootstrap/cache/*
+yagaz-api/.phpunit.result.cache
+yagaz-api/public/hot
+
+# === Docker volumes locaux ===
+ops/data/
+
+# === Firmware (build PlatformIO) ===
+yagaz-firmware/.pio/
+yagaz-firmware/.pioenvs/
