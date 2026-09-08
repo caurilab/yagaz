@@ -47,7 +47,17 @@ export type NomIcone =
   | 'wifi'
   | 'bluetooth'
   | 'eclair'
-  | 'fermer';
+  | 'fermer'
+  | 'crayon'
+  | 'calendrier'
+  | 'camembert'
+  | 'tendance'
+  | 'annonce'
+  | 'repeat'
+  | 'alerte'
+  | 'cercle'
+  | 'flecheHaut'
+  | 'flecheBas';
 
 type Props = {
   nom: NomIcone;
@@ -230,6 +240,68 @@ const TRACES: Record<NomIcone, (c: string) => ReactNode> = {
     <>
       <Line x1={6} y1={6} x2={18} y2={18} />
       <Line x1={18} y1={6} x2={6} y2={18} />
+    </>
+  ),
+  crayon: () => (
+    <>
+      <Path d="M4 20l.9-3.6a2 2 0 0 1 .5-.9L15.4 5.5a2 2 0 0 1 2.8 0l.3.3a2 2 0 0 1 0 2.8L8.5 19.1a2 2 0 0 1-.9.5L4 20z" />
+      <Line x1={13.5} y1={7.4} x2={16.6} y2={10.5} />
+    </>
+  ),
+  calendrier: () => (
+    <>
+      <Rect x={3.5} y={5} width={17} height={15.5} rx={2.5} />
+      <Line x1={3.5} y1={9.5} x2={20.5} y2={9.5} />
+      <Line x1={8} y1={3} x2={8} y2={6.5} />
+      <Line x1={16} y1={3} x2={16} y2={6.5} />
+    </>
+  ),
+  camembert: () => (
+    <>
+      <Circle cx={12} cy={12} r={8.5} />
+      <Line x1={12} y1={12} x2={12} y2={3.5} />
+      <Line x1={12} y1={12} x2={20.5} y2={12} />
+    </>
+  ),
+  tendance: () => (
+    <>
+      <Path d="M3 16.5l5.5-5.5 3.5 3.5L21 6.5" />
+      <Path d="M15.5 6.5H21v5.5" />
+    </>
+  ),
+  annonce: () => (
+    <>
+      <Path d="M3.5 10.5 17 6v12L3.5 13.5z" />
+      <Path d="M17 8.5a3 3 0 0 1 0 7" />
+      <Path d="M7 12.5v4.2a1.8 1.8 0 0 0 3.5.6" />
+    </>
+  ),
+  repeat: () => (
+    <>
+      <Path d="M16.5 2.5 20.5 6l-4 3.5" />
+      <Path d="M3.5 11v-.5a4 4 0 0 1 4-4h13" />
+      <Path d="M7.5 21.5 3.5 18l4-3.5" />
+      <Path d="M20.5 13v.5a4 4 0 0 1-4 4h-13" />
+    </>
+  ),
+  alerte: (c) => (
+    <>
+      <Path d="M10.3 4.2 2.8 17.5a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 4.2a2 2 0 0 0-3.4 0z" />
+      <Line x1={12} y1={9.5} x2={12} y2={13.5} />
+      <Circle cx={12} cy={17} r={1.1} fill={c} stroke="none" />
+    </>
+  ),
+  cercle: () => <Circle cx={12} cy={12} r={4.5} />,
+  flecheHaut: () => (
+    <>
+      <Line x1={12} y1={19} x2={12} y2={5.5} />
+      <Path d="M6.5 11 12 5.5l5.5 5.5" />
+    </>
+  ),
+  flecheBas: () => (
+    <>
+      <Line x1={12} y1={5} x2={12} y2={18.5} />
+      <Path d="M6.5 13 12 18.5l5.5-5.5" />
     </>
   ),
 };

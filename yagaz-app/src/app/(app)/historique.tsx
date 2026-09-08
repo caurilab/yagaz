@@ -3,10 +3,11 @@
  * alertes et sessions de cuisson, filtrable, pull-to-refresh + pagination
  * "charger plus" (contrat `GET /api/historique`).
  */
-import { useCallback, useEffect, useState, type ComponentProps } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+
+import { Icone, type NomIcone } from '../../components/icones';
 
 import { BandeauSync } from '../../components/BandeauSync';
 import { Bouton } from '../../components/Bouton';
@@ -20,8 +21,6 @@ import type { EvenementHistorique, IconeEvenementHistorique, Pagination } from '
 
 const PAR_PAGE = 15;
 
-type NomIonicons = ComponentProps<typeof Ionicons>['name'];
-
 const FILTRES: { valeur: IconeEvenementHistorique | 'tous'; libelle: string }[] = [
   { valeur: 'tous', libelle: 'Tous' },
   { valeur: 'commande', libelle: 'Recharges' },
@@ -30,11 +29,11 @@ const FILTRES: { valeur: IconeEvenementHistorique | 'tous'; libelle: string }[] 
   { valeur: 'cuisson', libelle: 'Cuisson' },
 ];
 
-const ICONES_EVENEMENT: Record<IconeEvenementHistorique, NomIonicons> = {
-  commande: 'cube-outline',
-  paiement: 'card-outline',
-  alerte: 'warning-outline',
-  cuisson: 'flame-outline',
+const ICONES_EVENEMENT: Record<IconeEvenementHistorique, NomIcone> = {
+  commande: 'commande',
+  paiement: 'recu',
+  alerte: 'alerte',
+  cuisson: 'flamme',
 };
 
 export default function EcranHistorique() {
@@ -163,11 +162,11 @@ export default function EcranHistorique() {
 }
 
 function LigneEvenement({ evenement }: { evenement: EvenementHistorique }) {
-  const icone = ICONES_EVENEMENT[evenement.icone] ?? 'ellipse-outline';
+  const icone = ICONES_EVENEMENT[evenement.icone] ?? 'cercle';
   return (
     <View style={styles.ligne}>
       <View style={styles.pastilleIcone}>
-        <Ionicons name={icone} size={20} color={couleurs.rouge} />
+        <Icone nom={icone} taille={20} couleur={couleurs.rouge} />
       </View>
       <View style={styles.ligneTexte}>
         <Text style={styles.ligneTitre} numberOfLines={1}>

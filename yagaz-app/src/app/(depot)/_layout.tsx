@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 
-import { IconeOnglet } from '../../components/IconeOnglet';
+import { Icone } from '../../components/icones';
 import { DepotProvider } from '../../data/DepotContext';
 import { couleurs } from '../../../theme/couleurs';
 import { styleBarreOnglets } from '../../components/styleBarreOnglets';
@@ -24,35 +24,35 @@ export default function LayoutDepot() {
           options={{
             title: 'Stock',
             tabBarLabel: 'Stock',
-            tabBarIcon: ({ color }) => <IconeOnglet nom="archive" color={color} />,
+            tabBarIcon: ({ color }) => <Icone nom="depot" couleur={color as string} />,
           }}
         />
         <Tabs.Screen
           name="commandes"
           options={{
             title: 'Commandes',
-            tabBarIcon: ({ color }) => <IconeOnglet nom="cube" color={color} />,
+            tabBarIcon: ({ color }) => <Icone nom="commande" couleur={color as string} />,
           }}
         />
         <Tabs.Screen
           name="propositions"
           options={{
             title: 'Propositions',
-            tabBarIcon: ({ color }) => <IconeOnglet nom="megaphone" color={color} />,
+            tabBarIcon: ({ color }) => <Icone nom="annonce" couleur={color as string} />,
           }}
         />
         <Tabs.Screen
           name="reappros"
           options={{
             title: 'Réappros',
-            tabBarIcon: ({ color }) => <IconeOnglet nom="repeat" color={color} />,
+            tabBarIcon: ({ color }) => <Icone nom="repeat" couleur={color as string} />,
           }}
         />
         <Tabs.Screen
           name="reglages"
           options={{
             title: 'Réglages',
-            tabBarIcon: ({ color }) => <IconeOnglet nom="settings" color={color} />,
+            tabBarIcon: ({ color }) => <Icone nom="reglages" couleur={color as string} />,
           }}
         />
       </Tabs>

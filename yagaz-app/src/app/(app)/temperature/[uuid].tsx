@@ -9,10 +9,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-
 import { BandeauSync } from '../../../components/BandeauSync';
 import { CourbeTemperatureHoraire } from '../../../components/graphiques/CourbeTemperatureHoraire';
+import { Icone } from '../../../components/icones';
 import * as api from '../../../api/endpoints';
 import { executerAvecSource, temperatureAnalyseDemoParPeriode } from '../../../api/demo';
 import { useDonnees } from '../../../data/DonneesContext';
@@ -115,18 +114,18 @@ export default function EcranTemperatureAnalyse() {
           </View>
         ) : !analyse ? (
           <View style={styles.chargement}>
-            <Ionicons name="thermometer-outline" size={30} color={couleurs.grisNeutre} />
+            <Icone nom="thermometre" taille={30} couleur={couleurs.grisNeutre} />
             <Text style={styles.texteVide}>Aucune donnée de température disponible.</Text>
           </View>
         ) : (
           <>
             <View style={[styles.carte, styles.carteTemperature]}>
               <View style={styles.ligneEnteteTemperature}>
-                <Ionicons name="thermometer-outline" size={20} color={elevee ? couleurs.danger : couleurs.rouge} />
+                <Icone nom="thermometre" taille={20} couleur={elevee ? couleurs.danger : couleurs.rouge} />
                 <Text style={styles.libelleTemperature}>Température courante</Text>
                 {analyse.cuisson_en_cours ? (
                   <View style={styles.badgeCuisson}>
-                    <Ionicons name="flame" size={12} color={couleurs.blanc} />
+                    <Icone nom="flamme" taille={12} couleur={couleurs.blanc} />
                     <Text style={styles.texteBadgeCuisson}>Cuisson en cours</Text>
                   </View>
                 ) : null}
@@ -177,13 +176,13 @@ export default function EcranTemperatureAnalyse() {
 
             <View style={[styles.carte, styles.carteEnEvidence]}>
               <View style={styles.blocEnEvidence}>
-                <Ionicons name="flame-outline" size={22} color={couleurs.rouge} />
+                <Icone nom="flamme" taille={22} couleur={couleurs.rouge} />
                 <Text style={styles.libelleEnEvidence}>Heure de pointe</Text>
                 <Text style={styles.chiffreEnEvidence}>{libelleHeure(analyse.heure_pointe)}</Text>
               </View>
               <View style={styles.separateurVertical} />
               <View style={styles.blocEnEvidence}>
-                <Ionicons name="restaurant-outline" size={22} color={couleurs.rouge} />
+                <Icone nom="cuisine" taille={22} couleur={couleurs.rouge} />
                 <Text style={styles.libelleEnEvidence}>Période dominante</Text>
                 <Text style={styles.chiffreEnEvidence} numberOfLines={1}>
                   {analyse.periode_dominante.libelle}

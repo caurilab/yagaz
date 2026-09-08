@@ -1,6 +1,5 @@
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -10,6 +9,7 @@ import { Bouton } from '../../components/Bouton';
 import { BouteilleGaz } from '../../components/BouteilleGaz';
 import { EncartConnecterMateriel } from '../../components/EncartConnecterMateriel';
 import { EncartTemperature } from '../../components/EncartTemperature';
+import { Icone } from '../../components/icones';
 import { SelecteurSite } from '../../components/SelecteurSite';
 import { useAuth } from '../../auth/AuthContext';
 import { useDonnees } from '../../data/DonneesContext';
@@ -63,7 +63,7 @@ export default function EcranAccueilFoyer() {
                 style={styles.boutonCloche}
                 accessibilityRole="button"
                 accessibilityLabel="Voir mes statistiques">
-                <Ionicons name="stats-chart-outline" size={22} color={couleurs.blanc} />
+                <Icone nom="analyse" taille={22} couleur={couleurs.blanc} />
               </Pressable>
               <Pressable
                 onPress={() => router.push('/alertes')}
@@ -71,7 +71,7 @@ export default function EcranAccueilFoyer() {
                 style={styles.boutonCloche}
                 accessibilityRole="button"
                 accessibilityLabel="Voir les alertes">
-                <Ionicons name="notifications-outline" size={22} color={couleurs.blanc} />
+                <Icone nom="cloche" taille={22} couleur={couleurs.blanc} />
                 {alertesActives > 0 ? <View style={styles.pastilleAlerte} /> : null}
               </Pressable>
             </View>
@@ -109,7 +109,7 @@ export default function EcranAccueilFoyer() {
 
             <Pressable style={styles.lienGererBouteilles} onPress={() => router.push('/bouteilles')}>
               <Text style={styles.texteLienGererBouteilles}>Gérer mes bouteilles</Text>
-              <Ionicons name="chevron-forward" size={18} color={couleurs.rouge} />
+              <Icone nom="chevron" taille={18} couleur={couleurs.rouge} />
             </Pressable>
 
             <View style={styles.blocTemperature}>
@@ -148,7 +148,7 @@ function EtatVide() {
   return (
     <View style={styles.carteVide}>
       <View style={styles.iconeVide}>
-        <Ionicons name="flame-outline" size={28} color={couleurs.rouge} />
+        <Icone nom="flamme" taille={28} couleur={couleurs.rouge} />
       </View>
       <Text style={styles.titreVide}>Aucune bouteille enregistrée</Text>
       <Text style={styles.texteVide}>

@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 
-import { IconeOnglet } from '../../components/IconeOnglet';
+import { Icone } from '../../components/icones';
 import { MandataireProvider } from '../../data/MandataireContext';
 import { couleurs } from '../../../theme/couleurs';
 import { styleBarreOnglets } from '../../components/styleBarreOnglets';
@@ -25,7 +25,7 @@ export default function LayoutMandataire() {
           options={{
             title: 'Tournée du jour',
             tabBarLabel: 'Tournée',
-            tabBarIcon: ({ color }) => <IconeOnglet lib="material-community" nom="truck-delivery" color={color} />,
+            tabBarIcon: ({ color }) => <Icone nom="livraison" couleur={color as string} />,
           }}
         />
         <Tabs.Screen
@@ -33,14 +33,14 @@ export default function LayoutMandataire() {
           options={{
             title: 'Mes dépôts',
             tabBarLabel: 'Dépôts',
-            tabBarIcon: ({ color }) => <IconeOnglet nom="business" color={color} />,
+            tabBarIcon: ({ color }) => <Icone nom="depot" couleur={color as string} />,
           }}
         />
         <Tabs.Screen
           name="reglages"
           options={{
             title: 'Réglages',
-            tabBarIcon: ({ color }) => <IconeOnglet nom="settings" color={color} />,
+            tabBarIcon: ({ color }) => <Icone nom="reglages" couleur={color as string} />,
           }}
         />
       </Tabs>

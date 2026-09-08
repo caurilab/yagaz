@@ -2,9 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { router } from 'expo-router';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-
 import { Bouton } from '../../components/Bouton';
+import { Icone } from '../../components/icones';
 import { SelecteurFormat } from '../../components/SelecteurFormat';
 import { useCommandes } from '../../data/CommandesContext';
 import { useDonnees } from '../../data/DonneesContext';
@@ -123,7 +122,7 @@ export default function EcranNouvelleCommande() {
                 disabled={!depot.disponible}>
                 <View style={styles.zoneNomDepot}>
                   <View style={styles.ligneNomDepot}>
-                    <Ionicons name="location" size={16} color={couleurs.rouge} />
+                    <Icone nom="localisation" taille={16} couleur={couleurs.rouge} />
                     <Text style={styles.nomDepot}>{depot.nom}</Text>
                   </View>
                   {depot.adresse ? <Text style={styles.adresseDepot}>{depot.adresse}</Text> : null}
@@ -132,7 +131,7 @@ export default function EcranNouvelleCommande() {
                 <View style={styles.zoneDistanceDepot}>
                   <Text style={styles.distanceDepot}>{depot.distance_km.toFixed(1)} km</Text>
                   {depotChoisi?.uuid === depot.uuid ? (
-                    <Ionicons name="checkmark-circle" size={20} color={couleurs.rouge} />
+                    <Icone nom="check" taille={20} couleur={couleurs.rouge} />
                   ) : null}
                 </View>
               </Pressable>

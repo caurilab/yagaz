@@ -7,9 +7,9 @@
  */
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 
 import { couleurs, espacements, rayons } from '../../theme/couleurs';
+import { Icone } from './icones';
 
 export function EncartConnecterMateriel({ texte }: { texte: string }) {
   return (
@@ -19,7 +19,7 @@ export function EncartConnecterMateriel({ texte }: { texte: string }) {
       accessibilityRole="button"
       accessibilityLabel={`${texte} - voir les matériels`}>
       <Text style={styles.texte}>{texte}</Text>
-      <Ionicons name="chevron-forward" size={14} color={couleurs.texteDoux} />
+      <Icone nom="chevron" taille={14} couleur={couleurs.texteDoux} />
     </Pressable>
   );
 }

@@ -6,11 +6,11 @@
  */
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 
 import { couleurs, espacements, rayons } from '../../theme/couleurs';
 import type { TemperatureSite } from '../api/types';
 import { EncartConnecterMateriel } from './EncartConnecterMateriel';
+import { Icone } from './icones';
 
 /** Seuil d'alerte visuelle - la sécurité (notification `temperature_elevee`) reste côté API. */
 export const SEUIL_TEMPERATURE_ELEVEE_C = 60;
@@ -30,7 +30,7 @@ export function EncartTemperature({
     return (
       <View style={styles.carte}>
         <View style={styles.libelleAvecIcone}>
-          <Ionicons name="thermometer-outline" size={18} color={couleurs.grisNeutre} />
+          <Icone nom="thermometre" taille={18} couleur={couleurs.grisNeutre} />
           <Text style={styles.libelle}>Température cuisine</Text>
         </View>
         <Text style={styles.chiffreDesactive}>-- °C</Text>
@@ -47,12 +47,12 @@ export function EncartTemperature({
     <>
       <View style={styles.ligneEntete}>
         <View style={styles.libelleAvecIcone}>
-          <Ionicons name="thermometer-outline" size={18} color={elevee ? couleurs.danger : couleurs.rouge} />
+          <Icone nom="thermometre" taille={18} couleur={elevee ? couleurs.danger : couleurs.rouge} />
           <Text style={styles.libelle}>Température cuisine</Text>
         </View>
         {temperature.cuisson_en_cours ? (
           <View style={styles.badgeCuisson}>
-            <Ionicons name="flame" size={12} color={couleurs.blanc} />
+            <Icone nom="flamme" taille={12} couleur={couleurs.blanc} />
             <Text style={styles.texteBadgeCuisson}>Cuisson en cours</Text>
           </View>
         ) : null}
@@ -66,7 +66,7 @@ export function EncartTemperature({
       {siteUuid ? (
         <View style={styles.ligneVoirPlus}>
           <Text style={styles.texteVoirPlus}>Voir le détail</Text>
-          <Ionicons name="chevron-forward" size={14} color={couleurs.texteDoux} />
+          <Icone nom="chevron" taille={14} couleur={couleurs.texteDoux} />
         </View>
       ) : null}
     </>

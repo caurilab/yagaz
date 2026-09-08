@@ -2,11 +2,10 @@ import { useState } from 'react';
 import { router } from 'expo-router';
 import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-
 import { BadgeEtat } from '../../components/BadgeEtat';
 import { Bouton } from '../../components/Bouton';
 import { BouteilleGaz } from '../../components/BouteilleGaz';
+import { Icone } from '../../components/icones';
 import { useDonnees } from '../../data/DonneesContext';
 import { couleurs, espacements, rayons } from '../../../theme/couleurs';
 import { formaterAutonomie } from '../../utils/niveau';
@@ -41,7 +40,9 @@ export default function EcranBouteilles() {
         contentContainerStyle={styles.liste}
         ListEmptyComponent={
           <View style={styles.vide}>
-            <Ionicons name="flame-outline" size={32} color={couleurs.grisNeutre} style={styles.iconeVide} />
+            <View style={styles.iconeVide}>
+              <Icone nom="flamme" taille={32} couleur={couleurs.grisNeutre} />
+            </View>
             <Text style={styles.texteVide}>Aucune bouteille pour ce site pour l'instant.</Text>
           </View>
         }

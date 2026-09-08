@@ -1,7 +1,7 @@
 import { router, Tabs } from 'expo-router';
 import { Pressable, Text } from 'react-native';
 
-import { IconeOnglet } from '../../components/IconeOnglet';
+import { Icone } from '../../components/icones';
 import { couleurs } from '../../../theme/couleurs';
 import { styleBarreOnglets } from '../../components/styleBarreOnglets';
 
@@ -37,7 +37,7 @@ export default function LayoutApp() {
           title: 'Accueil',
           headerShown: false,
           tabBarLabel: 'Accueil',
-          tabBarIcon: ({ color }) => <IconeOnglet nom="home" color={color} />,
+          tabBarIcon: ({ color }) => <Icone nom="accueil" couleur={color as string} />,
         }}
       />
       <Tabs.Screen
@@ -45,14 +45,14 @@ export default function LayoutApp() {
         options={{
           href: null,
           title: 'Bouteilles',
-          tabBarIcon: ({ color }) => <IconeOnglet lib="material-community" nom="propane-tank" color={color} />,
+          tabBarIcon: ({ color }) => <Icone nom="bouteille" couleur={color as string} />,
         }}
       />
       <Tabs.Screen
         name="commandes"
         options={{
           title: 'Commandes',
-          tabBarIcon: ({ color }) => <IconeOnglet nom="cube" color={color} />,
+          tabBarIcon: ({ color }) => <Icone nom="commande" couleur={color as string} />,
         }}
       />
       <Tabs.Screen
@@ -60,14 +60,14 @@ export default function LayoutApp() {
         options={{
           href: null,
           title: 'Alertes',
-          tabBarIcon: ({ color }) => <IconeOnglet nom="notifications" color={color} />,
+          tabBarIcon: ({ color }) => <Icone nom="cloche" couleur={color as string} />,
         }}
       />
       <Tabs.Screen
         name="historique"
         options={{
           title: 'Historique',
-          tabBarIcon: ({ color }) => <IconeOnglet nom="time-outline" color={color} />,
+          tabBarIcon: ({ color }) => <Icone nom="historique" couleur={color as string} />,
         }}
       />
       <Tabs.Screen
@@ -75,14 +75,14 @@ export default function LayoutApp() {
         options={{
           href: null,
           title: 'Analyse',
-          tabBarIcon: ({ color }) => <IconeOnglet nom="stats-chart-outline" color={color} />,
+          tabBarIcon: ({ color }) => <Icone nom="analyse" couleur={color as string} />,
         }}
       />
       <Tabs.Screen
         name="reglages"
         options={{
           title: 'Réglages',
-          tabBarIcon: ({ color }) => <IconeOnglet nom="settings" color={color} />,
+          tabBarIcon: ({ color }) => <Icone nom="reglages" couleur={color as string} />,
         }}
       />
       <Tabs.Screen

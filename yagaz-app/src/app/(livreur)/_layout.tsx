@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 
-import { IconeOnglet } from '../../components/IconeOnglet';
+import { Icone } from '../../components/icones';
 import { LivreurProvider } from '../../data/LivreurContext';
 import { couleurs } from '../../../theme/couleurs';
 import { styleBarreOnglets } from '../../components/styleBarreOnglets';
@@ -24,7 +24,7 @@ export default function LayoutLivreur() {
           options={{
             title: 'Mes missions',
             tabBarLabel: 'Missions',
-            tabBarIcon: ({ color }) => <IconeOnglet lib="material-community" nom="moped" color={color} />,
+            tabBarIcon: ({ color }) => <Icone nom="livraison" couleur={color as string} />,
           }}
         />
         <Tabs.Screen
@@ -32,21 +32,21 @@ export default function LayoutLivreur() {
           options={{
             title: 'Foyers en tension',
             tabBarLabel: 'Tension',
-            tabBarIcon: ({ color }) => <IconeOnglet lib="material-community" nom="gas-station" color={color} />,
+            tabBarIcon: ({ color }) => <Icone nom="depot" couleur={color as string} />,
           }}
         />
         <Tabs.Screen
           name="notifications"
           options={{
             title: 'Notifications',
-            tabBarIcon: ({ color }) => <IconeOnglet nom="notifications" color={color} />,
+            tabBarIcon: ({ color }) => <Icone nom="cloche" couleur={color as string} />,
           }}
         />
         <Tabs.Screen
           name="reglages"
           options={{
             title: 'Réglages',
-            tabBarIcon: ({ color }) => <IconeOnglet nom="settings" color={color} />,
+            tabBarIcon: ({ color }) => <Icone nom="reglages" couleur={color as string} />,
           }}
         />
       </Tabs>

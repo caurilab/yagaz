@@ -6,9 +6,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 
 import { BandeauSync } from '../../components/BandeauSync';
+import { Icone } from '../../components/icones';
 import { BarresConsommation } from '../../components/graphiques/BarresConsommation';
 import { CalendrierHeatmap } from '../../components/graphiques/CalendrierHeatmap';
 import { Donut, LegendeDonut } from '../../components/graphiques/Donut';
@@ -103,7 +103,9 @@ export default function EcranAnalyse() {
           </View>
         ) : !analyse ? (
           <View style={styles.chargement}>
-            <Ionicons name="bar-chart-outline" size={30} color={couleurs.grisNeutre} style={styles.iconeVide} />
+            <View style={styles.iconeVide}>
+              <Icone nom="analyse" taille={30} couleur={couleurs.grisNeutre} />
+            </View>
             <Text style={styles.texteVide}>Aucune analyse disponible.</Text>
           </View>
         ) : (
@@ -152,14 +154,14 @@ export default function EcranAnalyse() {
                 </View>
               ) : (
                 <View style={styles.videSection}>
-                  <Ionicons name="pie-chart-outline" size={26} color={couleurs.grisNeutre} />
+                  <Icone nom="camembert" taille={26} couleur={couleurs.grisNeutre} />
                   <Text style={styles.texteVide}>Pas de répartition sur cette période.</Text>
                 </View>
               )}
             </View>
 
             <View style={[styles.carte, styles.carteProjection]}>
-              <Ionicons name="calendar-outline" size={22} color={couleurs.rouge} />
+              <Icone nom="calendrier" taille={22} couleur={couleurs.rouge} />
               <View style={styles.texteProjection}>
                 <Text style={styles.titreProjection}>Prochaine recharge estimée</Text>
                 <Text style={styles.chiffreProjection}>
@@ -219,11 +221,7 @@ function Tendance({ pct }: { pct: number }) {
   const hausse = pct > 0;
   return (
     <View style={styles.ligneTendance}>
-      <Ionicons
-        name={hausse ? 'arrow-up' : 'arrow-down'}
-        size={12}
-        color={hausse ? couleurs.ambre : couleurs.vertOk}
-      />
+      <Icone nom={hausse ? 'flecheHaut' : 'flecheBas'} taille={12} couleur={hausse ? couleurs.ambre : couleurs.vertOk} />
       <Text style={[styles.texteTendance, { color: hausse ? couleurs.ambre : couleurs.vertOk }]}>
         {Math.abs(pct)} % vs période précédente
       </Text>

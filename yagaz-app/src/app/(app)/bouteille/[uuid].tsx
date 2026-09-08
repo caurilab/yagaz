@@ -2,8 +2,6 @@ import { useMemo, useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-
 import { BadgeEtat } from '../../../components/BadgeEtat';
 import { BandeauSync } from '../../../components/BandeauSync';
 import { Bouton } from '../../../components/Bouton';
@@ -11,6 +9,7 @@ import { BouteilleGaz } from '../../../components/BouteilleGaz';
 import { Champ } from '../../../components/Champ';
 import { EncartConnecterMateriel } from '../../../components/EncartConnecterMateriel';
 import { EncartTemperature } from '../../../components/EncartTemperature';
+import { Icone } from '../../../components/icones';
 import { SelecteurFormat } from '../../../components/SelecteurFormat';
 import { useDonnees } from '../../../data/DonneesContext';
 import { useTemperatureSite } from '../../../data/useTemperatureSite';
@@ -155,7 +154,7 @@ export default function EcranDetailBouteille() {
             {aBalance ? <BadgeEtat etat={niveau.etat} /> : null}
             {!modeEdition ? (
               <Pressable onPress={demarrerEdition} hitSlop={10} style={styles.boutonModifier}>
-                <Ionicons name="create-outline" size={20} color={couleurs.rouge} />
+                <Icone nom="crayon" taille={20} couleur={couleurs.rouge} />
                 <Text style={styles.texteModifier}>Modifier</Text>
               </Pressable>
             ) : null}
@@ -231,7 +230,7 @@ export default function EcranDetailBouteille() {
 
             <Text style={styles.sectionTitre}>Courbe de niveau</Text>
             <View style={styles.placeholderCourbe}>
-              <Ionicons name="trending-up-outline" size={26} color={couleurs.grisNeutre} />
+              <Icone nom="tendance" taille={26} couleur={couleurs.grisNeutre} />
               <Text style={styles.texteVide}>Courbe de niveau bientôt disponible</Text>
             </View>
           </>
@@ -318,7 +317,7 @@ export default function EcranDetailBouteille() {
               onPress={confirmerSuppression}
               disabled={enCours}
               accessibilityRole="button">
-              <Ionicons name="trash-outline" size={18} color={couleurs.danger} />
+              <Icone nom="corbeille" taille={18} couleur={couleurs.danger} />
               <Text style={styles.texteSupprimer}>Supprimer la bouteille</Text>
             </Pressable>
           </>
