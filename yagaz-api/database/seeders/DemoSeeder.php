@@ -8,10 +8,13 @@ use App\Enums\OrigineCommande;
 use App\Enums\RoleBouteille;
 use App\Enums\RoleMembership;
 use App\Enums\StatutCommande;
+use App\Enums\StatutEquipement;
 use App\Enums\StatutPaiement;
 use App\Enums\TareSource;
+use App\Enums\TypeEquipement;
 use App\Models\Bouteille;
 use App\Models\Commande;
+use App\Models\Equipement;
 use App\Models\FormatBouteille;
 use App\Models\LivreurHabituel;
 use App\Models\Membership;
@@ -116,6 +119,30 @@ class DemoSeeder extends Seeder
                 'calcule_at' => now(),
             ]
         );
+
+        // --- Équipements du foyer (registre unifié, ADR 0012) ---
+        // Balance : reliée au plateau de démo par référence (reference =
+        // uid du plateau), pour cohérence avec l'ingestion de poids
+        // existante. Température : équipement distinct, actif, sans lien à
+        // un capteur physique de démo dédié. PAS d'écran : démontre le
+        // gating « acquérir l'écran » (ADR 0012) sur ce site de démo.
+        Equipement::query()->forceCreate([
+            'type' => TypeEquipement::Balance,
+            'reference' => $plateau->uid,
+            'site_id' => $site->id,
+            'statut' => StatutEquipement::Actif,
+            'cree_par' => $foyer->id,
+            'dernier_vu_at' => now(),
+        ]);
+
+        Equipement::query()->forceCreate([
+            'type' => TypeEquipement::Temperature,
+            'reference' => 'TEMP-DEMO-001',
+            'site_id' => $site->id,
+            'statut' => StatutEquipement::Actif,
+            'cree_par' => $foyer->id,
+            'dernier_vu_at' => now(),
+        ]);
 
         // Le foyer a désigné le livreur comme livreur habituel du site
         // (active les maillons A et C du déclenchement automatique).

@@ -9,6 +9,7 @@ use App\Http\Controllers\DepotCommandeController;
 use App\Http\Controllers\DepotController;
 use App\Http\Controllers\DepotStockController;
 use App\Http\Controllers\DistributeurController;
+use App\Http\Controllers\EquipementController;
 use App\Http\Controllers\FormatBouteilleController;
 use App\Http\Controllers\HistoriqueController;
 use App\Http\Controllers\LivraisonController;
@@ -80,6 +81,16 @@ Route::middleware('auth:sanctum')->group(function () {
     // consommation/dépense — cloisonnés au périmètre foyer (`site_acces`).
     Route::get('/historique', [HistoriqueController::class, 'index']);
     Route::get('/analyse', [AnalyseController::class, 'index']);
+
+    // === Équipements (contrat API, §« Équipements » — ADR 0012) =========
+    // Registre unifié balance/température/écran, cloisonné par
+    // `EquipementPolicy` (accès au site d'affectation, ou créateur tant
+    // que non affecté). Les capacités dérivées (`a_balance`/`a_temperature`/
+    // `a_ecran`) sont exposées sur `SiteResource`.
+    Route::get('/equipements', [EquipementController::class, 'index']);
+    Route::post('/equipements', [EquipementController::class, 'store']);
+    Route::patch('/equipements/{equipement:uuid}', [EquipementController::class, 'update']);
+    Route::delete('/equipements/{equipement:uuid}', [EquipementController::class, 'destroy']);
 
     // === Formats (contrat API, §« Formats ») ============================
     Route::get('/formats', [FormatBouteilleController::class, 'index']);

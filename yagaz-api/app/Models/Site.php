@@ -117,4 +117,14 @@ class Site extends Model
     {
         return $this->hasMany(SessionCuisson::class);
     }
+
+    /**
+     * Équipements (balance/température/écran) affectés à ce site (ADR 0012).
+     *
+     * @return HasMany<Equipement, $this>
+     */
+    public function equipements(): HasMany
+    {
+        return $this->hasMany(Equipement::class);
+    }
 }

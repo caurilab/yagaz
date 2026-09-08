@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Enums\NiveauAcces;
 use App\Enums\StatutAlerte;
+use App\Enums\StatutEquipement;
+use App\Enums\TypeEquipement;
 use App\Http\Controllers\Concerns\AutoriseCloisonnement;
 use App\Http\Requests\SiteLivreurHabituelRequest;
 use App\Http\Requests\SitePartageRequest;
@@ -185,9 +187,9 @@ class SiteController extends Controller
 
     /**
      * Hydrate un site des attributs calculés attendus par `SiteResource`
-     * (`niveau_acces`, `bouteilles_count`, `a_alerte_active`) — pas des
-     * colonnes du modèle, construits ici pour rester au plus près de
-     * l'utilisateur courant.
+     * (`niveau_acces`, `bouteilles_count`, `a_alerte_active`,
+     * `a_balance`/`a_temperature`/`a_ecran`) — pas des colonnes du modèle,
+     * construits ici pour rester au plus près de l'utilisateur courant.
      */
     private function hydrater(Site $site, User $user): Site
     {
@@ -198,6 +200,20 @@ class SiteController extends Controller
         $site->setAttribute('a_alerte_active', Alerte::whereIn('bouteille_id', $bouteilleIds)
             ->whereIn('statut', [StatutAlerte::Emise->value, StatutAlerte::Vue->value])
             ->exists());
+
+        // Capacités du site (ADR 0012) : dérivées de ses équipements actifs,
+        // un type à la fois — le gating côté app grise la donnée tant que la
+        // capacité correspondante est fausse.
+        foreach ([
+            'a_balance' => TypeEquipement::Balance,
+            'a_temperature' => TypeEquipement::Temperature,
+            'a_ecran' => TypeEquipement::Ecran,
+        ] as $attribut => $type) {
+            $site->setAttribute($attribut, $site->equipements()
+                ->where('type', $type->value)
+                ->where('statut', StatutEquipement::Actif->value)
+                ->exists());
+        }
 
         return $site;
     }
