@@ -40,6 +40,7 @@ services:
     volumes:
       - ./ops/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
       - ./ops/mosquitto/passwd:/mosquitto/config/passwd:ro
+      - ./ops/mosquitto/acl:/mosquitto/config/acl:ro
       - ./ops/data/mqtt/data:/mosquitto/data
       - ./ops/data/mqtt/log:/mosquitto/log
 

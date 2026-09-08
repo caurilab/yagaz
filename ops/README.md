@@ -41,6 +41,12 @@ docker compose ps
 ## Notes de sécurité
 
 - `ops/mosquitto/passwd` et `.env` ne sont **jamais** commités (voir `.gitignore`).
-- Mosquitto n'autorise pas l'accès anonyme. Une ACL par appareil sera ajoutée
-  en Phase 2 (chaque plateau ne publie que sur son propre topic).
+- Mosquitto n'autorise pas l'accès anonyme et applique une **ACL par appareil**
+  (`ops/mosquitto/acl`) : chaque plateau ne peut publier que sur son propre topic
+  `yagaz/v1/plateau/{son uid}/...`. Seul le compte de service `yagaz-ingest`
+  écoute l'ensemble des mesures.
+- **Provisionner un plateau** : ajouter son couple identifiants au broker
+  (`mosquitto_passwd -b ops/mosquitto/passwd <uid> <secret>`) et créer
+  l'enregistrement `Plateau` correspondant en base (statut `actif`, `secret_hash`
+  haché). L'ingestion rejette tout `uid` non provisionné.
 - Les mots de passe `change_me_local` sont pour le développement uniquement.

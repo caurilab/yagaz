@@ -1,0 +1,18 @@
+# ACL Mosquitto — cloisonnement des appareils (doc 08 §2)
+#
+# Chaque plateau se connecte avec username = son uid (ex. PLT-7Q3F2A).
+# Les motifs %u sont remplacés par le username du client.
+
+# --- Un plateau ne peut publier QUE sur son propre topic ---
+# (write = publier). Il publie ses mesures et son état de présence.
+pattern write yagaz/v1/plateau/%u/mesure
+pattern write yagaz/v1/plateau/%u/etat
+# Il peut lire les commandes qui lui sont adressées.
+pattern read yagaz/v1/plateau/%u/cmd
+
+# --- Le compte de service d'ingestion (backend Laravel) ---
+# Il écoute toutes les mesures et tous les états, et peut pousser des commandes.
+user yagaz-ingest
+topic read yagaz/v1/plateau/+/mesure
+topic read yagaz/v1/plateau/+/etat
+topic write yagaz/v1/plateau/+/cmd
