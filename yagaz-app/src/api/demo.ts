@@ -18,6 +18,7 @@ import type {
   MesRoles,
   MissionLivreur,
   Notification,
+  Paiement,
   Reappro,
   Site,
   StockFormat,
@@ -229,6 +230,19 @@ export const depotsDemo: Depot[] = [
 
 export const commandesFoyerDemo: Commande[] = [
   {
+    uuid: 'commande-a-payer',
+    site_uuid: 'site-domicile',
+    format: formatsDemo[1],
+    quantite: 1,
+    depot_uuid: orgDepotDemoUuid,
+    statut: 'confirmee',
+    commission_g: 150,
+    mode_paiement: 'a_la_livraison',
+    statut_paiement: 'en_attente',
+    created_at: ilYA(10),
+    livraison: null,
+  },
+  {
     uuid: 'commande-en-livraison',
     site_uuid: 'site-domicile',
     format: formatsDemo[1],
@@ -236,6 +250,8 @@ export const commandesFoyerDemo: Commande[] = [
     depot_uuid: orgDepotDemoUuid,
     statut: 'en_livraison',
     commission_g: 150,
+    mode_paiement: 'mobile_money',
+    statut_paiement: 'regle',
     created_at: ilYA(90),
     livraison: {
       id: 1001,
@@ -255,6 +271,8 @@ export const commandesFoyerDemo: Commande[] = [
     depot_uuid: orgDepotDemoUuid,
     statut: 'proposee',
     commission_g: 200,
+    mode_paiement: 'a_la_livraison',
+    statut_paiement: 'en_attente',
     created_at: ilYA(20),
     livraison: null,
   },
@@ -266,6 +284,8 @@ export const commandesFoyerDemo: Commande[] = [
     depot_uuid: orgDepotDemoUuid,
     statut: 'livree',
     commission_g: 100,
+    mode_paiement: 'a_la_livraison',
+    statut_paiement: 'en_attente',
     created_at: ilYA(60 * 24 * 6),
     livraison: {
       id: 998,
@@ -302,6 +322,8 @@ export const depotCommandesDemo: CommandeDepot[] = [
     depot_uuid: orgDepotDemoUuid,
     statut: 'confirmee',
     commission_g: 150,
+    mode_paiement: 'a_la_livraison',
+    statut_paiement: 'en_attente',
     created_at: ilYA(15),
     livraison: null,
   },
@@ -314,6 +336,8 @@ export const depotCommandesDemo: CommandeDepot[] = [
     depot_uuid: orgDepotDemoUuid,
     statut: 'preparee',
     commission_g: 100,
+    mode_paiement: 'a_la_livraison',
+    statut_paiement: 'en_attente',
     created_at: ilYA(45),
     livraison: null,
   },
@@ -326,6 +350,8 @@ export const depotCommandesDemo: CommandeDepot[] = [
     depot_uuid: orgDepotDemoUuid,
     statut: 'en_livraison',
     commission_g: 150,
+    mode_paiement: 'mobile_money',
+    statut_paiement: 'regle',
     created_at: ilYA(90),
     livraison: {
       id: 1001,
@@ -535,4 +561,42 @@ export async function executerAvecSource<T>(
 export async function avecRepliDemo<T>(appelReel: () => Promise<T>, donneesDemo: T): Promise<T> {
   const { data } = await executerAvecSource(appelReel, donneesDemo);
   return data;
+}
+
+// --- Paiement Mobile Money (contrat §2 bis) : repli démo ---
+
+/**
+ * Délai avant qu'un paiement Mobile Money démo passe de `initie` à `regle`
+ * (le vrai passage se ferait via un webhook opérateur, hors app) - assez
+ * court pour que le polling de l'écran le montre en quelques rafraîchissements.
+ */
+const DELAI_REGLEMENT_PAIEMENT_DEMO_MS = 6000;
+
+const paiementsDemoParCommande = new Map<string, { paiement: Paiement; initieAt: number }>();
+
+function genererReferencePaiementDemo(): string {
+  return `DEMO-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+}
+
+/** Simule l'initiation d'un paiement Mobile Money (repli si l'appel réel échoue). */
+export function initierPaiementDemo(commandeUuid: string, montant = 8500, devise = 'XOF'): Paiement {
+  const paiement: Paiement = { reference: genererReferencePaiementDemo(), statut: 'initie', montant, devise };
+  paiementsDemoParCommande.set(commandeUuid, { paiement, initieAt: Date.now() });
+  return paiement;
+}
+
+/**
+ * Simule le polling du statut : reste `initie` jusqu'à
+ * `DELAI_REGLEMENT_PAIEMENT_DEMO_MS`, puis bascule à `regle` (comme le
+ * ferait le webhook opérateur réel).
+ */
+export function statutPaiementDemo(commandeUuid: string): Paiement {
+  const etat = paiementsDemoParCommande.get(commandeUuid);
+  if (!etat) {
+    return { reference: 'DEMO-INCONNU', statut: 'en_attente', montant: 0, devise: 'XOF' };
+  }
+  if (etat.paiement.statut === 'initie' && Date.now() - etat.initieAt >= DELAI_REGLEMENT_PAIEMENT_DEMO_MS) {
+    etat.paiement = { ...etat.paiement, statut: 'regle' };
+  }
+  return etat.paiement;
 }

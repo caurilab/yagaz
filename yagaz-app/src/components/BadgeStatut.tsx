@@ -1,15 +1,17 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { espacements, rayons } from '../../theme/couleurs';
-import type { StatutCommande, StatutLigneTournee, StatutLivraison, StatutTournee } from '../api/types';
+import type { StatutCommande, StatutLigneTournee, StatutLivraison, StatutPaiement, StatutTournee } from '../api/types';
 import {
   couleursStatutCommande,
   couleursStatutLigneTournee,
   couleursStatutLivraison,
+  couleursStatutPaiement,
   couleursStatutTournee,
   libellesStatutCommande,
   libellesStatutLigneTournee,
   libellesStatutLivraison,
+  libellesStatutPaiement,
   libellesStatutTournee,
 } from '../utils/statuts';
 
@@ -41,6 +43,14 @@ export function BadgeStatutLigneTournee({ statut }: { statut: StatutLigneTournee
   return (
     <View style={[styles.badge, { backgroundColor: couleursStatutLigneTournee[statut] }]}>
       <Text style={styles.texte}>{libellesStatutLigneTournee[statut]}</Text>
+    </View>
+  );
+}
+
+export function BadgeStatutPaiement({ statut }: { statut: StatutPaiement }) {
+  return (
+    <View style={[styles.badge, { backgroundColor: couleursStatutPaiement[statut] }]}>
+      <Text style={styles.texte}>{libellesStatutPaiement[statut]}</Text>
     </View>
   );
 }

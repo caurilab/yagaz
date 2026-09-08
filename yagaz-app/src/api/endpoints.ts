@@ -39,6 +39,7 @@ import type {
   MesRoles,
   MissionLivreur,
   Notification,
+  Paiement,
   PointMesure,
   Reappro,
   ReponseAuth,
@@ -198,6 +199,16 @@ export function commande(uuid: string) {
 
 export function repondreProposition(uuid: string, corps: CorpsReponseCommande) {
   return requeteApi<{ data: Commande }>(`/commandes/${uuid}/reponse`, { methode: 'POST', corps });
+}
+
+/** Initie un paiement Mobile Money pour une commande `confirmee` du foyer. */
+export function initierPaiement(uuid: string) {
+  return requeteApi<{ data: Paiement }>(`/commandes/${uuid}/paiement`, { methode: 'POST' });
+}
+
+/** Statut courant du paiement d'une commande (à poller jusqu'à `regle`/`echoue`/`expire`). */
+export function statutPaiement(uuid: string) {
+  return requeteApi<{ data: Paiement }>(`/commandes/${uuid}/paiement`);
 }
 
 // --- Dépôt - stock et commandes (contrat 10 §4) ---

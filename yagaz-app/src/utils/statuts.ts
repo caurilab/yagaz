@@ -4,7 +4,7 @@
  * sans réinventer la logique métier - la transition est décidée côté API.
  */
 import { couleurs } from '../../theme/couleurs';
-import type { StatutCommande, StatutLigneTournee, StatutLivraison, StatutTournee } from '../api/types';
+import type { StatutCommande, StatutLigneTournee, StatutLivraison, StatutPaiement, StatutTournee } from '../api/types';
 
 export const libellesStatutCommande: Record<StatutCommande, string> = {
   proposee: 'Proposition reçue',
@@ -22,6 +22,23 @@ export const couleursStatutCommande: Record<StatutCommande, string> = {
   en_livraison: couleurs.rouge,
   livree: couleurs.vertOk,
   annulee: couleurs.grisNeutre,
+};
+
+/** Paiement Mobile Money (contrat §2 bis) - `regle` arrive par webhook opérateur, l'app poll et affiche. */
+export const libellesStatutPaiement: Record<StatutPaiement, string> = {
+  en_attente: 'Paiement à la livraison',
+  initie: 'Paiement initié',
+  regle: 'Paiement réglé',
+  echoue: 'Paiement échoué',
+  expire: 'Paiement expiré',
+};
+
+export const couleursStatutPaiement: Record<StatutPaiement, string> = {
+  en_attente: couleurs.grisNeutre,
+  initie: couleurs.ambre,
+  regle: couleurs.vertOk,
+  echoue: couleurs.rouge,
+  expire: couleurs.grisNeutre,
 };
 
 export const libellesStatutLivraison: Record<StatutLivraison, string> = {

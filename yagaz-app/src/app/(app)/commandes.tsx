@@ -3,22 +3,23 @@ import { router } from 'expo-router';
 import { Alert, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { BadgeStatutCommande } from '../../components/BadgeStatut';
+import { BadgeStatutCommande, BadgeStatutPaiement } from '../../components/BadgeStatut';
 import { BandeauSync } from '../../components/BandeauSync';
 import { Bouton } from '../../components/Bouton';
 import { useCommandes } from '../../data/CommandesContext';
 import { useDonnees } from '../../data/DonneesContext';
 import { couleurs, espacements, rayons } from '../../../theme/couleurs';
-import type { Commande } from '../../api/types';
+import type { Commande, StatutPaiement } from '../../api/types';
 
 /**
  * Suivi de commande jusqu'à la livraison, et réponse à une proposition
  * reçue (oui/non) - contrat 10 §2-3, UX §2 "Recharge" et "Proposition reçue".
  */
 export default function EcranCommandesFoyer() {
-  const { commandes, statutSync, rafraichir, repondre } = useCommandes();
+  const { commandes, statutSync, rafraichir, repondre, paiements, payerMobileMoney } = useCommandes();
   const { sites } = useDonnees();
   const [uuidEnCours, setUuidEnCours] = useState<string | null>(null);
+  const [uuidPaiementEnCours, setUuidPaiementEnCours] = useState<string | null>(null);
 
   const commandesTriees = useMemo(
     () => [...commandes].sort((a, b) => (a.created_at < b.created_at ? 1 : -1)),
@@ -33,6 +34,20 @@ export default function EcranCommandesFoyer() {
       Alert.alert('Action impossible', 'Impossible d\'enregistrer votre réponse pour le moment.');
     } finally {
       setUuidEnCours(null);
+    }
+  }
+
+  async function payer(commande: Commande) {
+    setUuidPaiementEnCours(commande.uuid);
+    try {
+      await payerMobileMoney(commande.uuid);
+    } catch {
+      Alert.alert(
+        'Paiement impossible',
+        "Impossible d'initier le paiement Mobile Money pour le moment - vous pouvez payer à la livraison."
+      );
+    } finally {
+      setUuidPaiementEnCours(null);
     }
   }
 
@@ -60,6 +75,8 @@ export default function EcranCommandesFoyer() {
         }
         renderItem={({ item }) => {
           const nomSite = sites.find((s) => s.uuid === item.site_uuid)?.nom;
+          const statutPaiement: StatutPaiement = paiements[item.uuid]?.statut ?? item.statut_paiement;
+          const paiementEnCours = uuidPaiementEnCours === item.uuid;
           return (
             <View style={styles.carte}>
               <View style={styles.ligneEntete}>
@@ -76,6 +93,30 @@ export default function EcranCommandesFoyer() {
                   {item.livraison.livreur_nom ? `Livreur : ${item.livraison.livreur_nom} - ` : ''}
                   {item.livraison.statut}
                 </Text>
+              ) : null}
+
+              {item.statut === 'confirmee' ? (
+                <View style={styles.paiement}>
+                  {statutPaiement === 'regle' ? (
+                    <BadgeStatutPaiement statut={statutPaiement} />
+                  ) : (
+                    <>
+                      {statutPaiement !== 'en_attente' ? <BadgeStatutPaiement statut={statutPaiement} /> : null}
+                      <Bouton
+                        titre={statutPaiement === 'echoue' || statutPaiement === 'expire' ? 'Réessayer' : 'Payer par Mobile Money'}
+                        variante="contour"
+                        enCours={paiementEnCours}
+                        desactive={statutPaiement === 'initie'}
+                        onPress={() => payer(item)}
+                      />
+                      <Text style={styles.rappelPaiement}>
+                        {statutPaiement === 'initie'
+                          ? 'Confirmez sur votre téléphone (USSD ou lien reçu de l\'opérateur).'
+                          : 'Le paiement à la livraison reste possible.'}
+                      </Text>
+                    </>
+                  )}
+                </View>
               ) : null}
 
               {item.statut === 'proposee' ? (
@@ -157,6 +198,15 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: couleurs.texteDoux,
     marginTop: espacements.xs,
+  },
+  paiement: {
+    marginTop: espacements.md,
+    gap: espacements.sm,
+    alignItems: 'flex-start',
+  },
+  rappelPaiement: {
+    fontSize: 12,
+    color: couleurs.texteDoux,
   },
   actions: {
     flexDirection: 'row',

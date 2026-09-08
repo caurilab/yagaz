@@ -266,9 +266,31 @@ export interface Commande {
   depot_uuid: string;
   statut: StatutCommande;
   commission_g: number;
+  /** Défaut `a_la_livraison` (contrat §2 bis, paiement Mobile Money). */
+  mode_paiement: ModePaiement;
+  statut_paiement: StatutPaiement;
   created_at: string;
   /** Présent dès qu'une livraison a été affectée (contrat §2, §4). */
   livraison: Livraison | null;
+}
+
+// --- Paiement Mobile Money (contrat §2 bis) ---
+
+export type ModePaiement = 'a_la_livraison' | 'mobile_money';
+
+export type StatutPaiement = 'en_attente' | 'initie' | 'regle' | 'echoue' | 'expire';
+
+/**
+ * Paiement Mobile Money d'une commande : l'app initie et suit, mais le
+ * paiement lui-même se fait chez l'opérateur (push USSD/lien) - jamais de
+ * saisie de données de carte ou d'identifiants ici. `regle` arrive via un
+ * webhook opérateur, hors app ; l'app poll `GET .../paiement`.
+ */
+export interface Paiement {
+  reference: string;
+  statut: StatutPaiement;
+  montant: number;
+  devise: string;
 }
 
 /**
