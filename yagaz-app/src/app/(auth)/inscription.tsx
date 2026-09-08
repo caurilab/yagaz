@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   texteErreur: {
-    color: couleurs.rouge,
+    color: couleurs.danger,
     fontSize: 14,
     marginBottom: espacements.md,
     textAlign: 'center',

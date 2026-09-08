@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
     color: couleurs.texte,
   },
   champErreur: {
-    borderColor: couleurs.rouge,
+    borderColor: couleurs.danger,
   },
   aide: {
     marginTop: espacements.xs,
@@ -73,6 +73,6 @@ const styles = StyleSheet.create({
   texteErreur: {
     marginTop: espacements.xs,
     fontSize: 13,
-    color: couleurs.rouge,
+    color: couleurs.danger,
   },
 });

@@ -3,6 +3,7 @@ import { Tabs } from 'expo-router';
 import { IconeOnglet } from '../../components/IconeOnglet';
 import { MandataireProvider } from '../../data/MandataireContext';
 import { couleurs } from '../../../theme/couleurs';
+import { styleBarreOnglets } from '../../components/styleBarreOnglets';
 
 /**
  * Navigation mandataire : tournée du jour / dépôts / réglages (doc 11 §1,
@@ -17,6 +18,7 @@ export default function LayoutMandataire() {
           headerTintColor: couleurs.texte,
           tabBarActiveTintColor: couleurs.rouge,
           tabBarInactiveTintColor: couleurs.texteDoux,
+          ...styleBarreOnglets,
         }}>
         <Tabs.Screen
           name="index"

@@ -34,6 +34,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   texteAlerte: {
-    color: couleurs.rouge,
+    color: couleurs.danger,
   },
 });

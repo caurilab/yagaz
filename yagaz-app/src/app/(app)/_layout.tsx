@@ -3,6 +3,7 @@ import { Pressable, Text } from 'react-native';
 
 import { IconeOnglet } from '../../components/IconeOnglet';
 import { couleurs } from '../../../theme/couleurs';
+import { styleBarreOnglets } from '../../components/styleBarreOnglets';
 
 function BoutonRetour() {
   return (
@@ -25,6 +26,7 @@ export default function LayoutApp() {
         headerTintColor: couleurs.texte,
         tabBarActiveTintColor: couleurs.rouge,
         tabBarInactiveTintColor: couleurs.texteDoux,
+        ...styleBarreOnglets,
       }}>
       <Tabs.Screen
         name="index"

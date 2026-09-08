@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
     marginBottom: espacements.lg,
   },
   texteErreur: {
-    color: couleurs.rouge,
+    color: couleurs.danger,
     fontSize: 14,
     marginBottom: espacements.md,
     textAlign: 'center',

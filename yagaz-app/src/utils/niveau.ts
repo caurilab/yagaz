@@ -18,7 +18,7 @@ export const couleursEtat: Record<EtatNiveau, string> = {
   plein: couleurs.vertOk,
   correct: couleurs.vertOk,
   bas: couleurs.ambre,
-  presque_vide: couleurs.rouge,
+  presque_vide: couleurs.danger,
   inconnu: couleurs.grisNeutre,
 };
 

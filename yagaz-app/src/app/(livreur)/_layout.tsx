@@ -3,6 +3,7 @@ import { Tabs } from 'expo-router';
 import { IconeOnglet } from '../../components/IconeOnglet';
 import { LivreurProvider } from '../../data/LivreurContext';
 import { couleurs } from '../../../theme/couleurs';
+import { styleBarreOnglets } from '../../components/styleBarreOnglets';
 
 /**
  * Navigation livreur : missions / réglages (UX §6). Application la plus
@@ -16,6 +17,7 @@ export default function LayoutLivreur() {
           headerTintColor: couleurs.texte,
           tabBarActiveTintColor: couleurs.rouge,
           tabBarInactiveTintColor: couleurs.texteDoux,
+          ...styleBarreOnglets,
         }}>
         <Tabs.Screen
           name="index"

@@ -3,6 +3,7 @@ import { Tabs } from 'expo-router';
 import { IconeOnglet } from '../../components/IconeOnglet';
 import { DepotProvider } from '../../data/DepotContext';
 import { couleurs } from '../../../theme/couleurs';
+import { styleBarreOnglets } from '../../components/styleBarreOnglets';
 
 /**
  * Navigation dépôt : stock / commandes entrantes / propositions / réglages
@@ -16,6 +17,7 @@ export default function LayoutDepot() {
           headerTintColor: couleurs.texte,
           tabBarActiveTintColor: couleurs.rouge,
           tabBarInactiveTintColor: couleurs.texteDoux,
+          ...styleBarreOnglets,
         }}>
         <Tabs.Screen
           name="index"

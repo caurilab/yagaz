@@ -136,6 +136,6 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: rayons.rond,
-    backgroundColor: couleurs.rouge,
+    backgroundColor: couleurs.danger,
   },
 });

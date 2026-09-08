@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: couleurs.bordure,
     borderLeftWidth: 4,
-    borderLeftColor: couleurs.rouge,
+    borderLeftColor: couleurs.danger,
     padding: espacements.lg,
     marginBottom: espacements.md,
   },

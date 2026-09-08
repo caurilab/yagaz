@@ -34,12 +34,15 @@ export default function EcranAccueilFoyer() {
   return (
     <View style={styles.conteneur}>
       <LinearGradient
-        colors={couleurAmbiance ? [couleurAmbiance, couleurs.degradeFin] : [couleurs.degradeDebut, couleurs.degradeFin]}
+        colors={[couleurs.degradeDebut, couleurs.degradeFin]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.entete}>
         <SafeAreaView edges={['top']}>
-          <Text style={styles.texteBonjour}>Bonjour{user ? `, ${prenomDe(user.nom)}` : ''}</Text>
+          <View style={styles.ligneBonjour}>
+            <Text style={styles.texteBonjour}>Bonjour{user ? `, ${prenomDe(user.nom)}` : ''}</Text>
+            {couleurAmbiance ? <View style={[styles.pastilleAmbiance, { backgroundColor: couleurAmbiance }]} /> : null}
+          </View>
           <View style={styles.selecteurZone}>
             <SelecteurSite sites={sites} siteActif={siteActif} onChoisir={definirSiteActif} />
           </View>
@@ -176,11 +179,23 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: rayons.xl,
     borderBottomRightRadius: rayons.xl,
   },
+  ligneBonjour: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espacements.sm,
+    marginTop: espacements.sm,
+  },
   texteBonjour: {
     fontSize: 26,
     fontWeight: '700',
     color: couleurs.blanc,
-    marginTop: espacements.sm,
+  },
+  pastilleAmbiance: {
+    width: 12,
+    height: 12,
+    borderRadius: rayons.rond,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.7)',
   },
   selecteurZone: {
     marginTop: espacements.md,

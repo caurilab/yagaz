@@ -37,7 +37,7 @@ export const couleursStatutPaiement: Record<StatutPaiement, string> = {
   en_attente: couleurs.grisNeutre,
   initie: couleurs.ambre,
   regle: couleurs.vertOk,
-  echoue: couleurs.rouge,
+  echoue: couleurs.danger,
   expire: couleurs.grisNeutre,
 };
 
