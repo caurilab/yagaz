@@ -2,19 +2,17 @@
 
 Photo de l'avancement, mise à jour en continu par l'archiviste.
 
-Dernière mise à jour : 2026-09-08 (Phase 2 terminée)
+Dernière mise à jour : 2026-09-08 (Phase 3 terminée)
 
 ## En un coup d'œil
 
-Le projet est en **développement**. **Phases 0, 1 et 2 terminées.** Phase 0 :
-monorepo, scaffolding, infra Docker, CI, secrets. Phase 1 : schéma complet (21
-migrations, hypertable Timescale), multi-sites, cloisonnement (policies + tests),
-audit sécurité. Phase 2 : chaîne d'ingestion MQTT (service de traitement,
-calibrage tare, niveau/autonomie, alertes), firmware ESP32, ACL par appareil,
-audit sécurité de l'ingestion mené et corrigé (dont un anti panne-sèche
-critique). **CI verte** (migrations sur vrai TimescaleDB + 35 tests). Dépôt sur
-GitHub (`caurilab/yagaz`). Prochaine étape : Phase 3 (app foyer). Le prototype
-matériel reste en cours de sourcing.
+Le projet est en **développement**. **Phases 0 à 3 terminées.** Fondations, socle
+de données + cloisonnement, chaîne d'ingestion MQTT + firmware, et **application
+foyer** (contrat d'API + endpoints backend + écrans React Native, hors ligne).
+Chaque phase a fait l'objet d'un audit de sécurité Opus mené et corrigé. **CI
+verte** : 81 tests / 259 assertions, migrations sur vrai TimescaleDB, build web,
+typecheck app. Dépôt sur GitHub (`caurilab/yagaz`). Prochaine étape : Phase 4
+(dépôt + boucle de commande). Le prototype matériel reste en cours de sourcing.
 
 ## Fait
 
@@ -35,17 +33,20 @@ matériel reste en cours de sourcing.
 - **Phase 2 — Ingestion et chaîne de mesure** (voir `docs/rapports/phase-2.md`) :
   service d'ingestion MQTT, calibrage tare, niveau/autonomie, alertes, firmware
   ESP32, ACL par appareil, audit sécurité corrigé. ADR 0006/0007. CI verte.
+- **Phase 3 — App foyer** (voir `docs/rapports/phase-3.md`) : contrat d'API v1,
+  endpoints backend (auth/sites/bouteilles/formats/alertes/dépôts), app React
+  Native (accueil autonomie, multi-sites, enregistrement, hors ligne), audit
+  sécurité corrigé (rate-limiting, normalisation téléphone). CI verte.
 
 ## En cours
 
-- **Phase 3 — App foyer** : contrat d'API foyer, écrans (niveau/autonomie,
-  multi-bouteilles, multi-sites, enregistrement, alertes), robustesse hors ligne.
+- **Phase 4 — Dépôt et boucle de commande** : app dépôt (stock plein/vide,
+  commandes entrantes), boucle foyer → dépôt → livraison, rôle livreur.
 - Commande des composants du prototype (3 plateaux de test).
 
 ## À venir
 
-- Phase 4 : dépôt + boucle de commande. Phase 5 : mandataire + distributeur.
-- Phase 6 : consolidation.
+- Phase 5 : mandataire + distributeur (dashboards web). Phase 6 : consolidation.
 - Démarrer l'infra Docker (ou créer la base `yagaz` locale) et exécuter les
   migrations. Activer TLS MQTT avant prod (ADR 0007). Flasher/calibrer le firmware.
 
