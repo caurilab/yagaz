@@ -47,6 +47,7 @@ jobs:
         env:
           DB_CONNECTION: pgsql
           DB_HOST: 127.0.0.1
+          DB_PORT: 5432
           DB_DATABASE: yagaz
           DB_USERNAME: yagaz
           DB_PASSWORD: yagaz_ci
@@ -63,6 +64,7 @@ jobs:
         env:
           DB_CONNECTION: pgsql
           DB_HOST: 127.0.0.1
+          DB_PORT: 5432
           DB_DATABASE: yagaz
           DB_USERNAME: yagaz
           DB_PASSWORD: yagaz_ci

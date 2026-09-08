@@ -17,7 +17,9 @@ services:
       POSTGRES_USER: ${DB_USERNAME:-yagaz}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-yagaz_local}
     ports:
-      - "${DB_PORT:-5432}:5432"
+      # Port hôte 5433 par défaut : évite la collision avec un PostgreSQL déjà
+      # installé localement sur 5432. Le conteneur écoute toujours sur 5432.
+      - "${DB_PORT:-5433}:5432"
     volumes:
       - ./ops/data/db:/var/lib/postgresql/data
       - ./ops/timescale/init:/docker-entrypoint-initdb.d:ro
