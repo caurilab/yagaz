@@ -2,23 +2,25 @@
 
 Photo de l'avancement, mise à jour en continu par l'archiviste.
 
-Dernière mise à jour : 2026-09-08 (cycle v1 terminé — 6 phases)
+Dernière mise à jour : 2026-09-08 (concept central fermé)
 
 ## En un coup d'œil
 
-**Les six phases du plan sont construites, testées et sécurisées.** Fondations,
-socle de données + cloisonnement, ingestion MQTT + firmware, application foyer,
-boucle de commande (foyer → dépôt → livreur), mandataire + distributeur
-(dashboards web, agrégats étanches au foyer), et consolidation (revue produit +
-rapport final). Un audit de sécurité Opus par phase, corrigé au fil de l'eau.
-**CI verte** : 131 tests / 442 assertions, migrations sur vrai TimescaleDB, build
-web, typecheck app. Dépôt sur GitHub (`caurilab/yagaz`).
+**Les six phases v1 sont construites, testées et sécurisées, ET le concept
+central est fermé.** La chaîne se déclenche désormais toute seule : une bouteille
+active sous le seuil → notification foyer + livreur habituel → file de tension
+côté dépôt et livreur → proposition (l'humain confirme) → et, côté stock dépôt,
+réappro préparé automatiquement vers le mandataire. Chaque transmission vers un
+acteur tiers est bornée au minimum et vérifiée par un test d'étanchéité. Un audit
+de sécurité Opus par incrément, corrigé au fil de l'eau. **CI verte** : 168 tests
+backend, migrations sur vrai TimescaleDB, build web, typecheck app. Dépôt sur
+GitHub (`caurilab/yagaz`).
 
-Le **rapport final** (`docs/rapports/rapport-final.md`) récapitule tout et liste
-les recommandations. Reste à compléter pour une v1 « concept complet » : le
-**déclenchement automatique de la chaîne** au seuil bas (alerte → livreur/dépôt),
-la boucle de réappro dépôt → mandataire, et trois compléments (i18n, carte, tare
-par photo) — voir le rapport final §6-7. Le prototype matériel reste en sourcing.
+Voir `docs/rapports/rapport-final.md` (v1) et
+`docs/rapports/rapport-cloture-concept-central.md` (déclenchement automatique).
+Prochaine étape : **feuille de route v2** (`docs/12-perspectives-v2.md`), en
+commençant par le paiement Mobile Money (derrière l'abstraction déjà isolée).
+Le prototype matériel reste en sourcing.
 
 ## Fait
 
