@@ -25,4 +25,12 @@ class BouteillePolicy
     {
         return $user->peutGererSite($bouteille->site);
     }
+
+    /**
+     * Supprimer une bouteille : gérer le site.
+     */
+    public function delete(User $user, Bouteille $bouteille): bool
+    {
+        return $user->peutGererSite($bouteille->site);
+    }
 }

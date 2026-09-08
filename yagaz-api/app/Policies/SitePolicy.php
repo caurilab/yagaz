@@ -35,4 +35,15 @@ class SitePolicy
     {
         return $user->peutGererSite($site);
     }
+
+    /**
+     * Partager l'accès à un site (contrat API,
+     * `POST /api/sites/{uuid}/partages`) : réservé au propriétaire, pas au
+     * gestionnaire (cas « surveiller un proche » : seul celui qui a créé le
+     * site décide qui d'autre y accède).
+     */
+    public function partager(User $user, Site $site): bool
+    {
+        return $user->estProprietaireDuSite($site);
+    }
 }

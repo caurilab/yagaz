@@ -26,4 +26,14 @@ class AlertePolicy
 
         return false;
     }
+
+    /**
+     * Changer le statut d'une alerte (vue/résolue) : même périmètre que sa
+     * visibilité — pas de niveau d'accès supplémentaire requis (contrat API,
+     * `PATCH /api/alertes/{id}`).
+     */
+    public function update(User $user, Alerte $alerte): bool
+    {
+        return $this->view($user, $alerte);
+    }
 }

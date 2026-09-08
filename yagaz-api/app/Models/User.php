@@ -10,6 +10,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -37,6 +38,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'canaux_alerte' => 'array',
         ];
     }
 
@@ -134,6 +136,17 @@ class User extends Authenticatable
         return $this->hasMany(LivreurHabituel::class, 'livreur_user_id');
     }
 
+    /**
+     * Livreur habituel par défaut de ce foyer (préférence de compte,
+     * contrat API `PATCH /api/me/reglages-alertes`).
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function livreurHabituelPrefere(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'livreur_habituel_user_id');
+    }
+
     // === Cloisonnement (doc 07, §10) ===================================
     // Ces helpers matérialisent les frontières d'accès. Les policies s'appuient
     // dessus ; ils ne remplacent pas les contraintes de données (FK, index),
@@ -214,6 +227,19 @@ class User extends Authenticatable
                 NiveauAcces::Proprietaire->value,
                 NiveauAcces::Gestionnaire->value,
             ])
+            ->exists();
+    }
+
+    /**
+     * L'utilisateur est-il propriétaire de ce site ? Réservé au partage
+     * d'accès (contrat API, `POST /api/sites/{uuid}/partages`) : un
+     * gestionnaire peut administrer le site mais pas en partager l'accès.
+     */
+    public function estProprietaireDuSite(Site $site): bool
+    {
+        return $this->siteAcces()
+            ->where('site_id', $site->id)
+            ->where('niveau', NiveauAcces::Proprietaire->value)
             ->exists();
     }
 }
