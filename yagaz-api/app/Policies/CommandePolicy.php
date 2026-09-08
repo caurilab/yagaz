@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\OrigineCommande;
 use App\Enums\RoleMembership;
 use App\Models\Commande;
 use App\Models\User;
@@ -71,5 +72,19 @@ class CommandePolicy
     public function gererDepot(User $user, Commande $commande): bool
     {
         return $commande->cibleOrg !== null && $user->estMembreDe($commande->cibleOrg, RoleMembership::GerantDepot);
+    }
+
+    /**
+     * Confirmer/ajuster un réappro `proposee` (ADR 0009, maillon D, contrat
+     * API doc 11 §1, `POST /commandes/{uuid}/confirmer-reappro`) : réservé
+     * au gérant direct du dépôt DEMANDEUR (celui qui a proposé le réappro),
+     * jamais le mandataire cible — c'est bien le dépôt qui confirme/ajuste
+     * avant que le réappro n'apparaisse comme « ferme » au mandataire.
+     */
+    public function confirmerReappro(User $user, Commande $commande): bool
+    {
+        return $commande->origine === OrigineCommande::Depot
+            && $commande->demandeurOrg !== null
+            && $user->estMembreDe($commande->demandeurOrg, RoleMembership::GerantDepot);
     }
 }

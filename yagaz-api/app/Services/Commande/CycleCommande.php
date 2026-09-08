@@ -19,6 +19,7 @@ use App\Models\Site;
 use App\Models\Stock;
 use App\Models\User;
 use App\Services\Notification\Notificateur;
+use App\Services\Reappro\PreparationReappro;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -41,7 +42,10 @@ final class CycleCommande
      */
     private const int COMMISSION_G_PAR_BOUTEILLE = 50;
 
-    public function __construct(private readonly Notificateur $notificateur = new Notificateur) {}
+    public function __construct(
+        private readonly Notificateur $notificateur = new Notificateur,
+        private readonly PreparationReappro $preparationReappro = new PreparationReappro,
+    ) {}
 
     /**
      * Une commande créée par un foyer part directement `confirmee` (doc 10, §2).
@@ -156,6 +160,12 @@ final class CycleCommande
                 'livraison_id' => null,
             ]);
 
+            // Production automatique du réappro (ADR 0009, maillon D) : après
+            // chaque décrément de `pleines`, dans la même transaction.
+            if ($commandeVerrouillee->cibleOrg !== null) {
+                $this->preparationReappro->preparer($commandeVerrouillee->cibleOrg, $commandeVerrouillee->format);
+            }
+
             $commandeVerrouillee->statut = StatutCommande::Preparee;
             $commandeVerrouillee->save();
 
@@ -216,6 +226,70 @@ final class CycleCommande
 
             return $livraison;
         });
+    }
+
+    /**
+     * Le dépôt demandeur confirme (et ajuste éventuellement la quantité
+     * d'un) réappro `proposee` → `confirmee` (ADR 0009, maillon D, contrat
+     * API doc 11 §1). Tant qu'il reste `proposee`, le réappro n'apparaît pas
+     * comme « ferme » au mandataire ; la confirmation le rend visible dans
+     * `GET /mandataires/{org}/reappros` et le notifie.
+     *
+     * Verrou de ligne (mêmes garanties TOCTOU qu'ailleurs dans ce service) :
+     * une double confirmation concurrente se sérialise, la seconde voit le
+     * statut déjà `confirmee` et est refusée.
+     */
+    public function confirmerReappro(Commande $commande, ?int $quantite): Commande
+    {
+        return DB::transaction(function () use ($commande, $quantite) {
+            $commandeVerrouillee = Commande::whereKey($commande->id)->lockForUpdate()->firstOrFail();
+
+            abort_unless(
+                $commandeVerrouillee->origine === OrigineCommande::Depot
+                    && $commandeVerrouillee->statut === StatutCommande::Proposee,
+                422,
+                "Ce réappro n'est pas (ou plus) une proposition en attente de confirmation."
+            );
+
+            if ($quantite !== null) {
+                $commandeVerrouillee->quantite = $quantite;
+            }
+
+            $commandeVerrouillee->statut = StatutCommande::Confirmee;
+            $commandeVerrouillee->save();
+
+            $this->notifierMandataireReapproConfirme($commandeVerrouillee);
+
+            return $commandeVerrouillee;
+        });
+    }
+
+    /**
+     * Notifie les mandataires actifs de l'organisation cible qu'un réappro
+     * vient d'être confirmé par le dépôt (4e événement de notification, ADR
+     * 0009 §D) : il apparaît désormais comme « ferme » dans leurs réappros.
+     */
+    private function notifierMandataireReapproConfirme(Commande $commande): void
+    {
+        if ($commande->cibleOrg === null) {
+            return;
+        }
+
+        $mandataires = User::whereHas('memberships', fn ($membership) => $membership
+            ->where('organisation_id', $commande->cibleOrg->id)
+            ->where('role', RoleMembership::Mandataire->value)
+            ->where('actif', true))
+            ->get();
+
+        foreach ($mandataires as $mandataire) {
+            $this->notificateur->notifier(
+                $mandataire,
+                TypeAlerte::ReapproConfirme,
+                ['commande_uuid' => $commande->uuid],
+                organisation: $commande->cibleOrg,
+                commande: $commande,
+            );
+        }
     }
 
     private function calculerCommission(int $quantite): int

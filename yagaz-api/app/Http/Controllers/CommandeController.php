@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CommandeConfirmerReapproRequest;
 use App\Http\Requests\CommandeLivraisonRequest;
 use App\Http\Requests\CommandeReponseRequest;
 use App\Http\Requests\CommandeStoreRequest;
@@ -69,6 +70,21 @@ class CommandeController extends Controller
         abort_unless($request->user()->can('repondre', $commande), 404);
 
         $this->cycle->repondre($commande, (bool) $request->validated('accepte'));
+
+        return new CommandeResource($commande->fresh(self::RELATIONS));
+    }
+
+    /**
+     * Le dépôt demandeur confirme/ajuste un réappro `proposee` → `confirmee`
+     * (ADR 0009, maillon D ; contrat API doc 11 §1).
+     */
+    public function confirmerReappro(CommandeConfirmerReapproRequest $request, Commande $commande): CommandeResource
+    {
+        abort_unless($request->user()->can('confirmerReappro', $commande), 404);
+
+        $quantite = $request->validated('quantite');
+
+        $this->cycle->confirmerReappro($commande, $quantite !== null ? (int) $quantite : null);
 
         return new CommandeResource($commande->fresh(self::RELATIONS));
     }

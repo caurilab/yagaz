@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\OrigineCommande;
 use App\Enums\RoleMembership;
 use App\Http\Requests\DepotCommandeIndexRequest;
 use App\Http\Requests\DepotPropositionRequest;
 use App\Http\Resources\CommandeResource;
 use App\Http\Resources\FoyerEnTensionResource;
+use App\Http\Resources\ReapproResource;
 use App\Models\Commande;
 use App\Models\FormatBouteille;
 use App\Models\Organisation;
@@ -43,6 +45,27 @@ class DepotCommandeController extends Controller
             ->get();
 
         return CommandeResource::collection($commandes);
+    }
+
+    /**
+     * Réappros du dépôt (ADR 0009, maillon D ; contrat API doc 11 §1,
+     * `GET /api/depots/{orgUuid}/reappros`) : commandes `origine = depot`
+     * dont ce dépôt est le DEMANDEUR — pour l'écran de confirmation/
+     * ajustement, y compris les `proposee` (pas encore confirmées),
+     * contrairement à la vue du mandataire.
+     */
+    public function reappros(DepotCommandeIndexRequest $request, Organisation $organisation): AnonymousResourceCollection
+    {
+        abort_unless($request->user()->can('gererDepot', $organisation), 404);
+
+        $reappros = Commande::where('demandeur_org_id', $organisation->id)
+            ->where('origine', OrigineCommande::Depot->value)
+            ->when($request->validated('statut'), fn ($query, $statut) => $query->where('statut', $statut))
+            ->with(['cibleOrg', 'format'])
+            ->orderByDesc('created_at')
+            ->get();
+
+        return ReapproResource::collection($reappros);
     }
 
     /**

@@ -84,6 +84,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // === Dépôt — commandes et livraison (contrat API doc 10, §4) ========
     Route::patch('/commandes/{commande:uuid}/preparer', [CommandeController::class, 'preparer']);
     Route::post('/commandes/{commande:uuid}/livraison', [CommandeController::class, 'livraison']);
+    // Confirmation/ajustement d'un réappro par le dépôt demandeur (ADR 0009, maillon D).
+    Route::post('/commandes/{commande:uuid}/confirmer-reappro', [CommandeController::class, 'confirmerReappro']);
 
     // === Dépôt — stock, file entrante, propositions (contrat API doc 10, §4)
     Route::get('/depots/{organisation:uuid}/stocks', [DepotStockController::class, 'index']);
@@ -93,6 +95,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/depots/{organisation:uuid}/propositions', [DepotCommandeController::class, 'propositions']);
     // File des foyers en tension de la zone de desserte (ADR 0009, maillon B).
     Route::get('/depots/{organisation:uuid}/foyers-en-tension', [DepotCommandeController::class, 'foyersEnTension']);
+    // Réappros proposés/confirmés du dépôt (ADR 0009, maillon D).
+    Route::get('/depots/{organisation:uuid}/reappros', [DepotCommandeController::class, 'reappros']);
 
     // === Livreur — missions, propositions (contrat API doc 10, §5 ; ADR 0009 maillon C)
     Route::get('/livreur/missions', [LivreurController::class, 'missions']);

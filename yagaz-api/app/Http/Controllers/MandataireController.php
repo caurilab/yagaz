@@ -51,8 +51,13 @@ class MandataireController extends Controller
     }
 
     /**
-     * Réappros (doc 11, §1) : commandes d'origine `depot` ciblant ce
-     * mandataire, avec leur statut.
+     * Réappros (ADR 0009, maillon D ; contrat API doc 11, §1) : commandes
+     * d'origine `depot` ciblant ce mandataire — produites automatiquement
+     * par `PreparationReappro` quand un dépôt passe en tension, confirmées
+     * par lui via `POST /commandes/{uuid}/confirmer-reappro`. Les `confirmee`
+     * (les fermes) sont mises en avant ; une `proposee` reste visible ici
+     * (elle appartient au périmètre du mandataire) mais n'est pas encore
+     * « ferme » tant que le dépôt ne l'a pas confirmée.
      */
     public function reappros(DepotCommandeIndexRequest $request, Organisation $organisation): AnonymousResourceCollection
     {
@@ -62,6 +67,7 @@ class MandataireController extends Controller
             ->where('origine', OrigineCommande::Depot->value)
             ->when($request->validated('statut'), fn ($query, $statut) => $query->where('statut', $statut))
             ->with(['demandeurOrg', 'format'])
+            ->orderByRaw("case when statut = 'confirmee' then 0 else 1 end")
             ->orderByDesc('created_at')
             ->get();
 

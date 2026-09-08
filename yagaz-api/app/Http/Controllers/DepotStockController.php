@@ -9,6 +9,7 @@ use App\Models\FormatBouteille;
 use App\Models\MouvementStock;
 use App\Models\Organisation;
 use App\Models\Stock;
+use App\Services\Reappro\PreparationReappro;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +21,8 @@ use Illuminate\Support\Facades\DB;
  */
 class DepotStockController extends Controller
 {
+    public function __construct(private readonly PreparationReappro $preparationReappro = new PreparationReappro) {}
+
     public function index(Request $request, Organisation $organisation): AnonymousResourceCollection
     {
         abort_unless($request->user()->can('gererDepot', $organisation), 404);
@@ -87,6 +90,10 @@ class DepotStockController extends Controller
                     'livraison_id' => null,
                 ]);
             }
+
+            // Production automatique du réappro (ADR 0009, maillon D) : après
+            // chaque ajustement manuel de stock, dans la même transaction.
+            $this->preparationReappro->preparer($organisation, $formatBouteille);
 
             return $stock;
         });
