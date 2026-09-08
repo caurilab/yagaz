@@ -38,10 +38,25 @@ class DepotStockController extends Controller
         $validated = $request->validated();
 
         $stock = DB::transaction(function () use ($organisation, $formatBouteille, $validated) {
-            $stock = Stock::firstOrCreate(
-                ['organisation_id' => $organisation->id, 'format_id' => $formatBouteille->id],
-                ['pleines' => 0, 'vides' => 0, 'seuil_plein_bas' => 0]
-            );
+            // `Stock::firstOrCreate` mass-assignerait `organisation_id`/
+            // `format_id` : exclus de `$fillable` (audit sécurité Phase 4,
+            // [INFO]), on les pose donc par `forceFill` explicite.
+            $stock = Stock::where('organisation_id', $organisation->id)
+                ->where('format_id', $formatBouteille->id)
+                ->lockForUpdate()
+                ->first();
+
+            if ($stock === null) {
+                $stock = new Stock;
+                $stock->forceFill([
+                    'organisation_id' => $organisation->id,
+                    'format_id' => $formatBouteille->id,
+                    'pleines' => 0,
+                    'vides' => 0,
+                    'seuil_plein_bas' => 0,
+                ]);
+                $stock->save();
+            }
 
             $deltaPleines = array_key_exists('pleines', $validated) ? $validated['pleines'] - $stock->pleines : 0;
             $deltaVides = array_key_exists('vides', $validated) ? $validated['vides'] - $stock->vides : 0;

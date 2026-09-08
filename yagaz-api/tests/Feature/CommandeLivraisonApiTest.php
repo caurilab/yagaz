@@ -74,7 +74,7 @@ class CommandeLivraisonApiTest extends TestCase
     {
         $depot = Organisation::factory()->depot()->create();
         $format = FormatBouteille::factory()->create();
-        $stock = Stock::create([
+        $stock = Stock::forceCreate([
             'organisation_id' => $depot->id,
             'format_id' => $format->id,
             'pleines' => $pleines,
@@ -83,6 +83,19 @@ class CommandeLivraisonApiTest extends TestCase
         ]);
 
         return [$depot, $format, $stock];
+    }
+
+    /**
+     * Rend un site « client » d'un dépôt (heuristique v1 : au moins une
+     * commande existante ciblant ce dépôt — `DepotCommandeController::propositions`).
+     */
+    private function etablirClienteleDepot(Site $site, Organisation $depot, FormatBouteille $format): void
+    {
+        Commande::factory()->create([
+            'site_id' => $site->id,
+            'cible_org_id' => $depot->id,
+            'format_id' => $format->id,
+        ]);
     }
 
     // === Boucle complète =================================================
@@ -370,6 +383,7 @@ class CommandeLivraisonApiTest extends TestCase
         [$foyer, $site] = $this->foyerAvecSite();
         [$depot, $format] = $this->depotAvecStock();
         $gerant = $this->gerantDe($depot);
+        $this->etablirClienteleDepot($site, $depot, $format);
 
         Sanctum::actingAs($gerant);
         $proposition = $this->postJson("/api/depots/{$depot->uuid}/propositions", [
@@ -392,6 +406,7 @@ class CommandeLivraisonApiTest extends TestCase
         [$foyer, $site] = $this->foyerAvecSite();
         [$depot, $format] = $this->depotAvecStock();
         $gerant = $this->gerantDe($depot);
+        $this->etablirClienteleDepot($site, $depot, $format);
 
         Sanctum::actingAs($gerant);
         $uuid = $this->postJson("/api/depots/{$depot->uuid}/propositions", [
@@ -412,13 +427,16 @@ class CommandeLivraisonApiTest extends TestCase
         [$autreFoyer] = $this->foyerAvecSite();
         [$depot, $format] = $this->depotAvecStock();
         $gerant = $this->gerantDe($depot);
+        $this->etablirClienteleDepot($site, $depot, $format);
 
         Sanctum::actingAs($gerant);
-        $uuid = $this->postJson("/api/depots/{$depot->uuid}/propositions", [
+        $proposition = $this->postJson("/api/depots/{$depot->uuid}/propositions", [
             'site_uuid' => $site->uuid,
             'format_id' => $format->id,
             'quantite' => 1,
-        ])->json('data.uuid');
+        ]);
+        $proposition->assertCreated();
+        $uuid = $proposition->json('data.uuid');
 
         Sanctum::actingAs($autreFoyer);
         $this->postJson("/api/commandes/{$uuid}/reponse", ['accepte' => true])->assertNotFound();
@@ -444,6 +462,179 @@ class CommandeLivraisonApiTest extends TestCase
         $this->assertDatabaseHas('commandes', [
             'uuid' => $reponse->json('data.uuid'),
             'commission_g' => 150,
+        ]);
+    }
+
+    // === Sécurité Phase 4 =================================================
+
+    public function test_vides_recuperes_superieur_a_la_quantite_est_refuse(): void
+    {
+        [$foyer, $site] = $this->foyerAvecSite();
+        [$depot, $format] = $this->depotAvecStock(pleines: 10, vides: 2);
+        $gerant = $this->gerantDe($depot);
+        $livreur = $this->livreurDe($depot);
+
+        Sanctum::actingAs($foyer);
+        $uuid = $this->postJson('/api/commandes', [
+            'site_uuid' => $site->uuid,
+            'format_id' => $format->id,
+            'quantite' => 2,
+            'depot_uuid' => $depot->uuid,
+        ])->json('data.uuid');
+
+        Sanctum::actingAs($gerant);
+        $this->patchJson("/api/commandes/{$uuid}/preparer")->assertOk();
+        $livraisonId = $this->postJson("/api/commandes/{$uuid}/livraison", [
+            'livreur_user_id' => $livreur->uuid,
+        ])->json('data.id');
+
+        Sanctum::actingAs($livreur);
+        $this->patchJson("/api/livraisons/{$livraisonId}/statut", ['statut' => 'en_route'])->assertOk();
+        $this->patchJson("/api/livraisons/{$livraisonId}/statut", ['statut' => 'livree'])->assertOk();
+
+        // La commande porte sur 2 bouteilles : en récupérer 3 est refusé.
+        $this->patchJson("/api/livraisons/{$livraisonId}/statut", [
+            'statut' => 'vide_recupere',
+            'vides_recuperes' => 3,
+        ])->assertStatus(422);
+
+        $this->assertDatabaseHas('stocks', [
+            'organisation_id' => $depot->id,
+            'format_id' => $format->id,
+            'vides' => 2,
+        ]);
+        $this->assertDatabaseHas('livraisons', ['id' => $livraisonId, 'statut' => 'livree']);
+    }
+
+    public function test_une_seconde_preparation_de_la_meme_commande_est_refusee(): void
+    {
+        [$foyer, $site] = $this->foyerAvecSite();
+        [$depot, $format] = $this->depotAvecStock(pleines: 10);
+        $gerant = $this->gerantDe($depot);
+
+        Sanctum::actingAs($foyer);
+        $uuid = $this->postJson('/api/commandes', [
+            'site_uuid' => $site->uuid,
+            'format_id' => $format->id,
+            'quantite' => 2,
+            'depot_uuid' => $depot->uuid,
+        ])->json('data.uuid');
+
+        Sanctum::actingAs($gerant);
+        $this->patchJson("/api/commandes/{$uuid}/preparer")->assertOk();
+        // La commande est déjà `preparee` : une seconde préparation est refusée.
+        $this->patchJson("/api/commandes/{$uuid}/preparer")->assertStatus(422);
+
+        // Le stock n'a été décrémenté qu'une seule fois.
+        $this->assertDatabaseHas('stocks', [
+            'organisation_id' => $depot->id,
+            'format_id' => $format->id,
+            'pleines' => 8,
+        ]);
+        $this->assertDatabaseCount('mouvements_stock', 1);
+    }
+
+    public function test_une_seconde_affectation_de_livraison_est_refusee(): void
+    {
+        [$foyer, $site] = $this->foyerAvecSite();
+        [$depot, $format] = $this->depotAvecStock();
+        $gerant = $this->gerantDe($depot);
+        $livreurA = $this->livreurDe($depot);
+        $livreurB = $this->livreurDe($depot);
+
+        Sanctum::actingAs($foyer);
+        $uuid = $this->postJson('/api/commandes', [
+            'site_uuid' => $site->uuid,
+            'format_id' => $format->id,
+            'quantite' => 1,
+            'depot_uuid' => $depot->uuid,
+        ])->json('data.uuid');
+
+        Sanctum::actingAs($gerant);
+        $this->patchJson("/api/commandes/{$uuid}/preparer")->assertOk();
+        $this->postJson("/api/commandes/{$uuid}/livraison", [
+            'livreur_user_id' => $livreurA->uuid,
+        ])->assertCreated();
+
+        // Une livraison existe déjà pour cette commande : la seconde est refusée.
+        $this->postJson("/api/commandes/{$uuid}/livraison", [
+            'livreur_user_id' => $livreurB->uuid,
+        ])->assertStatus(422);
+
+        $commandeId = Commande::where('uuid', $uuid)->value('id');
+        $this->assertDatabaseCount('livraisons', 1);
+        $this->assertDatabaseHas('livraisons', ['commande_id' => $commandeId, 'livreur_user_id' => $livreurA->id]);
+    }
+
+    public function test_proposition_vers_un_site_non_client_est_refusee(): void
+    {
+        [, $site] = $this->foyerAvecSite();
+        [$depot, $format] = $this->depotAvecStock();
+        $gerant = $this->gerantDe($depot);
+
+        // Le site n'a jamais commandé auprès de ce dépôt.
+        Sanctum::actingAs($gerant);
+        $this->postJson("/api/depots/{$depot->uuid}/propositions", [
+            'site_uuid' => $site->uuid,
+            'format_id' => $format->id,
+            'quantite' => 1,
+        ])->assertNotFound();
+    }
+
+    public function test_proposition_vers_un_site_client_est_acceptee(): void
+    {
+        [, $site] = $this->foyerAvecSite();
+        [$depot, $format] = $this->depotAvecStock();
+        $gerant = $this->gerantDe($depot);
+        $this->etablirClienteleDepot($site, $depot, $format);
+
+        Sanctum::actingAs($gerant);
+        $this->postJson("/api/depots/{$depot->uuid}/propositions", [
+            'site_uuid' => $site->uuid,
+            'format_id' => $format->id,
+            'quantite' => 1,
+        ])->assertCreated();
+    }
+
+    public function test_une_quantite_excessive_est_refusee(): void
+    {
+        [$foyer, $site] = $this->foyerAvecSite();
+        [$depot, $format] = $this->depotAvecStock();
+
+        Sanctum::actingAs($foyer);
+        $this->postJson('/api/commandes', [
+            'site_uuid' => $site->uuid,
+            'format_id' => $format->id,
+            'quantite' => 1000,
+            'depot_uuid' => $depot->uuid,
+        ])->assertStatus(422);
+    }
+
+    public function test_le_mass_assignment_de_colonnes_serveur_est_ignore_a_la_creation(): void
+    {
+        [$foyer, $site] = $this->foyerAvecSite();
+        [$depot, $format] = $this->depotAvecStock();
+
+        Sanctum::actingAs($foyer);
+        $reponse = $this->postJson('/api/commandes', [
+            'site_uuid' => $site->uuid,
+            'format_id' => $format->id,
+            'quantite' => 1,
+            'depot_uuid' => $depot->uuid,
+            // Tentative de forcer des colonnes d'autorisation/sensibles : le
+            // FormRequest ne les valide pas, elles sont ignorées.
+            'commission_g' => 999999,
+            'statut' => 'livree',
+        ]);
+
+        $reponse->assertCreated();
+        // Commission calculée côté serveur (50 g × 1), statut serveur `confirmee`.
+        $reponse->assertJsonPath('data.commission_g', 50);
+        $reponse->assertJsonPath('data.statut', 'confirmee');
+        $this->assertDatabaseHas('commandes', [
+            'uuid' => $reponse->json('data.uuid'),
+            'commission_g' => 50,
+            'statut' => 'confirmee',
         ]);
     }
 }

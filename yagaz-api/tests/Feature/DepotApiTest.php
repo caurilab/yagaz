@@ -23,13 +23,13 @@ class DepotApiTest extends TestCase
         $format = FormatBouteille::factory()->create();
 
         $proche = Organisation::factory()->depot()->create(['nom' => 'Dépôt proche', 'lat' => 14.70, 'lng' => -17.45]);
-        Stock::create(['organisation_id' => $proche->id, 'format_id' => $format->id, 'pleines' => 10, 'vides' => 2]);
+        Stock::forceCreate(['organisation_id' => $proche->id, 'format_id' => $format->id, 'pleines' => 10, 'vides' => 2]);
 
         $loin = Organisation::factory()->depot()->create(['nom' => 'Dépôt loin', 'lat' => 16.00, 'lng' => -16.00]);
-        Stock::create(['organisation_id' => $loin->id, 'format_id' => $format->id, 'pleines' => 5, 'vides' => 1]);
+        Stock::forceCreate(['organisation_id' => $loin->id, 'format_id' => $format->id, 'pleines' => 5, 'vides' => 1]);
 
         $sansStock = Organisation::factory()->depot()->create(['nom' => 'Dépôt sans stock', 'lat' => 14.71, 'lng' => -17.46]);
-        Stock::create(['organisation_id' => $sansStock->id, 'format_id' => $format->id, 'pleines' => 0, 'vides' => 5]);
+        Stock::forceCreate(['organisation_id' => $sansStock->id, 'format_id' => $format->id, 'pleines' => 0, 'vides' => 5]);
 
         Sanctum::actingAs(User::factory()->create());
 
@@ -53,7 +53,7 @@ class DepotApiTest extends TestCase
         $format = FormatBouteille::factory()->create();
 
         $depot = Organisation::factory()->depot()->create(['lat' => 14.70, 'lng' => -17.45]);
-        Stock::create(['organisation_id' => $depot->id, 'format_id' => $format->id, 'pleines' => 10, 'vides' => 2]);
+        Stock::forceCreate(['organisation_id' => $depot->id, 'format_id' => $format->id, 'pleines' => 10, 'vides' => 2]);
 
         Sanctum::actingAs(User::factory()->create());
 

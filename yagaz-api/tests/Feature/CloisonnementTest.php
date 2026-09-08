@@ -46,7 +46,7 @@ class CloisonnementTest extends TestCase
 
     private function stockPour(Organisation $organisation): Stock
     {
-        return Stock::create([
+        return Stock::forceCreate([
             'organisation_id' => $organisation->id,
             'format_id' => FormatBouteille::factory()->create()->id,
             'pleines' => 10,

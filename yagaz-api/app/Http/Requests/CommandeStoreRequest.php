@@ -28,7 +28,7 @@ class CommandeStoreRequest extends FormRequest
         return [
             'site_uuid' => ['required', 'uuid', 'exists:sites,uuid'],
             'format_id' => ['required', 'integer', 'exists:formats_bouteille,id'],
-            'quantite' => ['required', 'integer', 'min:1'],
+            'quantite' => ['required', 'integer', 'min:1', 'max:100'],
             'depot_uuid' => [
                 'required',
                 'uuid',

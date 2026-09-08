@@ -87,9 +87,21 @@ final class CycleLivraison
      * `vide_recupere` ⇒ incrémente les `vides` du stock du dépôt, mouvement
      * `retour_vide` tracé avec la livraison en référence (doc 10, §6). À
      * défaut de précision, autant de vides récupérés que de pleines livrées.
+     *
+     * Refuse (422) `vides_recuperes > commande.quantite` : la borne haute du
+     * FormRequest est large et ne protège pas vraiment, un livreur pourrait
+     * sinon gonfler arbitrairement le stock `vides` d'un dépôt (audit
+     * sécurité Phase 4, [MOYEN]). Une livraison ne peut jamais rapporter plus
+     * de vides que de pleines commandées.
      */
     private function passerVideRecupere(Livraison $livraison, Commande $commande, ?int $videsRecuperes): void
     {
+        abort_if(
+            $videsRecuperes !== null && $videsRecuperes > $commande->quantite,
+            422,
+            'Le nombre de vides récupérés ne peut pas dépasser la quantité commandée.'
+        );
+
         $quantite = $videsRecuperes ?? $commande->quantite;
 
         $livraison->statut = StatutLivraison::VideRecupere;

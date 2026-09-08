@@ -35,11 +35,22 @@ class DepotCommandeController extends Controller
         return CommandeResource::collection($commandes);
     }
 
+    /**
+     * Un dépôt ne peut proposer une livraison qu'à un site déjà « client »,
+     * c'est-à-dire un site ayant au moins une commande existante ciblant ce
+     * dépôt (heuristique v1, audit sécurité Phase 4, [MOYEN] — une relation
+     * dépôt↔zone plus riche viendra plus tard). Sinon 404 (pas 422 : ne
+     * révèle pas si le site existe ailleurs, hors du périmètre du dépôt).
+     */
     public function propositions(DepotPropositionRequest $request, Organisation $organisation): JsonResponse
     {
         abort_unless($request->user()->can('gererDepot', $organisation), 404);
 
-        $site = Site::where('uuid', $request->validated('site_uuid'))->firstOrFail();
+        $site = Site::where('uuid', $request->validated('site_uuid'))
+            ->whereHas('commandes', fn ($query) => $query->where('cible_org_id', $organisation->id))
+            ->first();
+        abort_if($site === null, 404);
+
         $format = FormatBouteille::findOrFail($request->validated('format_id'));
 
         $commande = $this->cycle->proposer($organisation, $site, $format, (int) $request->validated('quantite'));

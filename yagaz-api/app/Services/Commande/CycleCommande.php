@@ -107,39 +107,48 @@ final class CycleCommande
      * Le dépôt prépare la commande : décrémente les bouteilles pleines du
      * stock (mouvement `vente`), refuse (422) si le stock est insuffisant ou
      * si la commande n'est pas `confirmee` (doc 10, §4 et §6).
+     *
+     * Le contrôle de statut est fait DANS la transaction, sur la commande
+     * rechargée sous `lockForUpdate` : deux préparations concurrentes de la
+     * même commande se sérialisent sur le verrou de ligne, la seconde voit le
+     * statut déjà `preparee` et est refusée — sans quoi elles pourraient
+     * toutes deux lire `confirmee` et décrémenter le stock deux fois (TOCTOU,
+     * audit sécurité Phase 4, [MOYEN]).
      */
     public function preparer(Commande $commande): Commande
     {
-        abort_unless(
-            $commande->statut === StatutCommande::Confirmee,
-            422,
-            'Seule une commande confirmée peut être préparée.'
-        );
-
         return DB::transaction(function () use ($commande) {
-            $stock = Stock::where('organisation_id', $commande->cible_org_id)
-                ->where('format_id', $commande->format_id)
+            $commandeVerrouillee = Commande::whereKey($commande->id)->lockForUpdate()->firstOrFail();
+
+            abort_unless(
+                $commandeVerrouillee->statut === StatutCommande::Confirmee,
+                422,
+                'Seule une commande confirmée peut être préparée.'
+            );
+
+            $stock = Stock::where('organisation_id', $commandeVerrouillee->cible_org_id)
+                ->where('format_id', $commandeVerrouillee->format_id)
                 ->lockForUpdate()
                 ->first();
 
             $disponibles = $stock !== null ? $stock->pleines : 0;
-            abort_if($disponibles < $commande->quantite, 422, 'Stock de bouteilles pleines insuffisant pour préparer cette commande.');
+            abort_if($disponibles < $commandeVerrouillee->quantite, 422, 'Stock de bouteilles pleines insuffisant pour préparer cette commande.');
 
-            $stock->pleines -= $commande->quantite;
+            $stock->pleines -= $commandeVerrouillee->quantite;
             $stock->save();
 
             MouvementStock::create([
                 'stock_id' => $stock->id,
                 'type' => TypeMouvementStock::Vente,
-                'delta_pleines' => -$commande->quantite,
+                'delta_pleines' => -$commandeVerrouillee->quantite,
                 'delta_vides' => 0,
                 'livraison_id' => null,
             ]);
 
-            $commande->statut = StatutCommande::Preparee;
-            $commande->save();
+            $commandeVerrouillee->statut = StatutCommande::Preparee;
+            $commandeVerrouillee->save();
 
-            return $commande;
+            return $commandeVerrouillee;
         });
     }
 
@@ -147,21 +156,17 @@ final class CycleCommande
      * Le dépôt affecte (éventuellement) un livreur à une commande préparée,
      * créant la livraison `affectee` (doc 10, §4 et §6). Le livreur, s'il est
      * précisé, doit être membre `livreur` du dépôt cible (sinon 422).
+     *
+     * Le statut de la commande et l'existence d'une livraison sont vérifiés
+     * DANS la transaction, sur la commande rechargée sous `lockForUpdate` :
+     * deux affectations concurrentes se sérialisent sur le verrou de ligne,
+     * la seconde voit la livraison déjà créée par la première et est refusée
+     * (TOCTOU, audit sécurité Phase 4, [MOYEN]). Un index unique sur
+     * `livraisons.commande_id` (migration `add_unique_commande_id_to_livraisons`)
+     * fait office de garde-fou base de données en dernier recours.
      */
     public function affecterLivreur(Commande $commande, ?User $livreur): Livraison
     {
-        abort_unless(
-            $commande->statut === StatutCommande::Preparee,
-            422,
-            'La commande doit être préparée avant d’affecter un livreur.'
-        );
-
-        abort_if(
-            $commande->livraisons()->exists(),
-            422,
-            'Une livraison existe déjà pour cette commande.'
-        );
-
         if ($livreur !== null) {
             abort_unless(
                 $commande->cibleOrg !== null && $livreur->estMembreDe($commande->cibleOrg, RoleMembership::Livreur),
@@ -171,12 +176,26 @@ final class CycleCommande
         }
 
         return DB::transaction(function () use ($commande, $livreur) {
+            $commandeVerrouillee = Commande::whereKey($commande->id)->lockForUpdate()->firstOrFail();
+
+            abort_unless(
+                $commandeVerrouillee->statut === StatutCommande::Preparee,
+                422,
+                'La commande doit être préparée avant d’affecter un livreur.'
+            );
+
+            abort_if(
+                $commandeVerrouillee->livraisons()->exists(),
+                422,
+                'Une livraison existe déjà pour cette commande.'
+            );
+
             $livraison = new Livraison;
             $livraison->forceFill([
-                'commande_id' => $commande->id,
+                'commande_id' => $commandeVerrouillee->id,
                 'livreur_user_id' => $livreur?->id,
                 'statut' => StatutLivraison::Affectee,
-                'pleines_deposees' => $commande->quantite,
+                'pleines_deposees' => $commandeVerrouillee->quantite,
                 'vides_recuperes' => 0,
                 'affectee_at' => now(),
             ]);

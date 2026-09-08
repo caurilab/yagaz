@@ -8,7 +8,7 @@ use App\Enums\StatutCommande;
 use App\Enums\StatutPaiement;
 use App\Traits\HasUuid;
 use Database\Factories\CommandeFactory;
-use Illuminate\Database\Eloquent\Attributes\Guarded;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,8 +18,16 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 /**
  * Une demande de recharge, émise par un foyer ou un dépôt vers son
  * mandataire — doc 07, §6 `commandes`.
+ *
+ * `$fillable` explicite (audit sécurité Phase 4, [INFO] `$fillable`
+ * explicite, ADR 0005 pt 3) : la commande n'est de toute façon jamais créée
+ * que par `CycleCommande` via `forceFill`, mais les colonnes d'autorisation
+ * (`cible_org_id`, `demandeur_user_id`, `demandeur_org_id`, `statut`,
+ * `statut_paiement`, `commission_g`) restent volontairement hors fillable en
+ * défense en profondeur, au cas où un futur appel les mass-assignerait par
+ * erreur depuis une requête.
  */
-#[Guarded([])]
+#[Fillable(['origine', 'site_id', 'format_id', 'quantite', 'mode_paiement'])]
 class Commande extends Model
 {
     /** @use HasFactory<CommandeFactory> */
