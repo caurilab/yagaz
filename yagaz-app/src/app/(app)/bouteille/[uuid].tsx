@@ -8,7 +8,9 @@ import { BadgeEtat } from '../../../components/BadgeEtat';
 import { BandeauSync } from '../../../components/BandeauSync';
 import { Bouton } from '../../../components/Bouton';
 import { Champ } from '../../../components/Champ';
+import { EncartTemperature } from '../../../components/EncartTemperature';
 import { useDonnees } from '../../../data/DonneesContext';
+import { useTemperatureSite } from '../../../data/useTemperatureSite';
 import { couleurs, espacements, rayons } from '../../../../theme/couleurs';
 import { formaterAutonomie } from '../../../utils/niveau';
 import { couleurPourFormat, teinteMarque } from '../../../utils/marque';
@@ -22,6 +24,7 @@ export default function EcranDetailBouteille() {
   const { uuid } = useLocalSearchParams<{ uuid: string }>();
   const { bouteilles, formats, marques, modifierBouteille, rafraichir } = useDonnees();
   const bouteille = bouteilles.find((b) => b.uuid === uuid);
+  const { temperature } = useTemperatureSite(bouteille?.site_uuid);
 
   const [modeEdition, setModeEdition] = useState(false);
   const [roleEdit, setRoleEdit] = useState<RoleBouteille>(bouteille?.role_bouteille ?? 'active');
@@ -141,6 +144,10 @@ export default function EcranDetailBouteille() {
           {niveau.estimation ? (
             <Text style={styles.texteEstimation}>Estimation en cours d'affinage</Text>
           ) : null}
+        </View>
+
+        <View style={styles.blocTemperature}>
+          <EncartTemperature temperature={temperature} />
         </View>
 
         {!modeEdition ? (
@@ -364,6 +371,9 @@ const styles = StyleSheet.create({
     color: couleurs.ambre,
     marginTop: espacements.xs,
     fontWeight: '600',
+  },
+  blocTemperature: {
+    marginBottom: espacements.lg,
   },
   sectionTitre: {
     fontSize: 16,

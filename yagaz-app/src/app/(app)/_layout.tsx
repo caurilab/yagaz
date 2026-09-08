@@ -59,6 +59,20 @@ export default function LayoutApp() {
         }}
       />
       <Tabs.Screen
+        name="historique"
+        options={{
+          title: 'Historique',
+          tabBarIcon: ({ color }) => <IconeOnglet nom="time-outline" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="analyse"
+        options={{
+          title: 'Analyse',
+          tabBarIcon: ({ color }) => <IconeOnglet nom="stats-chart-outline" color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="reglages"
         options={{
           title: 'Réglages',

@@ -6,26 +6,35 @@
  */
 import type {
   Alerte,
+  Analyse,
   Bouteille,
   Commande,
   CommandeDepot,
+  CorpsHistorique,
   Depot,
   DepotConsolide,
+  EvenementHistorique,
   Format,
   FoyerEnTension,
   FoyerEnTensionLivreur,
+  JourCuissonSerie,
   Marque,
   MembreLivreur,
   MesRoles,
   MissionLivreur,
   Notification,
   Paiement,
+  Pagination,
+  PeriodeAnalyse,
+  PointSerieConsommation,
   Reappro,
   Site,
   StockFormat,
+  TemperatureSite,
   Tournee,
   User,
 } from './types';
+import { couleurs } from '../../theme/couleurs';
 
 /** Active/désactive le repli sur les fixtures quand l'appel réel échoue. */
 export const MODE_DEMO = process.env.EXPO_PUBLIC_DEMO !== 'false';
@@ -546,6 +555,285 @@ export const mandataireTourneesDemo: Tournee[] = [
     created_at: ilYA(60 * 24 + 90),
   },
 ];
+
+// --- Historique unifié (foyer, doc 13 §1) : repli démo ---
+
+/**
+ * Une quinzaine d'événements variés (recharges, paiements, alertes, cuisson)
+ * cohérents avec `commandesFoyerDemo`/`alertesDemo` ci-dessus, triés récents
+ * d'abord comme l'exige le contrat.
+ */
+export const historiqueDemo: EvenementHistorique[] = [
+  {
+    type: 'session_cuisson',
+    date: ilYA(18),
+    titre: 'Session de cuisson',
+    detail: 'Domicile · 42 min de cuisson enregistrées',
+    icone: 'cuisson',
+  },
+  {
+    type: 'alerte_seuil_bas',
+    date: ilYA(4),
+    titre: 'Seuil bas atteint',
+    detail: 'La bouteille de réserve (B6) est sous le seuil bas.',
+    statut: 'Nouvelle',
+    icone: 'alerte',
+  },
+  {
+    type: 'paiement_regle',
+    date: ilYA(80),
+    titre: 'Paiement Mobile Money réglé',
+    detail: 'Commande B12 - Oryx · 1 bouteille',
+    montant: 8500,
+    statut: 'Réglé',
+    icone: 'paiement',
+  },
+  {
+    type: 'commande_en_livraison',
+    date: ilYA(90),
+    titre: 'Commande en livraison',
+    detail: 'B12 - Oryx · Moussa Ndiaye en route',
+    montant: 8500,
+    statut: 'En livraison',
+    icone: 'commande',
+  },
+  {
+    type: 'session_cuisson',
+    date: ilYA(60 * 20),
+    titre: 'Session de cuisson',
+    detail: 'Domicile · 35 min de cuisson enregistrées',
+    icone: 'cuisson',
+  },
+  {
+    type: 'alerte_seuil_bas',
+    date: ilYA(9 * 60),
+    titre: 'Seuil bas atteint',
+    detail: 'Chez Maman : bouteille active presque vide.',
+    statut: 'Nouvelle',
+    icone: 'alerte',
+  },
+  {
+    type: 'jalon_tare_fiable',
+    date: ilYA(60 * 24 * 2),
+    titre: 'Tare calibrée fiable',
+    detail: 'Bouteille active - la mesure de tare est désormais fiable.',
+    icone: 'commande',
+  },
+  {
+    type: 'commande_livree',
+    date: ilYA(60 * 24 * 6),
+    titre: 'Commande livrée',
+    detail: 'B6 - Total · 1 bouteille · vide récupérée',
+    montant: 6000,
+    statut: 'Livrée',
+    icone: 'commande',
+  },
+  {
+    type: 'session_cuisson',
+    date: ilYA(60 * 24 * 6 + 3),
+    titre: 'Session de cuisson',
+    detail: 'Domicile · 51 min de cuisson enregistrées',
+    icone: 'cuisson',
+  },
+  {
+    type: 'paiement_initie',
+    date: ilYA(60 * 24 * 7),
+    titre: 'Paiement Mobile Money initié',
+    detail: 'Commande B12 - Oryx · en attente de confirmation opérateur',
+    montant: 8500,
+    statut: 'Initié',
+    icone: 'paiement',
+  },
+  {
+    type: 'commande_confirmee',
+    date: ilYA(60 * 24 * 8),
+    titre: 'Commande confirmée',
+    detail: 'B38 - Petro Ivoire · 1 bouteille',
+    montant: 12000,
+    statut: 'Confirmée',
+    icone: 'commande',
+  },
+  {
+    type: 'session_cuisson',
+    date: ilYA(60 * 24 * 9),
+    titre: 'Session de cuisson',
+    detail: 'Domicile · 28 min de cuisson enregistrées',
+    icone: 'cuisson',
+  },
+  {
+    type: 'jalon_bouteille_changee',
+    date: ilYA(60 * 24 * 12),
+    titre: 'Bouteille changée',
+    detail: 'Nouvelle bouteille B6 enregistrée en secours.',
+    icone: 'commande',
+  },
+  {
+    type: 'alerte_resolue',
+    date: ilYA(60 * 24 * 13),
+    titre: 'Alerte résolue',
+    detail: 'Seuil bas - résolu après livraison.',
+    statut: 'Résolue',
+    icone: 'alerte',
+  },
+  {
+    type: 'paiement_regle',
+    date: ilYA(60 * 24 * 14),
+    titre: 'Paiement à la livraison réglé',
+    detail: 'Commande B12 - Oryx · 1 bouteille',
+    montant: 8500,
+    statut: 'Réglé',
+    icone: 'paiement',
+  },
+];
+
+/**
+ * Page démo conforme au contrat `{ data, pagination }` - filtre côté client
+ * sur `icone` (le contrat ne détaille pas les valeurs de `type`, voir
+ * `IconeEvenementHistorique`) et pagine la liste ci-dessus.
+ */
+export function historiquePageDemo(
+  params: CorpsHistorique = {}
+): { data: EvenementHistorique[]; pagination: Pagination } {
+  const parPage = params.par_page ?? 15;
+  const page = params.page ?? 1;
+  const filtres = params.type ? historiqueDemo.filter((e) => e.icone === params.type) : historiqueDemo;
+  const debut = (page - 1) * parPage;
+  const data = filtres.slice(debut, debut + parPage);
+  return {
+    data,
+    pagination: {
+      page,
+      par_page: parPage,
+      total: filtres.length,
+      total_pages: Math.max(1, Math.ceil(filtres.length / parPage)),
+    },
+  };
+}
+
+// --- Analyses (tableau de bord foyer, doc 13 §2) : repli démo ---
+
+function jourISO(decalageJours: number): string {
+  const d = new Date(maintenant);
+  d.setDate(d.getDate() - decalageJours);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Série journalière de cuisson démo, motif simple mais non uniforme (pas de `Math.random`, pour rester stable). */
+function serieJournaliereDemo(nbJours: number): JourCuissonSerie[] {
+  const points: JourCuissonSerie[] = [];
+  for (let i = nbJours - 1; i >= 0; i--) {
+    const motif = (nbJours - i) % 5;
+    const sessions = motif === 0 ? 0 : motif === 4 ? 3 : motif >= 2 ? 2 : 1;
+    points.push({ date: jourISO(i), sessions, duree_min: sessions * 22 });
+  }
+  return points;
+}
+
+function serieConsommationJournaliereDemo(nbJours: number): PointSerieConsommation[] {
+  const points: PointSerieConsommation[] = [];
+  for (let i = nbJours - 1; i >= 0; i--) {
+    const base = 0.35 + ((nbJours - i) % 4) * 0.18;
+    points.push({ date: jourISO(i), valeur: Math.round(base * 100) / 100 });
+  }
+  return points;
+}
+
+/** Agrégation mensuelle démo (12 points) pour la période "année". */
+function serieConsommationMensuelleDemo(): PointSerieConsommation[] {
+  const points: PointSerieConsommation[] = [];
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(maintenant);
+    d.setMonth(d.getMonth() - i, 1);
+    const base = 9 + (i % 5);
+    points.push({ date: d.toISOString().slice(0, 10), valeur: base });
+  }
+  return points;
+}
+
+export const analyseDemoParPeriode: Record<PeriodeAnalyse, Analyse> = {
+  semaine: {
+    consommation_kg: 3.2,
+    consommation_tendance_pct: -8,
+    depense_fcfa: 0,
+    depense_tendance_pct: 0,
+    recharges: { nombre: 0, cout_moyen_fcfa: 0, frequence_jours: 0 },
+    repartition: {
+      par_bouteille: [
+        { libelle: 'B12 - Oryx', valeur: 2.4, couleur: '#1E63B8' },
+        { libelle: 'B6 - Total', valeur: 0.8, couleur: '#E4032E' },
+      ],
+      par_site: [
+        { libelle: 'Domicile', valeur: 2.6, couleur: couleurs.rouge },
+        { libelle: 'Chez Maman', valeur: 0.6, couleur: couleurs.ambre },
+      ],
+    },
+    jours_cuisine: { nombre: 6, serie_journaliere: serieJournaliereDemo(7) },
+    autonomie_moyenne_h: 54,
+    projection_prochaine_recharge_jours: 9,
+    serie_consommation: serieConsommationJournaliereDemo(7),
+  },
+  mois: {
+    consommation_kg: 13.6,
+    consommation_tendance_pct: 5,
+    depense_fcfa: 17500,
+    depense_tendance_pct: 12,
+    recharges: { nombre: 2, cout_moyen_fcfa: 8750, frequence_jours: 14 },
+    repartition: {
+      par_bouteille: [
+        { libelle: 'B12 - Oryx', valeur: 10.1, couleur: '#1E63B8' },
+        { libelle: 'B6 - Total', valeur: 2.3, couleur: '#E4032E' },
+        { libelle: 'B38 - Petro Ivoire', valeur: 1.2, couleur: '#2E9E5B' },
+      ],
+      par_site: [
+        { libelle: 'Domicile', valeur: 11.4, couleur: couleurs.rouge },
+        { libelle: 'Chez Maman', valeur: 2.2, couleur: couleurs.ambre },
+      ],
+    },
+    jours_cuisine: { nombre: 24, serie_journaliere: serieJournaliereDemo(30) },
+    autonomie_moyenne_h: 50,
+    projection_prochaine_recharge_jours: 6,
+    serie_consommation: serieConsommationJournaliereDemo(30),
+  },
+  annee: {
+    consommation_kg: 142,
+    consommation_tendance_pct: -3,
+    depense_fcfa: 142000,
+    depense_tendance_pct: -4,
+    recharges: { nombre: 16, cout_moyen_fcfa: 8875, frequence_jours: 22 },
+    repartition: {
+      par_bouteille: [
+        { libelle: 'B12 - Oryx', valeur: 96, couleur: '#1E63B8' },
+        { libelle: 'B6 - Total', valeur: 28, couleur: '#E4032E' },
+        { libelle: 'B38 - Petro Ivoire', valeur: 18, couleur: '#2E9E5B' },
+      ],
+      par_site: [
+        { libelle: 'Domicile', valeur: 118, couleur: couleurs.rouge },
+        { libelle: 'Chez Maman', valeur: 24, couleur: couleurs.ambre },
+      ],
+    },
+    jours_cuisine: { nombre: 210, serie_journaliere: serieJournaliereDemo(90) },
+    autonomie_moyenne_h: 48,
+    projection_prochaine_recharge_jours: 5,
+    serie_consommation: serieConsommationMensuelleDemo(),
+  },
+};
+
+// --- Température & cuisson (ADR 0011, doc 13 §3) : repli démo ---
+
+export const temperatureDemoParSite: Record<string, TemperatureSite> = {
+  'site-domicile': {
+    temp_courante_c: 62,
+    frais: true,
+    cuisson_en_cours: true,
+    debut_cuisson_at: ilYA(18),
+  },
+  'site-maman': {
+    temp_courante_c: 24,
+    frais: false,
+    cuisson_en_cours: false,
+    debut_cuisson_at: null,
+  },
+};
 
 export type SourceDonnees = 'api' | 'demo';
 

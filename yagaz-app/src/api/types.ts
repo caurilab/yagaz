@@ -519,3 +519,102 @@ export interface CorpsAjustementTournee {
   livreur_user_id?: string;
   lignes?: CorpsAjustementLigneTournee[];
 }
+
+// --- Historique unifié (foyer, doc 13 §1) ---
+
+/**
+ * Slug d'icône plate de l'événement - c'est aussi la valeur utilisée par le
+ * filtre `type` de `GET /api/historique` côté client (le contrat ne détaille
+ * pas les valeurs possibles de `type` au-delà de ce slug).
+ */
+export type IconeEvenementHistorique = 'commande' | 'paiement' | 'alerte' | 'cuisson';
+
+export interface EvenementHistorique {
+  type: string;
+  date: string;
+  titre: string;
+  detail: string;
+  montant?: number;
+  statut?: string;
+  icone: IconeEvenementHistorique;
+}
+
+export interface Pagination {
+  page: number;
+  par_page: number;
+  total: number;
+  total_pages: number;
+}
+
+export interface CorpsHistorique {
+  site_uuid?: string;
+  depuis?: string;
+  type?: IconeEvenementHistorique;
+  page?: number;
+  par_page?: number;
+}
+
+// --- Analyses (tableau de bord foyer, doc 13 §2) ---
+
+export type PeriodeAnalyse = 'mois' | 'semaine' | 'annee';
+
+export interface RepartitionEntree {
+  libelle: string;
+  valeur: number;
+  couleur: string;
+}
+
+export interface RepartitionAnalyse {
+  par_bouteille: RepartitionEntree[];
+  par_site: RepartitionEntree[];
+}
+
+export interface RechargesAnalyse {
+  nombre: number;
+  cout_moyen_fcfa: number;
+  frequence_jours: number;
+}
+
+export interface JourCuissonSerie {
+  date: string;
+  sessions: number;
+  duree_min: number;
+}
+
+export interface JoursCuisineAnalyse {
+  nombre: number;
+  serie_journaliere: JourCuissonSerie[];
+}
+
+export interface PointSerieConsommation {
+  date: string;
+  valeur: number;
+}
+
+export interface Analyse {
+  consommation_kg: number;
+  consommation_tendance_pct: number;
+  depense_fcfa: number;
+  depense_tendance_pct: number;
+  recharges: RechargesAnalyse;
+  repartition: RepartitionAnalyse;
+  jours_cuisine: JoursCuisineAnalyse;
+  autonomie_moyenne_h: number;
+  projection_prochaine_recharge_jours: number;
+  serie_consommation: PointSerieConsommation[];
+}
+
+export interface CorpsAnalyse {
+  site_uuid?: string;
+  periode?: PeriodeAnalyse;
+}
+
+// --- Température & cuisson (ADR 0011, doc 13 §3) ---
+
+export interface TemperatureSite {
+  temp_courante_c: number;
+  /** false si la dernière mesure est trop ancienne (hors ligne) - même convention que `Niveau.frais`. */
+  frais: boolean;
+  cuisson_en_cours: boolean;
+  debut_cuisson_at: string | null;
+}

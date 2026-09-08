@@ -6,9 +6,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BadgeEtat } from '../../components/BadgeEtat';
 import { BandeauSync } from '../../components/BandeauSync';
 import { Bouton } from '../../components/Bouton';
+import { EncartTemperature } from '../../components/EncartTemperature';
 import { SelecteurSite } from '../../components/SelecteurSite';
 import { useAuth } from '../../auth/AuthContext';
 import { useDonnees } from '../../data/DonneesContext';
+import { useTemperatureSite } from '../../data/useTemperatureSite';
 import { couleurs, espacements, rayons } from '../../../theme/couleurs';
 import { formaterAutonomie } from '../../utils/niveau';
 import { couleurPourFormat } from '../../utils/marque';
@@ -30,6 +32,7 @@ export default function EcranAccueilFoyer() {
 
   const autresBouteilles = bouteilles.filter((b) => b.uuid !== bouteilleActive?.uuid);
   const couleurAmbiance = bouteilleActive ? couleurPourFormat(bouteilleActive.format, marques) : null;
+  const { temperature } = useTemperatureSite(siteActif?.uuid);
 
   return (
     <View style={styles.conteneur}>
@@ -68,6 +71,10 @@ export default function EcranAccueilFoyer() {
             ) : null}
 
             <CarteBouteilleActive bouteille={bouteilleActive} nomSite={siteActif?.nom} marques={marques} />
+
+            <View style={styles.blocTemperature}>
+              <EncartTemperature temperature={temperature} />
+            </View>
 
             {autresBouteilles.length > 0 ? (
               <>
@@ -312,6 +319,9 @@ const styles = StyleSheet.create({
     marginTop: espacements.xs,
     textAlign: 'center',
     fontWeight: '600',
+  },
+  blocTemperature: {
+    marginTop: espacements.md,
   },
   titreSection: {
     fontSize: 17,

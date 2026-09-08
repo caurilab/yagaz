@@ -5,18 +5,21 @@
 import { requeteApi } from './client';
 import type {
   Alerte,
+  Analyse,
   Bouteille,
   Commande,
   CommandeDepot,
   CorpsAffectationLivraison,
   CorpsAjustementStock,
   CorpsAjustementTournee,
+  CorpsAnalyse,
   CorpsConnexion,
   CorpsCreationBouteille,
   CorpsCreationCommande,
   CorpsCreationProposition,
   CorpsCreationSite,
   CorpsCreationTournee,
+  CorpsHistorique,
   CorpsInscription,
   CorpsConfirmationReappro,
   CorpsMajAlerte,
@@ -31,6 +34,7 @@ import type {
   CorpsReponseCommande,
   Depot,
   DepotConsolide,
+  EvenementHistorique,
   Format,
   FoyerEnTension,
   FoyerEnTensionLivreur,
@@ -41,6 +45,7 @@ import type {
   MissionLivreur,
   Notification,
   Paiement,
+  Pagination,
   PointMesure,
   Reappro,
   ReponseAuth,
@@ -49,6 +54,7 @@ import type {
   StatutLivraison,
   StatutNotification,
   StockFormat,
+  TemperatureSite,
   Tournee,
   User,
 } from './types';
@@ -312,4 +318,34 @@ export function creerTournee(orgUuid: string, corps: CorpsCreationTournee) {
 
 export function ajusterTournee(uuid: string, corps: CorpsAjustementTournee) {
   return requeteApi<{ data: Tournee }>(`/tournees/${uuid}`, { methode: 'PATCH', corps });
+}
+
+// --- Historique unifié (foyer, doc 13 §1) ---
+
+export function historique(params: CorpsHistorique = {}) {
+  const p = new URLSearchParams();
+  if (params.site_uuid) p.set('site_uuid', params.site_uuid);
+  if (params.depuis) p.set('depuis', params.depuis);
+  if (params.type) p.set('type', params.type);
+  if (params.page) p.set('page', String(params.page));
+  if (params.par_page) p.set('par_page', String(params.par_page));
+  const suffixe = p.toString() ? `?${p.toString()}` : '';
+  return requeteApi<{ data: EvenementHistorique[]; pagination: Pagination }>(`/historique${suffixe}`);
+}
+
+// --- Analyses (tableau de bord foyer, doc 13 §2) ---
+
+export function analyse(params: CorpsAnalyse = {}) {
+  const p = new URLSearchParams();
+  if (params.site_uuid) p.set('site_uuid', params.site_uuid);
+  if (params.periode) p.set('periode', params.periode);
+  const suffixe = p.toString() ? `?${p.toString()}` : '';
+  return requeteApi<{ data: Analyse }>(`/analyse${suffixe}`);
+}
+
+// --- Température & cuisson (ADR 0011, doc 13 §3) ---
+
+/** Pas d'enveloppe `data` pour cet endpoint (contrat doc 13 §3). */
+export function temperatureSite(uuid: string) {
+  return requeteApi<TemperatureSite>(`/sites/${uuid}/temperature`);
 }
