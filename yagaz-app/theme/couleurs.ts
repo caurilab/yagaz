@@ -16,6 +16,8 @@ export const couleurs = {
   vertOk: '#34C77B',
   bordure: '#ECECF0',
   blanc: '#FFFFFF',
+  ambre: '#F5A623',
+  grisNeutre: '#9CA3AF',
 } as const;
 
 export const espacements = {
