@@ -5,12 +5,14 @@ namespace App\Http\Controllers;
 use App\Enums\NiveauAcces;
 use App\Enums\StatutAlerte;
 use App\Http\Controllers\Concerns\AutoriseCloisonnement;
+use App\Http\Requests\SiteLivreurHabituelRequest;
 use App\Http\Requests\SitePartageRequest;
 use App\Http\Requests\SiteStoreRequest;
 use App\Http\Requests\SiteUpdateRequest;
 use App\Http\Resources\SiteResource;
 use App\Http\Resources\UserPubliqueResource;
 use App\Models\Alerte;
+use App\Models\LivreurHabituel;
 use App\Models\Site;
 use App\Models\SiteAcces;
 use App\Models\User;
@@ -125,6 +127,46 @@ class SiteController extends Controller
         }
 
         SiteAcces::where('site_id', $site->id)->where('user_id', $user->id)->delete();
+
+        return response()->noContent();
+    }
+
+    /**
+     * Désigne le livreur habituel **du site** (ADR 0009, maillons A et C ;
+     * contrat API, §« Sites ») : réservé au propriétaire (`SitePolicy::
+     * designerLivreurHabituel`). À ne pas confondre avec
+     * `users.livreur_habituel_user_id` (préférence par défaut du compte,
+     * `PATCH /api/me/reglages-alertes`) — sans colonne équivalente ici, un
+     * seul livreur habituel actif par site (`livreur_habituel.site_id`
+     * unique), remplacé par la nouvelle désignation le cas échéant.
+     */
+    public function designerLivreurHabituel(SiteLivreurHabituelRequest $request, Site $site): JsonResponse
+    {
+        $this->autoriserSite($request->user(), $site, 'designerLivreurHabituel');
+
+        $livreur = User::where('telephone', $request->validated('telephone'))->firstOrFail();
+
+        $livreurHabituel = LivreurHabituel::updateOrCreate(
+            ['site_id' => $site->id],
+            ['livreur_user_id' => $livreur->id, 'actif' => true],
+        );
+
+        return response()->json([
+            'message' => 'Livreur habituel désigné.',
+            'livreur' => new UserPubliqueResource($livreur),
+            'actif' => $livreurHabituel->actif,
+        ], 201);
+    }
+
+    /**
+     * Retire la désignation du livreur habituel du site (ADR 0009) : réservé
+     * au propriétaire, comme la désignation.
+     */
+    public function retirerLivreurHabituel(Request $request, Site $site): Response
+    {
+        $this->autoriserSite($request->user(), $site, 'designerLivreurHabituel');
+
+        LivreurHabituel::where('site_id', $site->id)->delete();
 
         return response()->noContent();
     }

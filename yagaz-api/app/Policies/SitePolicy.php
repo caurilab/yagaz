@@ -57,4 +57,16 @@ class SitePolicy
     {
         return $user->estLivreurHabituelDuSite($site);
     }
+
+    /**
+     * Désigner (ou retirer) le livreur habituel du site (ADR 0009 ;
+     * `POST/DELETE /api/sites/{uuid}/livreur-habituel`) : même exigence que
+     * `partager`, réservée au propriétaire — un gestionnaire administre le
+     * site mais ne décide pas qui d'autre reçoit ses alertes ni qui peut se
+     * proposer comme livreur pour ce site.
+     */
+    public function designerLivreurHabituel(User $user, Site $site): bool
+    {
+        return $user->estProprietaireDuSite($site);
+    }
 }

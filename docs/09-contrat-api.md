@@ -87,6 +87,8 @@ robustesse minimale). `register` crée un **foyer** (user sans organisation).
 | PATCH | `/api/sites/{uuid}` | `{ nom?, adresse?, lat?, lng? }` (gestionnaire/propriétaire). |
 | POST | `/api/sites/{uuid}/partages` | `{ telephone, niveau }` → partage l'accès à un utilisateur existant (propriétaire uniquement). Cas « surveiller un proche ». |
 | DELETE | `/api/sites/{uuid}/partages/{userUuid}` | Retire un accès (propriétaire). |
+| POST | `/api/sites/{uuid}/livreur-habituel` | `{ telephone }` → désigne le livreur habituel **de ce site** (propriétaire uniquement). La cible doit avoir un `Membership` actif de rôle `livreur` (sinon `422`). Un seul livreur habituel actif par site (remplace la désignation précédente). Gouverne le déclenchement automatique (ADR 0009, maillons A et C) — distinct de `livreur_habituel` dans `PATCH /api/me/reglages-alertes` ci-dessous, qui n'est qu'une préférence de compte. |
+| DELETE | `/api/sites/{uuid}/livreur-habituel` | Retire la désignation (propriétaire uniquement). |
 
 ### Formats (référentiel, lecture)
 
@@ -112,7 +114,7 @@ robustesse minimale). `register` crée un **foyer** (user sans organisation).
 |---|---|---|
 | GET | `/api/alertes` | Alertes des sites de l'utilisateur (seuil bas, proposition). Filtre `?statut=emise`. |
 | PATCH | `/api/alertes/{id}` | `{ statut: "vue" \| "resolue" }`. |
-| PATCH | `/api/me/reglages-alertes` | `{ canaux: ["push","sms","whatsapp"], livreur_habituel? }` (préférences). |
+| PATCH | `/api/me/reglages-alertes` | `{ canaux: ["push","sms","whatsapp"], livreur_habituel? }` (préférences). `livreur_habituel` ici est `users.livreur_habituel_user_id` : une préférence par défaut du compte, **lue par aucun maillon automatique**. La désignation qui gouverne A/C (notification + droit de proposer, ADR 0009) est **par site**, via `POST/DELETE /api/sites/{uuid}/livreur-habituel` ci-dessus. |
 
 ### Recharge (lecture ; commande = Phase 4)
 

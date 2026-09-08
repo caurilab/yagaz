@@ -98,18 +98,26 @@ final class Notificateur
      * explicite, pas un effet de bord.
      *
      * Anti-spam (ADR 0009) : pas de doublon tant qu'une alerte `seuil_bas`
-     * non résolue existe déjà pour ce livreur portant le même `site_nom` —
-     * la seule clé de rapprochement disponible ici, puisque `site_id` n'est
-     * justement jamais renseigné sur ce type d'alerte.
+     * non résolue existe déjà pour ce livreur portant la même `ref` — une
+     * clé opaque dérivée de l'identifiant du site (voir `refSite()`), pas de
+     * `site_nom` (audit sécurité, [FAIBLE] dédup sans identifiant foyer) :
+     * `site_nom` seul collisionne entre deux sites homonymes (deux foyers
+     * différents nommés « Maison », par exemple), ce qui masquerait à tort
+     * la notification du second. `ref` distingue les sites sans jamais
+     * exposer `site_id` en clair dans `contexte` (étanchéité ADR 0008
+     * intacte : aucun uuid/id foyer en clair, seulement un hash tronqué).
      *
      * @param  array{site_nom: ?string, zone: ?string, format_code: ?string}  $contexteMinimal
      */
-    public function notifierLivreurHabituel(User $livreur, array $contexteMinimal): ?Alerte
+    public function notifierLivreurHabituel(User $livreur, Site $site, array $contexteMinimal): ?Alerte
     {
+        $ref = $this->refSite($site);
+        $contexte = $contexteMinimal + ['ref' => $ref];
+
         $dejaNotifie = Alerte::where('destinataire_user_id', $livreur->id)
             ->where('type', TypeAlerte::SeuilBas)
             ->where('statut', '!=', StatutAlerte::Resolue)
-            ->where('contexte->site_nom', $contexteMinimal['site_nom'] ?? null)
+            ->where('contexte->ref', $ref)
             ->exists();
 
         if ($dejaNotifie) {
@@ -121,12 +129,27 @@ final class Notificateur
             'type' => TypeAlerte::SeuilBas,
             'statut' => StatutAlerte::Emise,
             'canal' => $this->canalPrincipal($livreur),
-            'contexte' => $contexteMinimal,
+            'contexte' => $contexte,
         ]);
 
-        $this->router($livreur, TypeAlerte::SeuilBas, $contexteMinimal, $alerte);
+        $this->router($livreur, TypeAlerte::SeuilBas, $contexte, $alerte);
 
         return $alerte;
+    }
+
+    /**
+     * Clé opaque et non ré-identifiante dérivée de l'identifiant du site
+     * (audit sécurité, [FAIBLE] dédup sans identifiant foyer) : sert
+     * uniquement à distinguer deux sites du même nom pour l'anti-spam
+     * `notifierLivreurHabituel()`, sans jamais exposer `site_id` en clair
+     * (HMAC, pas un hash simple — non devinable/bruteforçable même pour un
+     * espace d'identifiants restreint) ni permettre de le retrouver
+     * (tronqué à 16 caractères hexadécimaux, très largement suffisant pour
+     * éviter les collisions à l'échelle de cette dédup).
+     */
+    private function refSite(Site $site): string
+    {
+        return substr(hash_hmac('sha256', (string) $site->id, (string) config('app.key')), 0, 16);
     }
 
     /**

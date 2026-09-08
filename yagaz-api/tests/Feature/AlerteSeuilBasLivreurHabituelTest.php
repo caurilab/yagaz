@@ -128,11 +128,15 @@ class AlerteSeuilBasLivreurHabituelTest extends TestCase
         $notificationsLivreur->assertJsonPath('data.0.type', 'seuil_bas');
 
         $donnees = $notificationsLivreur->json('data.0');
-        $this->assertSame([
-            'site_nom' => $site->nom,
-            'zone' => 'Plateau',
-            'format_code' => 'B12',
-        ], $donnees['contexte']);
+        $this->assertEqualsCanonicalizing(['site_nom', 'zone', 'format_code', 'ref'], array_keys($donnees['contexte']));
+        $this->assertSame($site->nom, $donnees['contexte']['site_nom']);
+        $this->assertSame('Plateau', $donnees['contexte']['zone']);
+        $this->assertSame('B12', $donnees['contexte']['format_code']);
+        // `ref` (correctif dédup, [FAIBLE] dédup sans identifiant foyer) est
+        // une clé opaque (hash tronqué), pas l'UUID du site en clair.
+        $this->assertIsString($donnees['contexte']['ref']);
+        $this->assertMatchesRegularExpression('/^[0-9a-f]{16}$/', $donnees['contexte']['ref']);
+        $this->assertStringNotContainsString($site->uuid, $donnees['contexte']['ref']);
     }
 
     /**
@@ -174,7 +178,7 @@ class AlerteSeuilBasLivreurHabituelTest extends TestCase
         $this->assertNull($donnees['commande_uuid']);
 
         // Seule la projection minimale attendue est présente dans `contexte`.
-        $this->assertEqualsCanonicalizing(['site_nom', 'zone', 'format_code'], array_keys($donnees['contexte']));
+        $this->assertEqualsCanonicalizing(['site_nom', 'zone', 'format_code', 'ref'], array_keys($donnees['contexte']));
         $this->assertSame($site->nom, $donnees['contexte']['site_nom']);
         $this->assertSame('Almadies', $donnees['contexte']['zone']);
         $this->assertSame('B6', $donnees['contexte']['format_code']);
@@ -208,6 +212,38 @@ class AlerteSeuilBasLivreurHabituelTest extends TestCase
 
         // Aucune alerte adressée à un tiers.
         $this->assertSame(1, Alerte::where('type', TypeAlerte::SeuilBas->value)->count());
+    }
+
+    /**
+     * Correctif dédup sans identifiant foyer ([FAIBLE]) : deux sites
+     * HOMONYMES (même `site_nom`), rattachés au même livreur habituel,
+     * franchissent chacun le seuil bas → DEUX notifications distinctes,
+     * plus de collision anti-spam sur le nom du site.
+     */
+    public function test_deux_sites_homonymes_du_meme_livreur_en_tension_produisent_deux_notifications(): void
+    {
+        [, $siteA] = $this->foyerAvecSite(zone: 'Plateau');
+        $siteA->forceFill(['nom' => 'Maison'])->save();
+        [, $plateauA] = $this->bouteilleActiveSurSite($siteA, formatCode: 'B12');
+
+        [, $siteB] = $this->foyerAvecSite(zone: 'Almadies');
+        $siteB->forceFill(['nom' => 'Maison'])->save();
+        [, $plateauB] = $this->bouteilleActiveSurSite($siteB, formatCode: 'B6');
+
+        $livreur = User::factory()->create();
+        LivreurHabituel::create(['site_id' => $siteA->id, 'livreur_user_id' => $livreur->id, 'actif' => true]);
+        LivreurHabituel::create(['site_id' => $siteB->id, 'livreur_user_id' => $livreur->id, 'actif' => true]);
+
+        $this->franchirLeSeuilBas($plateauA);
+        $this->franchirLeSeuilBas($plateauB);
+
+        Sanctum::actingAs($livreur);
+        $reponse = $this->getJson('/api/notifications');
+        $reponse->assertOk();
+        $reponse->assertJsonCount(2, 'data');
+
+        $refs = collect($reponse->json('data'))->pluck('contexte.ref');
+        $this->assertCount(2, $refs->unique());
     }
 
     public function test_un_livreur_habituel_inactif_n_est_pas_notifie(): void

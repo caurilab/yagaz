@@ -52,6 +52,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/sites/{site:uuid}', [SiteController::class, 'update']);
     Route::post('/sites/{site:uuid}/partages', [SiteController::class, 'partager']);
     Route::delete('/sites/{site:uuid}/partages/{user:uuid}', [SiteController::class, 'retirerPartage']);
+    // Désignation du livreur habituel PAR SITE (ADR 0009, maillons A/C) : à
+    // ne pas confondre avec `PATCH /me/reglages-alertes` (préférence de
+    // compte, `users.livreur_habituel_user_id`, qui ne gouverne aucun
+    // maillon automatique).
+    Route::post('/sites/{site:uuid}/livreur-habituel', [SiteController::class, 'designerLivreurHabituel']);
+    Route::delete('/sites/{site:uuid}/livreur-habituel', [SiteController::class, 'retirerLivreurHabituel']);
 
     // === Formats (contrat API, §« Formats ») ============================
     Route::get('/formats', [FormatBouteilleController::class, 'index']);

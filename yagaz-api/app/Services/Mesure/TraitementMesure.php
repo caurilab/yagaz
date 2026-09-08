@@ -410,7 +410,7 @@ final class TraitementMesure
             return;
         }
 
-        $this->notificateur->notifierLivreurHabituel($livreur, [
+        $this->notificateur->notifierLivreurHabituel($livreur, $site, [
             'site_nom' => $site->nom,
             'zone' => $site->zone,
             'format_code' => $bouteille->format?->code,

@@ -161,4 +161,45 @@ class DepotFoyersEnTensionApiTest extends TestCase
         Sanctum::actingAs($intrus);
         $this->getJson("/api/depots/{$depot->uuid}/foyers-en-tension")->assertNotFound();
     }
+
+    /**
+     * Lacune signalée (audit) : un livreur (non-gérant) membre du dépôt
+     * n'est pas pour autant `gerant_depot` — `OrganisationPolicy::gererDepot`
+     * réserve la file au gérant direct. `404`, comme un intrus complet.
+     */
+    public function test_un_livreur_non_gerant_recoit_404_sur_foyers_en_tension(): void
+    {
+        $depot = Organisation::factory()->depot()->create();
+        $livreur = $this->livreurDe($depot);
+
+        Sanctum::actingAs($livreur);
+        $this->getJson("/api/depots/{$depot->uuid}/foyers-en-tension")->assertNotFound();
+    }
+
+    /**
+     * Correctif [FAIBLE] bucketiser la distance (ADR 0008, borne à la zone) :
+     * `distance_km` n'expose jamais la distance brute — arrondie au 0,5 km
+     * supérieur.
+     */
+    public function test_la_distance_est_bucketisee_au_demi_kilometre_superieur(): void
+    {
+        // ~0,022° de latitude ≈ 2,4 km à l'équateur : distance brute non ronde.
+        $depot = Organisation::factory()->depot()->create(['lat' => 14.7000, 'lng' => -17.4500]);
+        $gerant = $this->gerantDe($depot);
+        $format = FormatBouteille::factory()->create();
+
+        $site = $this->siteAvecNiveau(niveauPct: 5, format: $format, zone: 'Almadies');
+        $site->forceFill(['lat' => 14.7220, 'lng' => -17.4500])->save();
+        $this->rendreClient($site, $depot, $format);
+
+        Sanctum::actingAs($gerant);
+        $reponse = $this->getJson("/api/depots/{$depot->uuid}/foyers-en-tension");
+        $reponse->assertOk();
+
+        $distance = $reponse->json('data.0.distance_km');
+        $this->assertNotNull($distance);
+        // Multiple exact de 0,5, jamais la valeur brute (haversine ≈ 2,44 km).
+        $this->assertSame(0.0, fmod($distance * 10, 5));
+        $this->assertGreaterThanOrEqual(2.44, $distance);
+    }
 }

@@ -52,6 +52,19 @@ class ReapproApiTest extends TestCase
         return $user;
     }
 
+    private function livreurDe(Organisation $depot): User
+    {
+        $user = User::factory()->create();
+        Membership::forceCreate([
+            'user_id' => $user->id,
+            'organisation_id' => $depot->id,
+            'role' => RoleMembership::Livreur->value,
+            'actif' => true,
+        ]);
+
+        return $user;
+    }
+
     private function foyerAvecSite(): array
     {
         $user = User::factory()->create();
@@ -278,6 +291,31 @@ class ReapproApiTest extends TestCase
         $this->assertDatabaseHas('commandes', ['uuid' => $reappro->uuid, 'statut' => 'proposee']);
     }
 
+    /**
+     * Lacune signalée (audit) : le mandataire CIBLE d'un réappro (qui le
+     * voit, `GET /mandataires/{org}/reappros`) ne peut pas le confirmer à la
+     * place du dépôt demandeur (`CommandePolicy::confirmerReappro` exige le
+     * gérant DIRECT du dépôt demandeur, jamais le mandataire) — réponse
+     * uniforme `404`, cohérente avec le reste de `CommandeController`
+     * (`test_un_autre_depot_ne_peut_pas_confirmer_le_reappro` ci-dessus).
+     */
+    public function test_le_mandataire_ne_peut_pas_confirmer_le_reappro(): void
+    {
+        [$depot, $mandataire, $format] = $this->depotEnTensionAvecMandataire();
+        $mandataireUser = $this->mandataireDe($mandataire);
+
+        $reappro = Commande::factory()->depuisDepot()->create([
+            'demandeur_org_id' => $depot->id,
+            'cible_org_id' => $mandataire->id,
+            'format_id' => $format->id,
+        ]);
+
+        Sanctum::actingAs($mandataireUser);
+        $this->postJson("/api/commandes/{$reappro->uuid}/confirmer-reappro")->assertNotFound();
+
+        $this->assertDatabaseHas('commandes', ['uuid' => $reappro->uuid, 'statut' => 'proposee']);
+    }
+
     public function test_confirmer_un_reappro_deja_confirme_est_refuse(): void
     {
         [$depot, $mandataire, $format] = $this->depotEnTensionAvecMandataire();
@@ -292,6 +330,20 @@ class ReapproApiTest extends TestCase
         Sanctum::actingAs($gerantDepot);
         $this->postJson("/api/commandes/{$reappro->uuid}/confirmer-reappro")->assertOk();
         $this->postJson("/api/commandes/{$reappro->uuid}/confirmer-reappro")->assertStatus(422);
+    }
+
+    /**
+     * Lacune signalée (audit) : un livreur (non-gérant) membre du dépôt
+     * n'a pas accès à la liste des réappros du dépôt (`OrganisationPolicy::
+     * gererDepot` réserve à `gerant_depot`). `404`.
+     */
+    public function test_un_livreur_non_gerant_recoit_404_sur_les_reappros_du_depot(): void
+    {
+        [$depot] = $this->depotEnTensionAvecMandataire();
+        $livreur = $this->livreurDe($depot);
+
+        Sanctum::actingAs($livreur);
+        $this->getJson("/api/depots/{$depot->uuid}/reappros")->assertNotFound();
     }
 
     // === Visibilité mandataire =============================================

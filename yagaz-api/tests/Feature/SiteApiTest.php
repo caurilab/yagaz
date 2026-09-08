@@ -3,10 +3,17 @@
 namespace Tests\Feature;
 
 use App\Enums\NiveauAcces;
+use App\Enums\RoleMembership;
 use App\Models\Bouteille;
+use App\Models\FormatBouteille;
+use App\Models\LivreurHabituel;
+use App\Models\Membership;
+use App\Models\Organisation;
+use App\Models\Plateau;
 use App\Models\Site;
 use App\Models\SiteAcces;
 use App\Models\User;
+use App\Services\Mesure\TraitementMesure;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -236,5 +243,141 @@ class SiteApiTest extends TestCase
         $this->deleteJson("/api/sites/{$site->uuid}/partages/{$beneficiaire->uuid}")->assertNoContent();
 
         $this->assertDatabaseMissing('site_acces', ['site_id' => $site->id, 'user_id' => $beneficiaire->id]);
+    }
+
+    // === Livreur habituel PAR SITE (correctif [IMPORTANT], ADR 0009) ======
+
+    private function livreur(string $telephone): User
+    {
+        $user = User::factory()->create(['telephone' => $telephone]);
+        Membership::forceCreate([
+            'user_id' => $user->id,
+            'organisation_id' => Organisation::factory()->depot()->create()->id,
+            'role' => RoleMembership::Livreur->value,
+            'actif' => true,
+        ]);
+
+        return $user;
+    }
+
+    public function test_le_proprietaire_designe_un_livreur_habituel_pour_le_site(): void
+    {
+        [$proprietaire, $site] = $this->foyerAvecSite();
+        $livreur = $this->livreur('+221770009999');
+
+        Sanctum::actingAs($proprietaire);
+
+        $reponse = $this->postJson("/api/sites/{$site->uuid}/livreur-habituel", [
+            'telephone' => '+221770009999',
+        ]);
+
+        $reponse->assertCreated();
+        $this->assertDatabaseHas('livreur_habituel', [
+            'site_id' => $site->id,
+            'livreur_user_id' => $livreur->id,
+            'actif' => true,
+        ]);
+    }
+
+    public function test_designer_remplace_le_livreur_habituel_precedent(): void
+    {
+        [$proprietaire, $site] = $this->foyerAvecSite();
+        $premier = $this->livreur('+221770001010');
+        $second = $this->livreur('+221770002020');
+
+        LivreurHabituel::create(['site_id' => $site->id, 'livreur_user_id' => $premier->id, 'actif' => true]);
+
+        Sanctum::actingAs($proprietaire);
+        $this->postJson("/api/sites/{$site->uuid}/livreur-habituel", ['telephone' => '+221770002020'])
+            ->assertCreated();
+
+        // Un seul livreur habituel actif par site (site_id unique).
+        $this->assertSame(1, LivreurHabituel::where('site_id', $site->id)->count());
+        $this->assertDatabaseHas('livreur_habituel', ['site_id' => $site->id, 'livreur_user_id' => $second->id]);
+    }
+
+    public function test_un_non_proprietaire_ne_peut_pas_designer_le_livreur_habituel(): void
+    {
+        [, $site] = $this->foyerAvecSite();
+        $gestionnaire = User::factory()->create();
+        SiteAcces::forceCreate([
+            'site_id' => $site->id,
+            'user_id' => $gestionnaire->id,
+            'niveau' => NiveauAcces::Gestionnaire->value,
+        ]);
+        $livreur = $this->livreur('+221770003030');
+
+        Sanctum::actingAs($gestionnaire);
+
+        $this->postJson("/api/sites/{$site->uuid}/livreur-habituel", ['telephone' => '+221770003030'])
+            ->assertForbidden();
+
+        $this->assertDatabaseMissing('livreur_habituel', ['site_id' => $site->id, 'livreur_user_id' => $livreur->id]);
+    }
+
+    public function test_une_cible_non_livreur_est_refusee(): void
+    {
+        [$proprietaire, $site] = $this->foyerAvecSite();
+        $nonLivreur = User::factory()->create(['telephone' => '+221770004040']);
+
+        Sanctum::actingAs($proprietaire);
+
+        $this->postJson("/api/sites/{$site->uuid}/livreur-habituel", ['telephone' => '+221770004040'])
+            ->assertStatus(422);
+
+        $this->assertDatabaseMissing('livreur_habituel', ['site_id' => $site->id, 'livreur_user_id' => $nonLivreur->id]);
+    }
+
+    public function test_le_proprietaire_retire_la_designation_du_livreur_habituel(): void
+    {
+        [$proprietaire, $site] = $this->foyerAvecSite();
+        $livreur = $this->livreur('+221770005050');
+        LivreurHabituel::create(['site_id' => $site->id, 'livreur_user_id' => $livreur->id, 'actif' => true]);
+
+        Sanctum::actingAs($proprietaire);
+
+        $this->deleteJson("/api/sites/{$site->uuid}/livreur-habituel")->assertNoContent();
+
+        $this->assertDatabaseMissing('livreur_habituel', ['site_id' => $site->id]);
+    }
+
+    /**
+     * Bout-en-bout : après désignation via l'endpoint (pas de fixture
+     * directe en base), le maillon A (ADR 0009) notifie bien ce livreur au
+     * franchissement du seuil bas — preuve que la désignation par ce point
+     * d'entrée câble effectivement le déclenchement automatique.
+     */
+    public function test_apres_designation_via_l_endpoint_le_livreur_est_notifie_au_seuil_bas(): void
+    {
+        [$proprietaire, $site] = $this->foyerAvecSite();
+        $livreur = $this->livreur('+221770006060');
+
+        Sanctum::actingAs($proprietaire);
+        $this->postJson("/api/sites/{$site->uuid}/livreur-habituel", ['telephone' => '+221770006060'])
+            ->assertCreated();
+
+        $plateau = Plateau::factory()->actif()->create(['site_id' => $site->id]);
+        $format = FormatBouteille::factory()->create(['tare_nominale_g' => 13000, 'contenance_gaz_g' => 12500]);
+        Bouteille::factory()->create([
+            'site_id' => $site->id,
+            'plateau_id' => $plateau->id,
+            'format_id' => $format->id,
+            'tare_g' => 13000,
+            'tare_fiable' => true,
+            'seuil_bas_pct' => 15,
+        ]);
+
+        $service = new TraitementMesure;
+        $seq = 1;
+        $service->traiter(['uid' => $plateau->uid, 'v' => 1, 'ts' => now()->timestamp, 'poids_g' => 19250, 'seq' => $seq++]);
+        for ($i = 0; $i < 6; $i++) {
+            $service->traiter(['uid' => $plateau->uid, 'v' => 1, 'ts' => now()->timestamp, 'poids_g' => 13625, 'seq' => $seq++]);
+        }
+
+        Sanctum::actingAs($livreur);
+        $notifications = $this->getJson('/api/notifications');
+        $notifications->assertOk();
+        $notifications->assertJsonCount(1, 'data');
+        $notifications->assertJsonPath('data.0.type', 'seuil_bas');
     }
 }
