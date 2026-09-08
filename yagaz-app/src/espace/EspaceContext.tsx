@@ -79,12 +79,21 @@ export function EspaceProvider({ children }: { children: ReactNode }) {
     dejaCharge.current = true;
 
     (async () => {
-      const [rolesRecus, espaceCache, orgCache, orgMandataireCache] = await Promise.all([
+      const [rolesBruts, espaceCache, orgCache, orgMandataireCache] = await Promise.all([
         avecRepliDemo(() => api.mesRoles(), rolesDemo),
         lireCache<EspaceType>(CLES_CACHE.espaceActif),
         lireCache<string>(CLES_CACHE.depotOrgActif),
         lireCache<string>(CLES_CACHE.mandataireOrgActif),
       ]);
+      // Normalisation défensive : garantir que les listes existent toujours,
+      // même si l'API (ou une version plus ancienne) omet un champ.
+      const rolesRecus: MesRoles = {
+        foyer: rolesBruts?.foyer ?? false,
+        depots: rolesBruts?.depots ?? [],
+        mandataires: rolesBruts?.mandataires ?? [],
+        distributeurs: rolesBruts?.distributeurs ?? [],
+        livreur: rolesBruts?.livreur ?? false,
+      };
       setRoles(rolesRecus);
 
       const disponibles = calculerEspacesDisponibles(rolesRecus);
@@ -178,9 +187,9 @@ function calculerEspacesDisponibles(roles: MesRoles | null): OptionEspace[] {
   if (!roles) return [{ type: 'foyer', libelle: libelleEspace('foyer') }];
   const options: OptionEspace[] = [];
   if (roles.foyer) options.push({ type: 'foyer', libelle: libelleEspace('foyer') });
-  if (roles.depots.length > 0) options.push({ type: 'depot', libelle: libelleEspace('depot') });
+  if ((roles.depots?.length ?? 0) > 0) options.push({ type: 'depot', libelle: libelleEspace('depot') });
   if (roles.livreur) options.push({ type: 'livreur', libelle: libelleEspace('livreur') });
-  if (roles.mandataires.length > 0) options.push({ type: 'mandataire', libelle: libelleEspace('mandataire') });
+  if ((roles.mandataires?.length ?? 0) > 0) options.push({ type: 'mandataire', libelle: libelleEspace('mandataire') });
   return options.length > 0 ? options : [{ type: 'foyer', libelle: libelleEspace('foyer') }];
 }
 

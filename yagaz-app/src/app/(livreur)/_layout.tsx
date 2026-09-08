@@ -22,7 +22,7 @@ export default function LayoutLivreur() {
           options={{
             title: 'Mes missions',
             tabBarLabel: 'Missions',
-            tabBarIcon: ({ focused }) => <IconeOnglet symbole="🛵" focus={focused} />,
+            tabBarIcon: ({ color }) => <IconeOnglet lib="material-community" nom="moped" color={color} />,
           }}
         />
         <Tabs.Screen
@@ -30,21 +30,21 @@ export default function LayoutLivreur() {
           options={{
             title: 'Foyers en tension',
             tabBarLabel: 'Tension',
-            tabBarIcon: ({ focused }) => <IconeOnglet symbole="⛽️" focus={focused} />,
+            tabBarIcon: ({ color }) => <IconeOnglet lib="material-community" nom="gas-station" color={color} />,
           }}
         />
         <Tabs.Screen
           name="notifications"
           options={{
             title: 'Notifications',
-            tabBarIcon: ({ focused }) => <IconeOnglet symbole="🔔" focus={focused} />,
+            tabBarIcon: ({ color }) => <IconeOnglet nom="notifications" color={color} />,
           }}
         />
         <Tabs.Screen
           name="reglages"
           options={{
             title: 'Réglages',
-            tabBarIcon: ({ focused }) => <IconeOnglet symbole="⚙️" focus={focused} />,
+            tabBarIcon: ({ color }) => <IconeOnglet nom="settings" color={color} />,
           }}
         />
       </Tabs>

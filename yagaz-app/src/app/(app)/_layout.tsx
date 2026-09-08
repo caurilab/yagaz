@@ -1,11 +1,8 @@
 import { router, Tabs } from 'expo-router';
 import { Pressable, Text } from 'react-native';
 
+import { IconeOnglet } from '../../components/IconeOnglet';
 import { couleurs } from '../../../theme/couleurs';
-
-function IconeOnglet({ symbole, focus }: { symbole: string; focus: boolean }) {
-  return <Text style={{ fontSize: 22, opacity: focus ? 1 : 0.5 }}>{symbole}</Text>;
-}
 
 function BoutonRetour() {
   return (
@@ -35,35 +32,35 @@ export default function LayoutApp() {
           title: 'Accueil',
           headerShown: false,
           tabBarLabel: 'Accueil',
-          tabBarIcon: ({ focused }) => <IconeOnglet symbole="🏠" focus={focused} />,
+          tabBarIcon: ({ color }) => <IconeOnglet nom="home" color={color} />,
         }}
       />
       <Tabs.Screen
         name="bouteilles"
         options={{
           title: 'Bouteilles',
-          tabBarIcon: ({ focused }) => <IconeOnglet symbole="🛢️" focus={focused} />,
+          tabBarIcon: ({ color }) => <IconeOnglet lib="material-community" nom="propane-tank" color={color} />,
         }}
       />
       <Tabs.Screen
         name="commandes"
         options={{
           title: 'Commandes',
-          tabBarIcon: ({ focused }) => <IconeOnglet symbole="📦" focus={focused} />,
+          tabBarIcon: ({ color }) => <IconeOnglet nom="cube" color={color} />,
         }}
       />
       <Tabs.Screen
         name="alertes"
         options={{
           title: 'Alertes',
-          tabBarIcon: ({ focused }) => <IconeOnglet symbole="🔔" focus={focused} />,
+          tabBarIcon: ({ color }) => <IconeOnglet nom="notifications" color={color} />,
         }}
       />
       <Tabs.Screen
         name="reglages"
         options={{
           title: 'Réglages',
-          tabBarIcon: ({ focused }) => <IconeOnglet symbole="⚙️" focus={focused} />,
+          tabBarIcon: ({ color }) => <IconeOnglet nom="settings" color={color} />,
         }}
       />
       <Tabs.Screen

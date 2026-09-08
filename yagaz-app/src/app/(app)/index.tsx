@@ -11,7 +11,8 @@ import { useAuth } from '../../auth/AuthContext';
 import { useDonnees } from '../../data/DonneesContext';
 import { couleurs, espacements, rayons } from '../../../theme/couleurs';
 import { formaterAutonomie } from '../../utils/niveau';
-import type { Bouteille } from '../../api/types';
+import { couleurPourFormat } from '../../utils/marque';
+import type { Bouteille, Marque } from '../../api/types';
 
 export default function EcranAccueilFoyer() {
   const { user } = useAuth();
@@ -21,17 +22,19 @@ export default function EcranAccueilFoyer() {
     definirSiteActif,
     bouteilles,
     bouteilleActive,
+    marques,
     statutSync,
     chargementInitial,
     rafraichir,
   } = useDonnees();
 
   const autresBouteilles = bouteilles.filter((b) => b.uuid !== bouteilleActive?.uuid);
+  const couleurAmbiance = bouteilleActive ? couleurPourFormat(bouteilleActive.format, marques) : null;
 
   return (
     <View style={styles.conteneur}>
       <LinearGradient
-        colors={[couleurs.degradeDebut, couleurs.degradeFin]}
+        colors={couleurAmbiance ? [couleurAmbiance, couleurs.degradeFin] : [couleurs.degradeDebut, couleurs.degradeFin]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.entete}>
@@ -61,7 +64,7 @@ export default function EcranAccueilFoyer() {
               <BandeauSync texte="Connexion indisponible - dernières valeurs connues affichées" />
             ) : null}
 
-            <CarteBouteilleActive bouteille={bouteilleActive} nomSite={siteActif?.nom} />
+            <CarteBouteilleActive bouteille={bouteilleActive} nomSite={siteActif?.nom} marques={marques} />
 
             {autresBouteilles.length > 0 ? (
               <>
@@ -71,7 +74,7 @@ export default function EcranAccueilFoyer() {
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={styles.rangeeAutresBouteilles}>
                   {autresBouteilles.map((bouteille) => (
-                    <CarteMiniature key={bouteille.uuid} bouteille={bouteille} />
+                    <CarteMiniature key={bouteille.uuid} bouteille={bouteille} marques={marques} />
                   ))}
                 </ScrollView>
               </>
@@ -99,14 +102,28 @@ function EtatVide() {
   );
 }
 
-function CarteBouteilleActive({ bouteille, nomSite }: { bouteille: Bouteille; nomSite?: string }) {
+function CarteBouteilleActive({
+  bouteille,
+  nomSite,
+  marques,
+}: {
+  bouteille: Bouteille;
+  nomSite?: string;
+  marques: Marque[];
+}) {
   const { niveau } = bouteille;
+  const couleurMarqueBouteille = couleurPourFormat(bouteille.format, marques);
   return (
-    <Pressable style={styles.carteActive} onPress={() => router.push(`/bouteille/${bouteille.uuid}`)}>
+    <Pressable
+      style={[styles.carteActive, { borderLeftColor: couleurMarqueBouteille }]}
+      onPress={() => router.push(`/bouteille/${bouteille.uuid}`)}>
       <View style={styles.enTeteCarteActive}>
-        <Text style={styles.libelleCarteActive} numberOfLines={1}>
-          Bouteille active{nomSite ? ` - ${nomSite}` : ''}
-        </Text>
+        <View style={styles.libelleAvecPastille}>
+          <View style={[styles.pastilleMarque, { backgroundColor: couleurMarqueBouteille }]} />
+          <Text style={styles.libelleCarteActive} numberOfLines={1}>
+            Bouteille active{nomSite ? ` - ${nomSite}` : ''} · {bouteille.format.marque}
+          </Text>
+        </View>
         <BadgeEtat etat={niveau.etat} />
       </View>
 
@@ -129,12 +146,18 @@ function CarteBouteilleActive({ bouteille, nomSite }: { bouteille: Bouteille; no
   );
 }
 
-function CarteMiniature({ bouteille }: { bouteille: Bouteille }) {
+function CarteMiniature({ bouteille, marques }: { bouteille: Bouteille; marques: Marque[] }) {
+  const couleurMarqueBouteille = couleurPourFormat(bouteille.format, marques);
   return (
-    <Pressable style={styles.carteMiniature} onPress={() => router.push(`/bouteille/${bouteille.uuid}`)}>
-      <Text style={styles.libelleMiniature} numberOfLines={1}>
-        {bouteille.format.code} - {bouteille.role_bouteille === 'active' ? 'Active' : 'Secours'}
-      </Text>
+    <Pressable
+      style={[styles.carteMiniature, { borderTopColor: couleurMarqueBouteille, borderTopWidth: 3 }]}
+      onPress={() => router.push(`/bouteille/${bouteille.uuid}`)}>
+      <View style={styles.libelleAvecPastille}>
+        <View style={[styles.pastilleMarque, { backgroundColor: couleurMarqueBouteille }]} />
+        <Text style={styles.libelleMiniature} numberOfLines={1}>
+          {bouteille.format.code} - {bouteille.role_bouteille === 'active' ? 'Active' : 'Secours'}
+        </Text>
+      </View>
       <Text style={styles.pourcentMiniature}>{bouteille.niveau.niveau_pct} %</Text>
       <Text style={styles.autonomieMiniature}>{formaterAutonomie(bouteille.niveau.autonomie_heures)}</Text>
       <BadgeEtat etat={bouteille.niveau.etat} compact />
@@ -204,6 +227,7 @@ const styles = StyleSheet.create({
   carteActive: {
     backgroundColor: couleurs.carte,
     borderRadius: rayons.lg,
+    borderLeftWidth: 6,
     padding: espacements.lg,
     marginTop: -espacements.xl,
     shadowColor: '#000',
@@ -217,6 +241,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     gap: espacements.sm,
+  },
+  libelleAvecPastille: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espacements.xs,
+    flexShrink: 1,
+  },
+  pastilleMarque: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
   libelleCarteActive: {
     fontSize: 14,

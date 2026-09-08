@@ -14,6 +14,7 @@ import type {
   Format,
   FoyerEnTension,
   FoyerEnTensionLivreur,
+  Marque,
   MembreLivreur,
   MesRoles,
   MissionLivreur,
@@ -27,7 +28,7 @@ import type {
 } from './types';
 
 /** Active/désactive le repli sur les fixtures quand l'appel réel échoue. */
-export const MODE_DEMO = true;
+export const MODE_DEMO = process.env.EXPO_PUBLIC_DEMO !== 'false';
 
 const maintenant = new Date();
 function ilYA(minutes: number): string {
@@ -41,10 +42,21 @@ export const utilisateurDemo: User = {
   langue: 'fr',
 };
 
+/** Marques du référentiel (repli démo - mêmes couleurs que le contrat réel `/api/marques`). */
+export const marquesDemo: Marque[] = [
+  { id: 1, nom: 'Total', couleur: '#E4032E' },
+  { id: 2, nom: 'Oryx', couleur: '#1E63B8' },
+  { id: 3, nom: 'Petro Ivoire', couleur: '#2E9E5B' },
+  { id: 4, nom: 'Sodigaz', couleur: '#F08A24' },
+  { id: 5, nom: 'GESTOCI', couleur: '#7B4A2E' },
+];
+
 export const formatsDemo: Format[] = [
-  { id: 1, code: 'B6', marque: 'Yagaz Gaz', tare_nominale_g: 5200, contenance_gaz_g: 6000 },
-  { id: 2, code: 'B12', marque: 'Yagaz Gaz', tare_nominale_g: 14800, contenance_gaz_g: 12500 },
-  { id: 3, code: 'B38', marque: 'Yagaz Gaz', tare_nominale_g: 34000, contenance_gaz_g: 38000 },
+  { id: 1, code: 'B6', marque: 'Total', tare_nominale_g: 5200, contenance_gaz_g: 6000, couleur: '#E4032E' },
+  { id: 2, code: 'B12', marque: 'Oryx', tare_nominale_g: 14800, contenance_gaz_g: 12500, couleur: '#1E63B8' },
+  { id: 3, code: 'B38', marque: 'Petro Ivoire', tare_nominale_g: 34000, contenance_gaz_g: 38000, couleur: '#2E9E5B' },
+  { id: 4, code: 'B12', marque: 'Sodigaz', tare_nominale_g: 14700, contenance_gaz_g: 12500, couleur: '#F08A24' },
+  { id: 5, code: 'B6', marque: 'GESTOCI', tare_nominale_g: 5100, contenance_gaz_g: 6000, couleur: '#7B4A2E' },
 ];
 
 export const sitesDemo: Site[] = [

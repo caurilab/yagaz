@@ -7,11 +7,12 @@ import { Bouton } from '../../components/Bouton';
 import { Champ } from '../../components/Champ';
 import { useDonnees } from '../../data/DonneesContext';
 import { couleurs, espacements, rayons } from '../../../theme/couleurs';
+import { couleurPourFormat } from '../../utils/marque';
 import type { Format, RoleBouteille } from '../../api/types';
 
 /** Parcours guidé d'enregistrement d'une bouteille (UX §2). */
 export default function EcranEnregistrerBouteille() {
-  const { formats, bouteilles, enregistrerBouteille } = useDonnees();
+  const { formats, marques, bouteilles, enregistrerBouteille } = useDonnees();
 
   const codes = useMemo(() => Array.from(new Set(formats.map((f) => f.code))), [formats]);
   const [codeChoisi, setCodeChoisi] = useState<string | null>(codes[0] ?? null);
@@ -77,8 +78,9 @@ export default function EcranEnregistrerBouteille() {
           {formatsDuCode.map((format) => (
             <Pressable
               key={format.id}
-              style={[styles.chip, formatChoisi?.id === format.id && styles.chipActif]}
+              style={[styles.chip, styles.chipAvecPastille, formatChoisi?.id === format.id && styles.chipActif]}
               onPress={() => setFormatChoisi(format)}>
+              <View style={[styles.pastille, { backgroundColor: couleurPourFormat(format, marques) }]} />
               <Text style={[styles.chipTexte, formatChoisi?.id === format.id && styles.chipTexteActif]}>
                 {format.marque}
               </Text>
@@ -152,6 +154,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: couleurs.bordure,
     backgroundColor: couleurs.carte,
+  },
+  chipAvecPastille: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espacements.xs,
+  },
+  pastille: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
   chipActif: {
     backgroundColor: couleurs.rouge,

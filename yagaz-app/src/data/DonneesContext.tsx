@@ -15,8 +15,25 @@ import {
 } from 'react';
 
 import * as api from '../api/endpoints';
-import { MODE_DEMO, alertesDemo, bouteillesDemo, executerAvecSource, formatsDemo, sitesDemo } from '../api/demo';
-import type { Alerte, Bouteille, CorpsCreationBouteille, Format, RoleBouteille, Site } from '../api/types';
+import {
+  MODE_DEMO,
+  alertesDemo,
+  bouteillesDemo,
+  executerAvecSource,
+  formatsDemo,
+  marquesDemo,
+  sitesDemo,
+} from '../api/demo';
+import type {
+  Alerte,
+  Bouteille,
+  CorpsCreationBouteille,
+  CorpsMajBouteille,
+  Format,
+  Marque,
+  RoleBouteille,
+  Site,
+} from '../api/types';
 import { useAuth } from '../auth/AuthContext';
 import { CLES_CACHE, ecrireCache, lireCache } from './cache';
 
@@ -26,6 +43,7 @@ interface DonneesCache {
   sites: Site[];
   bouteillesParSite: Record<string, Bouteille[]>;
   formats: Format[];
+  marques: Marque[];
   alertes: Alerte[];
 }
 
@@ -37,6 +55,7 @@ interface ContexteDonneesValeur {
   bouteilles: Bouteille[];
   bouteilleActive: Bouteille | undefined;
   formats: Format[];
+  marques: Marque[];
   alertes: Alerte[];
   statutSync: StatutSync;
   derniereSyncAt: string | null;
@@ -44,7 +63,8 @@ interface ContexteDonneesValeur {
   rafraichir: () => Promise<void>;
   activerBouteille: (uuid: string) => Promise<void>;
   enregistrerBouteille: (corps: CorpsCreationBouteille) => Promise<Bouteille>;
-  majSeuilBouteille: (uuid: string, seuilBasPct: number) => Promise<void>;
+  /** Édition libre d'une bouteille (rôle, seuil, tare, format/marque - contrat PATCH). */
+  modifierBouteille: (uuid: string, corps: CorpsMajBouteille) => Promise<Bouteille>;
   majAlerteStatut: (id: number, statut: 'vue' | 'resolue') => Promise<void>;
 }
 
@@ -75,6 +95,7 @@ export function DonneesProvider({ children }: { children: ReactNode }) {
   const [siteActifUuid, setSiteActifUuid] = useState<string | null>(null);
   const [bouteillesParSite, setBouteillesParSite] = useState<Record<string, Bouteille[]>>({});
   const [formats, setFormats] = useState<Format[]>([]);
+  const [marques, setMarques] = useState<Marque[]>([]);
   const [alertes, setAlertes] = useState<Alerte[]>([]);
   const [statutSync, setStatutSync] = useState<StatutSync>('chargement');
   const [derniereSyncAt, setDerniereSyncAt] = useState<string | null>(null);
@@ -91,6 +112,7 @@ export function DonneesProvider({ children }: { children: ReactNode }) {
         setSites(cache.sites);
         setBouteillesParSite(cache.bouteillesParSite);
         setFormats(cache.formats);
+        setMarques(cache.marques ?? []);
         setAlertes(cache.alertes);
         setSiteActifUuid(siteActifCache ?? cache.sites[0]?.uuid ?? null);
         setChargementInitial(false);
@@ -111,6 +133,11 @@ export function DonneesProvider({ children }: { children: ReactNode }) {
         formatsDemo
       );
 
+      const { data: marquesRecues, source: sourceMarques } = await executerAvecSource(
+        () => api.listerMarques().then((r) => r.data),
+        marquesDemo
+      );
+
       const bouteillesEntrees = await Promise.all(
         sitesRecus.map(async (site) => {
           const { data, source } = await executerAvecSource(
@@ -121,7 +148,7 @@ export function DonneesProvider({ children }: { children: ReactNode }) {
         })
       );
       const bouteillesRecues: Record<string, Bouteille[]> = {};
-      let uneSourceDemo = sourceSites === 'demo' || sourceFormats === 'demo';
+      let uneSourceDemo = sourceSites === 'demo' || sourceFormats === 'demo' || sourceMarques === 'demo';
       for (const entree of bouteillesEntrees) {
         bouteillesRecues[entree.uuid] = entree.data;
         if (entree.source === 'demo') uneSourceDemo = true;
@@ -135,6 +162,7 @@ export function DonneesProvider({ children }: { children: ReactNode }) {
 
       setSites(sitesRecus);
       setFormats(formatsRecus);
+      setMarques(marquesRecues);
       setBouteillesParSite(bouteillesRecues);
       setAlertes(alertesRecues);
       setSiteActifUuid((precedent) => precedent ?? sitesRecus[0]?.uuid ?? null);
@@ -147,6 +175,7 @@ export function DonneesProvider({ children }: { children: ReactNode }) {
         sites: sitesRecus,
         bouteillesParSite: bouteillesRecues,
         formats: formatsRecus,
+        marques: marquesRecues,
         alertes: alertesRecues,
       });
     } catch {
@@ -180,11 +209,17 @@ export function DonneesProvider({ children }: { children: ReactNode }) {
     (siteUuid: string, valeur: Bouteille[]) => {
       setBouteillesParSite((precedent) => {
         const suivant = { ...precedent, [siteUuid]: valeur };
-        ecrireCache<DonneesCache>(CLES_CACHE.sites, { sites, bouteillesParSite: suivant, formats, alertes });
+        ecrireCache<DonneesCache>(CLES_CACHE.sites, {
+          sites,
+          bouteillesParSite: suivant,
+          formats,
+          marques,
+          alertes,
+        });
         return suivant;
       });
     },
-    [sites, formats, alertes]
+    [sites, formats, marques, alertes]
   );
 
   const activerBouteille = useCallback(
@@ -258,25 +293,40 @@ export function DonneesProvider({ children }: { children: ReactNode }) {
     [siteActifUuid, bouteillesParSite, formats, appliquerBouteillesSite]
   );
 
-  const majSeuilBouteille = useCallback(
-    async (uuid: string, seuilBasPct: number) => {
-      if (!siteActifUuid) return;
+  const modifierBouteille = useCallback(
+    async (uuid: string, corps: CorpsMajBouteille): Promise<Bouteille> => {
+      if (!siteActifUuid) throw new Error('Aucun site actif.');
       const actuelles = bouteillesParSite[siteActifUuid] ?? [];
       try {
-        const { data: bouteille } = await api.patchBouteille(uuid, { seuil_bas_pct: seuilBasPct });
+        const { data: bouteille } = await api.patchBouteille(uuid, corps);
+        const misesAJour = actuelles.map((b) => (b.uuid === bouteille.uuid ? bouteille : b));
         appliquerBouteillesSite(
           siteActifUuid,
-          actuelles.map((b) => (b.uuid === bouteille.uuid ? bouteille : b))
+          corps.role_bouteille === 'active' ? permuterActive(misesAJour, bouteille.uuid) : misesAJour
         );
+        return bouteille;
       } catch (erreur) {
         if (!MODE_DEMO) throw erreur;
-        appliquerBouteillesSite(
-          siteActifUuid,
-          actuelles.map((b) => (b.uuid === uuid ? { ...b, seuil_bas_pct: seuilBasPct } : b))
-        );
+        const formatChoisi = corps.format_id != null ? formats.find((f) => f.id === corps.format_id) : undefined;
+        const misesAJour = actuelles.map((b) => {
+          if (b.uuid !== uuid) return b;
+          return {
+            ...b,
+            ...(corps.role_bouteille !== undefined ? { role_bouteille: corps.role_bouteille } : {}),
+            ...(corps.seuil_bas_pct !== undefined ? { seuil_bas_pct: corps.seuil_bas_pct } : {}),
+            ...(corps.tare_g !== undefined ? { tare_g: corps.tare_g } : {}),
+            ...(corps.tare_source !== undefined ? { tare_source: corps.tare_source } : {}),
+            ...(formatChoisi ? { format: formatChoisi } : {}),
+          };
+        });
+        const finale = corps.role_bouteille === 'active' ? permuterActive(misesAJour, uuid) : misesAJour;
+        appliquerBouteillesSite(siteActifUuid, finale);
+        const bouteilleMaj = finale.find((b) => b.uuid === uuid);
+        if (!bouteilleMaj) throw erreur;
+        return bouteilleMaj;
       }
     },
-    [siteActifUuid, bouteillesParSite, appliquerBouteillesSite]
+    [siteActifUuid, bouteillesParSite, formats, appliquerBouteillesSite]
   );
 
   const majAlerteStatut = useCallback(async (id: number, statut: 'vue' | 'resolue') => {
@@ -304,6 +354,7 @@ export function DonneesProvider({ children }: { children: ReactNode }) {
       bouteilles,
       bouteilleActive,
       formats,
+      marques,
       alertes,
       statutSync,
       derniereSyncAt,
@@ -311,7 +362,7 @@ export function DonneesProvider({ children }: { children: ReactNode }) {
       rafraichir,
       activerBouteille,
       enregistrerBouteille,
-      majSeuilBouteille,
+      modifierBouteille,
       majAlerteStatut,
     }),
     [
@@ -322,6 +373,7 @@ export function DonneesProvider({ children }: { children: ReactNode }) {
       bouteilles,
       bouteilleActive,
       formats,
+      marques,
       alertes,
       statutSync,
       derniereSyncAt,
@@ -329,7 +381,7 @@ export function DonneesProvider({ children }: { children: ReactNode }) {
       rafraichir,
       activerBouteille,
       enregistrerBouteille,
-      majSeuilBouteille,
+      modifierBouteille,
       majAlerteStatut,
     ]
   );

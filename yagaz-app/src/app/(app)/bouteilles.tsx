@@ -8,10 +8,11 @@ import { Bouton } from '../../components/Bouton';
 import { useDonnees } from '../../data/DonneesContext';
 import { couleurs, espacements, rayons } from '../../../theme/couleurs';
 import { formaterAutonomie } from '../../utils/niveau';
+import { couleurPourFormat } from '../../utils/marque';
 import type { Bouteille } from '../../api/types';
 
 export default function EcranBouteilles() {
-  const { siteActif, bouteilles, activerBouteille } = useDonnees();
+  const { siteActif, bouteilles, marques, activerBouteille } = useDonnees();
   const [uuidEnCours, setUuidEnCours] = useState<string | null>(null);
 
   async function definirActive(bouteille: Bouteille) {
@@ -46,9 +47,12 @@ export default function EcranBouteilles() {
             <View style={styles.ligneEntete}>
               <View style={styles.roleZone}>
                 <Text style={styles.role}>{item.role_bouteille === 'active' ? 'Active' : 'Secours'}</Text>
-                <Text style={styles.format}>
-                  {item.format.code} - {item.format.marque}
-                </Text>
+                <View style={styles.ligneFormat}>
+                  <View style={[styles.pastille, { backgroundColor: couleurPourFormat(item.format, marques) }]} />
+                  <Text style={styles.format}>
+                    {item.format.code} - {item.format.marque}
+                  </Text>
+                </View>
               </View>
               <BadgeEtat etat={item.niveau.etat} />
             </View>
@@ -147,10 +151,20 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: couleurs.texte,
   },
+  ligneFormat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espacements.xs,
+    marginTop: 2,
+  },
+  pastille: {
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+  },
   format: {
     fontSize: 13,
     color: couleurs.texteDoux,
-    marginTop: 2,
   },
   ligneChiffres: {
     flexDirection: 'row',

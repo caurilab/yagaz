@@ -95,6 +95,16 @@ export interface Format {
   marque: string;
   tare_nominale_g: number;
   contenance_gaz_g: number;
+  /** Couleur hex de la marque (repli `#6B7280` côté client si absente). */
+  couleur?: string;
+}
+
+// --- Marques (référentiel) ---
+
+export interface Marque {
+  id: number;
+  nom: string;
+  couleur: string;
 }
 
 // --- Niveau (objet embarqué dans une bouteille) ---
@@ -144,6 +154,7 @@ export interface CorpsCreationBouteille {
 }
 
 export interface CorpsMajBouteille {
+  format_id?: number;
   role_bouteille?: RoleBouteille;
   seuil_bas_pct?: number;
   tare_g?: number;
@@ -244,6 +255,7 @@ export interface MesRoles {
   depots: RoleDepot[];
   livreur: boolean;
   mandataires: RoleMandataire[];
+  distributeurs?: RoleMandataire[];
 }
 
 export type EspaceType = 'foyer' | 'depot' | 'livreur' | 'mandataire';

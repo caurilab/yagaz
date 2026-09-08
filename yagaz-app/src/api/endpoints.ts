@@ -35,6 +35,7 @@ import type {
   FoyerEnTension,
   FoyerEnTensionLivreur,
   Livraison,
+  Marque,
   MembreLivreur,
   MesRoles,
   MissionLivreur,
@@ -100,6 +101,12 @@ export function retirerPartageSite(uuid: string, userUuid: string) {
 
 export function listerFormats() {
   return requeteApi<{ data: Format[] }>('/formats');
+}
+
+// --- Marques (référentiel) ---
+
+export function listerMarques() {
+  return requeteApi<{ data: Marque[] }>('/marques');
 }
 
 // --- Bouteilles ---

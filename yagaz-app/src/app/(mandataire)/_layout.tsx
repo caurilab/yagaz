@@ -23,7 +23,7 @@ export default function LayoutMandataire() {
           options={{
             title: 'Tournée du jour',
             tabBarLabel: 'Tournée',
-            tabBarIcon: ({ focused }) => <IconeOnglet symbole="🚚" focus={focused} />,
+            tabBarIcon: ({ color }) => <IconeOnglet lib="material-community" nom="truck-delivery" color={color} />,
           }}
         />
         <Tabs.Screen
@@ -31,14 +31,14 @@ export default function LayoutMandataire() {
           options={{
             title: 'Mes dépôts',
             tabBarLabel: 'Dépôts',
-            tabBarIcon: ({ focused }) => <IconeOnglet symbole="🏬" focus={focused} />,
+            tabBarIcon: ({ color }) => <IconeOnglet nom="business" color={color} />,
           }}
         />
         <Tabs.Screen
           name="reglages"
           options={{
             title: 'Réglages',
-            tabBarIcon: ({ focused }) => <IconeOnglet symbole="⚙️" focus={focused} />,
+            tabBarIcon: ({ color }) => <IconeOnglet nom="settings" color={color} />,
           }}
         />
       </Tabs>

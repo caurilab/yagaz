@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { router } from 'expo-router';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 
 import { Bouton } from '../../components/Bouton';
 import { useCommandes } from '../../data/CommandesContext';
@@ -115,17 +116,33 @@ export default function EcranNouvelleCommande() {
           <Text style={styles.texteVide}>Aucun dépôt disponible pour ce format à proximité.</Text>
         ) : (
           <View style={styles.listeDepots}>
+            <Text style={styles.texteCompteurDepots}>
+              {depots.length} dépôt{depots.length > 1 ? 's' : ''} à proximité
+            </Text>
             {depots.map((depot) => (
               <Pressable
                 key={depot.uuid}
-                style={[styles.carteDepot, depotChoisi?.uuid === depot.uuid && styles.carteDepotActive]}
+                style={[
+                  styles.carteDepot,
+                  depotChoisi?.uuid === depot.uuid && styles.carteDepotActive,
+                  !depot.disponible && styles.carteDepotIndisponible,
+                ]}
                 onPress={() => setDepotChoisi(depot)}
                 disabled={!depot.disponible}>
                 <View style={styles.zoneNomDepot}>
-                  <Text style={styles.nomDepot}>{depot.nom}</Text>
+                  <View style={styles.ligneNomDepot}>
+                    <Ionicons name="location" size={16} color={couleurs.rouge} />
+                    <Text style={styles.nomDepot}>{depot.nom}</Text>
+                  </View>
                   {depot.adresse ? <Text style={styles.adresseDepot}>{depot.adresse}</Text> : null}
+                  {!depot.disponible ? <Text style={styles.texteIndisponible}>Indisponible pour l'instant</Text> : null}
                 </View>
-                <Text style={styles.distanceDepot}>{depot.distance_km.toFixed(1)} km</Text>
+                <View style={styles.zoneDistanceDepot}>
+                  <Text style={styles.distanceDepot}>{depot.distance_km.toFixed(1)} km</Text>
+                  {depotChoisi?.uuid === depot.uuid ? (
+                    <Ionicons name="checkmark-circle" size={20} color={couleurs.rouge} />
+                  ) : null}
+                </View>
               </Pressable>
             ))}
           </View>
@@ -218,6 +235,11 @@ const styles = StyleSheet.create({
   listeDepots: {
     gap: espacements.sm,
   },
+  texteCompteurDepots: {
+    fontSize: 13,
+    color: couleurs.texteDoux,
+    marginBottom: espacements.xs,
+  },
   carteDepot: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -232,8 +254,16 @@ const styles = StyleSheet.create({
     borderColor: couleurs.rouge,
     borderWidth: 2,
   },
+  carteDepotIndisponible: {
+    opacity: 0.5,
+  },
   zoneNomDepot: {
     flex: 1,
+  },
+  ligneNomDepot: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espacements.xs,
   },
   nomDepot: {
     fontSize: 15,
@@ -244,6 +274,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: couleurs.texteDoux,
     marginTop: 2,
+  },
+  texteIndisponible: {
+    fontSize: 12,
+    color: couleurs.rouge,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  zoneDistanceDepot: {
+    alignItems: 'flex-end',
+    gap: espacements.xs,
   },
   distanceDepot: {
     fontSize: 13,

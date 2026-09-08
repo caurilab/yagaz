@@ -22,35 +22,35 @@ export default function LayoutDepot() {
           options={{
             title: 'Stock',
             tabBarLabel: 'Stock',
-            tabBarIcon: ({ focused }) => <IconeOnglet symbole="🧯" focus={focused} />,
+            tabBarIcon: ({ color }) => <IconeOnglet nom="archive" color={color} />,
           }}
         />
         <Tabs.Screen
           name="commandes"
           options={{
             title: 'Commandes',
-            tabBarIcon: ({ focused }) => <IconeOnglet symbole="📦" focus={focused} />,
+            tabBarIcon: ({ color }) => <IconeOnglet nom="cube" color={color} />,
           }}
         />
         <Tabs.Screen
           name="propositions"
           options={{
             title: 'Propositions',
-            tabBarIcon: ({ focused }) => <IconeOnglet symbole="📣" focus={focused} />,
+            tabBarIcon: ({ color }) => <IconeOnglet nom="megaphone" color={color} />,
           }}
         />
         <Tabs.Screen
           name="reappros"
           options={{
             title: 'Réappros',
-            tabBarIcon: ({ focused }) => <IconeOnglet symbole="🔁" focus={focused} />,
+            tabBarIcon: ({ color }) => <IconeOnglet nom="repeat" color={color} />,
           }}
         />
         <Tabs.Screen
           name="reglages"
           options={{
             title: 'Réglages',
-            tabBarIcon: ({ focused }) => <IconeOnglet symbole="⚙️" focus={focused} />,
+            tabBarIcon: ({ color }) => <IconeOnglet nom="settings" color={color} />,
           }}
         />
       </Tabs>
