@@ -1,19 +1,25 @@
 /**
- * Sélecteur de format 100 % visuel : bouteilles SVG alignées en ligne
- * scrollable, taille proportionnelle au format (B24 la plus grande, cf.
- * `BouteilleGaz`), code en appoint. Remplace les chips texte partout où l'on
- * choisit un format (nouvelle commande, enregistrement, édition) - on choisit
- * à l'œil, la marque se choisit à l'étape suivante. Sélection nette (halo
- * orange), jamais de fond plein criard.
+ * Sélecteur de format 100 % visuel : bouteilles SVG à taille proportionnelle
+ * au format (B35 la plus grande -> B6 la plus petite, cf. `BouteilleGaz`),
+ * code en appoint. On choisit à l'œil ; la marque se choisit à l'étape
+ * suivante. Sélection nette (halo orange), jamais de fond plein criard.
+ *
+ * Mise en page responsive : toutes les bouteilles sont visibles d'un coup
+ * (pas de défilement horizontal). Elles tiennent sur UNE ligne quand la
+ * largeur le permet, sinon se répartissent en rangées équilibrées (ex. 2+2),
+ * et la taille des cartes/bouteilles s'ajuste à la largeur disponible.
  */
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { type LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { couleurs, espacements, rayons } from '../../theme/couleurs';
+import { couleurs, rayons } from '../../theme/couleurs';
 import { BouteilleGaz } from './BouteilleGaz';
 
-const HAUTEUR_REFERENCE_BOUTEILLE = 108;
-const LARGEUR_CARTE = 96;
-const HAUTEUR_CARTE = 148;
+const ESPACE = 10;
+const LARGEUR_CARTE_MIN = 72;
+const LARGEUR_CARTE_MAX = 116;
+const HAUTEUR_BOUTEILLE_MIN = 66;
+const HAUTEUR_BOUTEILLE_MAX = 116;
 
 interface Props {
   codes: string[];
@@ -21,48 +27,84 @@ interface Props {
   onChoisir: (code: string) => void;
 }
 
+const borne = (valeur: number, min: number, max: number) => Math.max(min, Math.min(max, valeur));
+
+/** Nombre max de cartes par rangée tenant dans `largeur` sans passer sous la largeur mini. */
+function maxParRangee(largeur: number, total: number): number {
+  for (let k = total; k > 1; k -= 1) {
+    if ((largeur - ESPACE * (k - 1)) / k >= LARGEUR_CARTE_MIN) {
+      return k;
+    }
+  }
+  return 1;
+}
+
 export function SelecteurFormat({ codes, codeChoisi, onChoisir }: Props) {
+  const [largeur, setLargeur] = useState(0);
+  const total = codes.length;
+
+  const mesurer = (e: LayoutChangeEvent) => {
+    const l = e.nativeEvent.layout.width;
+    if (l > 0 && Math.abs(l - largeur) > 0.5) {
+      setLargeur(l);
+    }
+  };
+
+  // Rangées équilibrées : on répartit `total` en assez de rangées pour que
+  // chaque carte respecte la largeur mini (4 formats -> 1 ligne large, ou 2+2
+  // sur écran étroit), plutôt qu'une rangée pleine suivie d'une carte seule.
+  const capacite = largeur > 0 ? maxParRangee(largeur, total) : total;
+  const nbRangees = Math.max(1, Math.ceil(total / Math.max(1, capacite)));
+  const parRangee = Math.ceil(total / nbRangees);
+  const largeurCarte = largeur > 0
+    ? borne(Math.floor((largeur - ESPACE * (parRangee - 1)) / parRangee), LARGEUR_CARTE_MIN, LARGEUR_CARTE_MAX)
+    : LARGEUR_CARTE_MIN;
+  const hauteurBouteille = borne(Math.round(largeurCarte * 1.02), HAUTEUR_BOUTEILLE_MIN, HAUTEUR_BOUTEILLE_MAX);
+  const hauteurCarte = hauteurBouteille + 40;
+
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rangee}>
-      {codes.map((code) => {
-        const actif = codeChoisi === code;
-        return (
-          <Pressable
-            key={code}
-            style={[styles.carte, actif && styles.carteActive]}
-            onPress={() => onChoisir(code)}
-            accessibilityRole="button"
-            accessibilityState={{ selected: actif }}
-            accessibilityLabel={`Format ${code}`}>
-            <View style={styles.zoneBouteille}>
-              <BouteilleGaz code={code} niveauPct={100} taille={HAUTEUR_REFERENCE_BOUTEILLE} reflet={false} />
-            </View>
-            <Text style={[styles.code, actif && styles.codeActif]}>{code}</Text>
-          </Pressable>
-        );
-      })}
-    </ScrollView>
+    <View style={styles.grille} onLayout={mesurer}>
+      {largeur > 0 &&
+        codes.map((code) => {
+          const actif = codeChoisi === code;
+          return (
+            <Pressable
+              key={code}
+              style={[styles.carte, { width: largeurCarte, height: hauteurCarte }, actif && styles.carteActive]}
+              onPress={() => onChoisir(code)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: actif }}
+              accessibilityLabel={`Format ${code}`}>
+              <View style={styles.zoneBouteille}>
+                <BouteilleGaz code={code} niveauPct={100} taille={hauteurBouteille} reflet={false} />
+              </View>
+              <Text style={[styles.code, actif && styles.codeActif]}>{code}</Text>
+            </Pressable>
+          );
+        })}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  rangee: {
+  grille: {
     flexDirection: 'row',
-    gap: espacements.md,
-    paddingVertical: espacements.xs,
-    paddingHorizontal: 2,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    rowGap: ESPACE,
+    columnGap: ESPACE,
+    minHeight: LARGEUR_CARTE_MIN + 40,
   },
   carte: {
-    width: LARGEUR_CARTE,
-    height: HAUTEUR_CARTE,
     borderRadius: rayons.lg,
     borderWidth: 2,
     borderColor: 'transparent',
     backgroundColor: couleurs.carte,
     alignItems: 'center',
     justifyContent: 'flex-end',
-    paddingBottom: espacements.sm,
-    gap: espacements.xs,
+    paddingBottom: 8,
+    gap: 4,
   },
   carteActive: {
     borderColor: couleurs.rouge,
