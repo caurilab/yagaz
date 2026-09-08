@@ -26,6 +26,14 @@ export default function LayoutLivreur() {
           }}
         />
         <Tabs.Screen
+          name="tension"
+          options={{
+            title: 'Foyers en tension',
+            tabBarLabel: 'Tension',
+            tabBarIcon: ({ focused }) => <IconeOnglet symbole="⛽️" focus={focused} />,
+          }}
+        />
+        <Tabs.Screen
           name="notifications"
           options={{
             title: 'Notifications',

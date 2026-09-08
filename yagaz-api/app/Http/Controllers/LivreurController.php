@@ -7,6 +7,7 @@ use App\Enums\TypeOrganisation;
 use App\Http\Requests\LivreurMissionsIndexRequest;
 use App\Http\Requests\LivreurPropositionRequest;
 use App\Http\Resources\CommandeResource;
+use App\Http\Resources\FoyerEnTensionLivreurResource;
 use App\Http\Resources\LivraisonMissionResource;
 use App\Models\Livraison;
 use App\Models\Organisation;
@@ -15,6 +16,7 @@ use App\Models\User;
 use App\Services\Commande\CycleCommande;
 use App\Services\Commande\DetectionTension;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Collection;
 
@@ -39,6 +41,29 @@ class LivreurController extends Controller
             ->get();
 
         return LivraisonMissionResource::collection($livraisons);
+    }
+
+    /**
+     * File actionnable du livreur habituel (ADR 0008, précision « maillon C »)
+     * : les sites dont l'utilisateur courant est le livreur habituel ACTIF
+     * ET qui sont effectivement en tension (bouteille active sous le seuil
+     * bas, `DetectionTension`, même critère que la proposition). Réponse
+     * dédiée et minimale (`FoyerEnTensionLivreurResource`) : site_uuid, nom,
+     * zone, format — jamais niveau, autonomie, historique, autres
+     * bouteilles/sites, ni contact. Jamais les foyers habituels d'un autre
+     * livreur, ni les foyers non en tension.
+     */
+    public function foyersEnTension(Request $request): AnonymousResourceCollection
+    {
+        $sites = Site::whereHas('livreurHabituel', fn ($livreurHabituel) => $livreurHabituel
+            ->where('actif', true)
+            ->where('livreur_user_id', $request->user()->id))
+            ->get()
+            ->each(fn (Site $site) => $site->setAttribute('bouteille_en_tension', $this->tension->bouteilleEnTension($site)))
+            ->filter(fn (Site $site) => $site->bouteille_en_tension !== null)
+            ->values();
+
+        return FoyerEnTensionLivreurResource::collection($sites);
     }
 
     /**

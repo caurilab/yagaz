@@ -1,5 +1,6 @@
+import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BandeauSync } from '../../components/BandeauSync';
@@ -9,35 +10,19 @@ import { couleurs, espacements, rayons } from '../../../theme/couleurs';
 import type { Notification } from '../../api/types';
 
 /**
- * Notifications du livreur (doc 11 §3), dont l'alerte de tension d'un foyer
+ * Notifications du livreur (doc 11 §3), dont le rappel de tension d'un foyer
  * habituel : uniquement le sous-ensemble minimal `contexte` (nom, zone,
  * format) est affiché - jamais de niveau, d'autonomie ni d'historique
- * (ADR 0008). Depuis une notification de tension, le livreur peut proposer
- * une livraison (ADR 0009 §C).
+ * (ADR 0008). Ce rappel n'est PAS actionnable directement : il ne porte pas
+ * de `site_uuid` (ADR 0008). « Proposer » renvoie vers la file actionnable
+ * (`/tension`, `GET /api/livreur/foyers-en-tension`) qui, elle, identifie le
+ * foyer (ADR 0008, précision « maillon C »).
  */
 export default function EcranNotificationsLivreur() {
-  const { notifications, formats, statutSync, rafraichir, marquerNotificationVue, proposerLivraison } = useLivreur();
+  const { notifications, statutSync, rafraichir, marquerNotificationVue } = useLivreur();
   const [idEnCours, setIdEnCours] = useState<number | null>(null);
 
   const triees = [...notifications].sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
-
-  async function proposer(notification: Notification) {
-    if (!notification.contexte) return;
-    const format = formats.find((f) => f.code === notification.contexte?.format_code);
-    if (!format) {
-      Alert.alert('Format inconnu', 'Impossible de préparer cette proposition pour le moment.');
-      return;
-    }
-    setIdEnCours(notification.id);
-    try {
-      await proposerLivraison({ notification_id: notification.id, format_id: format.id, quantite: 1 });
-      Alert.alert('Proposition envoyée', 'Le foyer va recevoir votre proposition et pourra l\'accepter ou la refuser.');
-    } catch {
-      Alert.alert('Erreur', "L'envoi de la proposition a échoué. Réessayez.");
-    } finally {
-      setIdEnCours(null);
-    }
-  }
 
   async function marquerVue(notification: Notification) {
     setIdEnCours(notification.id);
@@ -85,9 +70,8 @@ export default function EcranNotificationsLivreur() {
               <View style={styles.actions}>
                 {item.contexte ? (
                   <Bouton
-                    titre="Proposer la livraison"
-                    enCours={idEnCours === item.id}
-                    onPress={() => proposer(item)}
+                    titre="Proposer une livraison"
+                    onPress={() => router.push('/tension')}
                     style={styles.boutonAction}
                   />
                 ) : null}

@@ -33,6 +33,7 @@ import type {
   DepotConsolide,
   Format,
   FoyerEnTension,
+  FoyerEnTensionLivreur,
   Livraison,
   MembreLivreur,
   MesRoles,
@@ -263,7 +264,16 @@ export function majStatutLivraison(id: number, corps: CorpsMajStatutLivraison) {
   return requeteApi<{ data: Livraison }>(`/livraisons/${id}/statut`, { methode: 'PATCH', corps });
 }
 
-/** Proposition d'un livreur habituel depuis une notification de tension (ADR 0009 §C). */
+/**
+ * File actionnable des foyers habituels en tension de l'utilisateur courant
+ * (ADR 0008, précision « maillon C »). C'est la source de `site_uuid` pour
+ * `livreurProposition` - jamais la notification de seuil bas, minimale.
+ */
+export function livreurFoyersEnTension() {
+  return requeteApi<{ data: FoyerEnTensionLivreur[] }>('/livreur/foyers-en-tension');
+}
+
+/** Proposition d'un livreur habituel pour un de ses foyers habituels en tension (ADR 0009 §C). */
 export function livreurProposition(corps: CorpsPropositionLivreur) {
   return requeteApi<{ data: Commande }>('/livreur/propositions', { methode: 'POST', corps });
 }

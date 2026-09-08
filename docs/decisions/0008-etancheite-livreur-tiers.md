@@ -37,6 +37,26 @@ Un livreur ne reçoit ces informations que pour les foyers **dont il est le
 livreur habituel** et qui sont **effectivement en tension** — jamais pour un
 foyer quelconque.
 
+## Précision (maillon C) — identité des foyers habituels en tension
+
+La **notification** de seuil bas reste un simple rappel minimal (`{site_nom, zone,
+format}` + `ref` opaque, sans uuid). Mais pour **proposer** une livraison, le
+livreur doit identifier le foyer. On distingue donc deux niveaux :
+
+- **Notification (nudge)** : minimale, sans identifiant.
+- **File actionnable du livreur** : `GET /livreur/foyers-en-tension` renvoie, pour
+  les sites dont l'utilisateur est le **livreur habituel désigné** ET qui sont
+  **en tension**, l'identité nécessaire à l'action : `site_uuid`, `nom`, `zone`,
+  `format`. Rien de plus — ni niveau, ni autonomie, ni historique, ni autres
+  bouteilles/sites, ni contact.
+
+Justification : le foyer a **explicitement désigné** ce livreur (via
+`POST /sites/{uuid}/livreur-habituel`, propriétaire only) ; ce consentement couvre
+le fait que ce livreur sache lequel de ses foyers habituels a besoin d'une
+recharge. Le périmètre reste strict (ses foyers habituels, en tension seulement).
+L'adresse précise et le contact ne viennent qu'avec la mission, après affectation
+humaine (`LivraisonMissionResource`, sans téléphone/identité étendue).
+
 ## Conséquences
 
 - Le `Notificateur` applique déjà l'invariant « pas de référence site/bouteille

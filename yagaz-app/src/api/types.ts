@@ -388,18 +388,31 @@ export interface CorpsConfirmationReappro {
 }
 
 /**
- * Proposition envoyée par un livreur habituel depuis une notification de
- * tension (ADR 0009 §C). `site_uuid` reste optionnel : la notification reçue
- * par le livreur ne le contient jamais (ADR 0008) - `notification_id` permet
- * au serveur de retrouver le foyer visé sans que l'app ne manipule son
- * identifiant.
+ * Entrée de la file actionnable du livreur habituel (ADR 0008, précision
+ * « maillon C » ; contrat 10 §5, `GET /api/livreur/foyers-en-tension`) :
+ * l'identité nécessaire pour proposer une livraison, et rien de plus - la
+ * notification de seuil bas, elle, reste minimale et sans identifiant
+ * (`Notification.contexte`).
+ */
+export interface FoyerEnTensionLivreur {
+  site_uuid: string;
+  nom: string;
+  zone: string;
+  format: Format;
+}
+
+/**
+ * Proposition envoyée par un livreur habituel pour un de ses foyers
+ * habituels en tension (ADR 0009 §C). `site_uuid` vient TOUJOURS de la file
+ * actionnable (`GET /api/livreur/foyers-en-tension`), jamais de la
+ * notification de seuil bas (qui ne le contient pas, ADR 0008). Le format
+ * n'est pas saisi côté client : dérivé par le serveur de la bouteille en
+ * tension du site.
  */
 export interface CorpsPropositionLivreur {
-  notification_id?: number;
-  site_uuid?: string;
-  format_id: number;
-  quantite: number;
+  site_uuid: string;
   depot_uuid?: string;
+  quantite?: number;
 }
 
 // --- Mandataire (doc 11 §1) ---

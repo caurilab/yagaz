@@ -13,6 +13,7 @@ import type {
   DepotConsolide,
   Format,
   FoyerEnTension,
+  FoyerEnTensionLivreur,
   MembreLivreur,
   MesRoles,
   MissionLivreur,
@@ -370,6 +371,21 @@ export const notificationsLivreurDemo: Notification[] = [
     message: "Un foyer habituel a besoin d'une recharge.",
     created_at: ilYA(5),
     contexte: { site_nom: 'Chez Maman', zone: 'Thiès', format_code: 'B38' },
+  },
+];
+
+/**
+ * File actionnable du livreur habituel (ADR 0008, précision « maillon C »)
+ * : cohérente avec `notificationsLivreurDemo` ci-dessus - même foyer
+ * (« Chez Maman », Thiès, B38), pour que le rappel et la file pointent
+ * démonstrativement vers la même proposition possible.
+ */
+export const livreurFoyersEnTensionDemo: FoyerEnTensionLivreur[] = [
+  {
+    site_uuid: 'site-maman',
+    nom: 'Chez Maman',
+    zone: 'Thiès',
+    format: formatsDemo[2],
   },
 ];
 

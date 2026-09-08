@@ -62,6 +62,8 @@ Accès : membre `livreur` (policy). Ne voit que ses livraisons affectées.
 | Méthode | Route | Notes |
 |---|---|---|
 | GET | `/api/livreur/missions` | Livraisons affectées : adresse (site), bouteille/format, quantité, à déposer / à récupérer, statut. Filtre `?statut`. |
+| GET | `/api/livreur/foyers-en-tension` | File actionnable des foyers habituels **en tension** de l'utilisateur courant (ADR 0008, précision « maillon C »). Par site : `site_uuid`, `nom`, `zone`, `format` — jamais niveau, autonomie, historique, autres bouteilles/sites, ni contact. C'est la source de `site_uuid` pour `POST /api/livreur/propositions` ci-dessous (pas la notification de seuil bas, minimale et sans identifiant). |
+| POST | `/api/livreur/propositions` | `{ site_uuid, depot_uuid?, quantite? }` → crée une commande `proposee` pour un foyer dont l'utilisateur est le livreur habituel **actif** et le site **en tension** (`site_uuid` issu de `GET /api/livreur/foyers-en-tension`). Le format est dérivé de la bouteille en tension du site, jamais saisi par le client. `depot_uuid` requis seulement si le livreur est membre de plusieurs dépôts. 403 si le livreur n'est pas le livreur habituel actif du site, 422 si le site n'est pas en tension. |
 | PATCH | `/api/livraisons/{id}/statut` | `{ statut: "en_route" \| "livree" \| "vide_recupere", vides_recuperes? }`. Transitions ordonnées. `livree` propage la commande en `livree` ; `vide_recupere` incrémente les `vides` du dépôt (mouvement `retour_vide`). |
 
 ## 6. Règles métier et cohérence

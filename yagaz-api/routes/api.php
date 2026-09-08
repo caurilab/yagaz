@@ -106,6 +106,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // === Livreur — missions, propositions (contrat API doc 10, §5 ; ADR 0009 maillon C)
     Route::get('/livreur/missions', [LivreurController::class, 'missions']);
+    // File actionnable des foyers habituels en tension (ADR 0008, précision « maillon C »).
+    Route::get('/livreur/foyers-en-tension', [LivreurController::class, 'foyersEnTension']);
     Route::post('/livreur/propositions', [LivreurController::class, 'propositions']);
     Route::patch('/livraisons/{livraison}/statut', [LivraisonController::class, 'statut']);
 

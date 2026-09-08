@@ -16,8 +16,14 @@ import {
 } from 'react';
 
 import * as api from '../api/endpoints';
-import { MODE_DEMO, executerAvecSource, formatsDemo, missionsLivreurDemo, notificationsLivreurDemo } from '../api/demo';
-import type { CorpsPropositionLivreur, Format, MissionLivreur, Notification, StatutLivraison } from '../api/types';
+import {
+  MODE_DEMO,
+  executerAvecSource,
+  livreurFoyersEnTensionDemo,
+  missionsLivreurDemo,
+  notificationsLivreurDemo,
+} from '../api/demo';
+import type { FoyerEnTensionLivreur, MissionLivreur, Notification, StatutLivraison } from '../api/types';
 import { useAuth } from '../auth/AuthContext';
 import { CLES_CACHE, ecrireCache, lireCache } from './cache';
 import type { StatutSync } from './DonneesContext';
@@ -25,8 +31,8 @@ import type { StatutSync } from './DonneesContext';
 interface ContexteLivreurValeur {
   missions: MissionLivreur[];
   notifications: Notification[];
-  /** Référentiel des formats, pour retrouver un `format_id` à partir du `format_code` d'une notification (ADR 0008 : la notification n'a que le code). */
-  formats: Format[];
+  /** File actionnable des foyers habituels en tension (ADR 0008, précision « maillon C ») - source de `site_uuid` pour proposer, jamais la notification. */
+  foyersEnTension: FoyerEnTensionLivreur[];
   chargementInitial: boolean;
   statutSync: StatutSync;
   rafraichir: () => Promise<void>;
@@ -36,7 +42,7 @@ interface ContexteLivreurValeur {
     videsRecuperes?: number
   ) => Promise<void>;
   marquerNotificationVue: (id: number) => Promise<void>;
-  proposerLivraison: (corps: CorpsPropositionLivreur) => Promise<void>;
+  proposerLivraison: (foyer: FoyerEnTensionLivreur, quantite?: number) => Promise<void>;
 }
 
 const ContexteLivreur = createContext<ContexteLivreurValeur | null>(null);
@@ -46,16 +52,17 @@ export function LivreurProvider({ children }: { children: ReactNode }) {
 
   const [missions, setMissions] = useState<MissionLivreur[]>([]);
   const [notificationsLivreur, setNotificationsLivreur] = useState<Notification[]>([]);
-  const [formats, setFormats] = useState<Format[]>([]);
+  const [foyersEnTension, setFoyersEnTension] = useState<FoyerEnTensionLivreur[]>([]);
   const [statutSync, setStatutSync] = useState<StatutSync>('chargement');
   const [chargementInitial, setChargementInitial] = useState(true);
   const dejaCharge = useRef(false);
 
   useEffect(() => {
     (async () => {
-      const [cacheMissions, cacheNotifications] = await Promise.all([
+      const [cacheMissions, cacheNotifications, cacheFoyersEnTension] = await Promise.all([
         lireCache<MissionLivreur[]>(CLES_CACHE.livreurMissions),
         lireCache<Notification[]>(CLES_CACHE.livreurNotifications),
+        lireCache<FoyerEnTensionLivreur[]>(CLES_CACHE.livreurFoyersEnTension),
       ]);
       if (cacheMissions) {
         setMissions(cacheMissions);
@@ -63,6 +70,9 @@ export function LivreurProvider({ children }: { children: ReactNode }) {
       }
       if (cacheNotifications) {
         setNotificationsLivreur(cacheNotifications);
+      }
+      if (cacheFoyersEnTension) {
+        setFoyersEnTension(cacheFoyersEnTension);
       }
     })();
   }, []);
@@ -78,16 +88,17 @@ export function LivreurProvider({ children }: { children: ReactNode }) {
         () => api.notifications().then((r) => r.data),
         notificationsLivreurDemo
       );
-      const { data: formatsRecus } = await executerAvecSource(
-        () => api.listerFormats().then((r) => r.data),
-        formatsDemo
+      const { data: foyersRecus } = await executerAvecSource(
+        () => api.livreurFoyersEnTension().then((r) => r.data),
+        livreurFoyersEnTensionDemo
       );
       setMissions(data);
       setNotificationsLivreur(notificationsRecues);
-      setFormats(formatsRecus);
+      setFoyersEnTension(foyersRecus);
       setStatutSync(source === 'demo' ? 'hors_ligne' : 'synchronise');
       await ecrireCache(CLES_CACHE.livreurMissions, data);
       await ecrireCache(CLES_CACHE.livreurNotifications, notificationsRecues);
+      await ecrireCache(CLES_CACHE.livreurFoyersEnTension, foyersRecus);
     } catch {
       setStatutSync('hors_ligne');
     } finally {
@@ -140,30 +151,26 @@ export function LivreurProvider({ children }: { children: ReactNode }) {
   }, []);
 
   /**
-   * Propose une livraison depuis une notification de tension (ADR 0009 §C).
-   * Ne manipule jamais de site_uuid (ADR 0008) : le serveur retrouve le foyer
-   * visé via `notification_id`. Marque la notification comme vue une fois la
-   * proposition envoyée.
+   * Propose une livraison pour un foyer de la file actionnable (ADR 0008,
+   * précision « maillon C » ; ADR 0009 §C) : `site_uuid` vient TOUJOURS du
+   * foyer choisi dans `foyersEnTension`, jamais d'une notification (qui ne le
+   * contient pas). Retire l'entrée de la file dès l'envoi (anti-doublon
+   * local), comme côté dépôt.
    */
-  const proposerLivraison = useCallback(
-    async (corps: CorpsPropositionLivreur) => {
-      try {
-        await api.livreurProposition(corps);
-      } catch (erreur) {
-        if (!MODE_DEMO) throw erreur;
-      }
-      if (corps.notification_id != null) {
-        await marquerNotificationVue(corps.notification_id);
-      }
-    },
-    [marquerNotificationVue]
-  );
+  const proposerLivraison = useCallback(async (foyer: FoyerEnTensionLivreur, quantite = 1) => {
+    try {
+      await api.livreurProposition({ site_uuid: foyer.site_uuid, quantite });
+    } catch (erreur) {
+      if (!MODE_DEMO) throw erreur;
+    }
+    setFoyersEnTension((precedent) => precedent.filter((f) => f.site_uuid !== foyer.site_uuid));
+  }, []);
 
   const valeur = useMemo<ContexteLivreurValeur>(
     () => ({
       missions,
       notifications: notificationsLivreur,
-      formats,
+      foyersEnTension,
       chargementInitial,
       statutSync,
       rafraichir,
@@ -174,7 +181,7 @@ export function LivreurProvider({ children }: { children: ReactNode }) {
     [
       missions,
       notificationsLivreur,
-      formats,
+      foyersEnTension,
       chargementInitial,
       statutSync,
       rafraichir,

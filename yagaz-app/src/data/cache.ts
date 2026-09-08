@@ -47,6 +47,7 @@ export const CLES_CACHE = {
   depotReappros: 'depot_reappros',
   livreurMissions: 'livreur_missions',
   livreurNotifications: 'livreur_notifications',
+  livreurFoyersEnTension: 'livreur_foyers_en_tension',
   mandataireOrgActif: 'mandataire_org_actif',
   mandataireDepots: 'mandataire_depots',
   mandataireTournees: 'mandataire_tournees',
