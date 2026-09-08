@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Contracts\Notification\CanalNotification;
+use App\Services\Notification\CanalLog;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -14,7 +16,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Canal de notification par défaut (contrat API doc 11, §3) : un
+        // vrai provider (FCM/APNs, SMS, WhatsApp) prendra la place de
+        // `CanalLog` ici, sans changer `Notificateur` ni le code appelant.
+        $this->app->bind(CanalNotification::class, CanalLog::class);
     }
 
     /**

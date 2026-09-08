@@ -24,6 +24,8 @@ class AlerteResource extends JsonResource
             'id' => $this->id,
             'bouteille_uuid' => $this->bouteille?->uuid,
             'organisation_uuid' => $this->organisation?->uuid,
+            'commande_uuid' => $this->commande?->uuid,
+            'site_uuid' => $this->site?->uuid,
             'type' => $this->type->value,
             'statut' => $this->statut->value,
             'canal' => $this->canal->value,

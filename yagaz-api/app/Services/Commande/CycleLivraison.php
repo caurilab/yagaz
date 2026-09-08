@@ -4,11 +4,13 @@ namespace App\Services\Commande;
 
 use App\Enums\StatutCommande;
 use App\Enums\StatutLivraison;
+use App\Enums\TypeAlerte;
 use App\Enums\TypeMouvementStock;
 use App\Models\Commande;
 use App\Models\Livraison;
 use App\Models\MouvementStock;
 use App\Models\Stock;
+use App\Services\Notification\Notificateur;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -16,9 +18,15 @@ use Illuminate\Support\Facades\DB;
  * transitions ordonnées (`affectee → en_route → livree → vide_recupere`,
  * jamais en arrière, rejet 422 sinon), propagation du statut sur la commande,
  * mouvement de stock au retour des vides — toujours en transaction.
+ *
+ * Notifie aussi le foyer du changement de statut de sa commande (contrat API
+ * doc 11, §3), sans jamais bloquer la transition si aucun destinataire n'est
+ * identifiable.
  */
 final class CycleLivraison
 {
+    public function __construct(private readonly Notificateur $notificateur = new Notificateur) {}
+
     /**
      * Ordre des statuts, pour n'autoriser que la transition vers le suivant
      * immédiat (doc 10, §5 : « Transitions ordonnées »).
@@ -68,6 +76,8 @@ final class CycleLivraison
 
         $commande->statut = StatutCommande::EnLivraison;
         $commande->save();
+
+        $this->notifierSiDestinataire($commande, TypeAlerte::CommandeEnLivraison);
     }
 
     /**
@@ -81,6 +91,8 @@ final class CycleLivraison
 
         $commande->statut = StatutCommande::Livree;
         $commande->save();
+
+        $this->notifierSiDestinataire($commande, TypeAlerte::CommandeLivree);
     }
 
     /**
@@ -128,5 +140,27 @@ final class CycleLivraison
             'delta_vides' => $quantite,
             'livraison_id' => $livraison->id,
         ]);
+    }
+
+    /**
+     * Notifie le foyer destinataire d'une commande, s'il est identifiable
+     * (contrat API doc 11, §3). N'échoue jamais faute de destinataire — la
+     * transition métier reste valide même sans notification possible.
+     */
+    private function notifierSiDestinataire(Commande $commande, TypeAlerte $type): void
+    {
+        $destinataire = $this->notificateur->resoudreDestinataireFoyer($commande);
+
+        if ($destinataire === null) {
+            return;
+        }
+
+        $this->notificateur->notifier(
+            $destinataire,
+            $type,
+            ['commande_uuid' => $commande->uuid],
+            commande: $commande,
+            site: $commande->site,
+        );
     }
 }

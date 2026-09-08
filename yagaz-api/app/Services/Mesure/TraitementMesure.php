@@ -12,6 +12,7 @@ use App\Models\Bouteille;
 use App\Models\Mesure;
 use App\Models\NiveauCourant;
 use App\Models\Plateau;
+use App\Services\Notification\Notificateur;
 use App\Traits\TronqueLesLogs;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -48,6 +49,7 @@ final class TraitementMesure
     public function __construct(
         private readonly TareCalibrage $tareCalibrage = new TareCalibrage,
         private readonly Autonomie $autonomie = new Autonomie,
+        private readonly Notificateur $notificateur = new Notificateur,
     ) {}
 
     /**
@@ -327,6 +329,12 @@ final class TraitementMesure
      *
      * Les bouteilles de secours ne déclenchent jamais cette alerte (sobriété,
      * doc 08 §8).
+     *
+     * Depuis la Phase 5 (contrat API doc 11, §3), l'alerte est adressée au
+     * propriétaire du site quand il est identifiable (`Notificateur`, qui la
+     * route aussi vers son(ses) canal(aux) préféré(s)) ; sinon elle reste
+     * créée sans destinataire précis, comme avant (foyer sans propriétaire
+     * enregistré — cas de test notamment).
      */
     private function gererAlerteSeuilBas(Bouteille $bouteille, ?int $niveauAvant, int $niveauApres, float $poidsLisse): ?Alerte
     {
@@ -348,6 +356,19 @@ final class TraitementMesure
 
         if ($alerteNonResolue) {
             return null;
+        }
+
+        $site = $bouteille->site;
+        $proprietaire = $this->notificateur->proprietaireDuSite($site);
+
+        if ($proprietaire !== null) {
+            return $this->notificateur->notifier(
+                $proprietaire,
+                TypeAlerte::SeuilBas,
+                ['bouteille_uuid' => $bouteille->uuid],
+                bouteille: $bouteille,
+                site: $site,
+            );
         }
 
         return Alerte::create([

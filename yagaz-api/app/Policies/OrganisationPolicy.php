@@ -41,4 +41,28 @@ class OrganisationPolicy
         return $organisation->type === TypeOrganisation::Depot
             && $user->estMembreDe($organisation, RoleMembership::GerantDepot);
     }
+
+    /**
+     * Gérer un mandataire (vue consolidée des dépôts, réappros, tournées —
+     * doc 11, §1) : réservé au membre `mandataire` direct, sur une
+     * organisation de type mandataire. Périmètre borné à l'org (pas de
+     * hiérarchie descendante : les dépôts enfants sont consultés à travers
+     * cette organisation, pas gérés directement par ce biais).
+     */
+    public function gererMandataire(User $user, Organisation $organisation): bool
+    {
+        return $organisation->type === TypeOrganisation::Mandataire
+            && $user->estMembreDe($organisation, RoleMembership::Mandataire);
+    }
+
+    /**
+     * Gérer un distributeur (demande régionale agrégée — doc 11, §2) :
+     * réservé au membre `distributeur` direct, sur une organisation de type
+     * distributeur.
+     */
+    public function gererDistributeur(User $user, Organisation $organisation): bool
+    {
+        return $organisation->type === TypeOrganisation::Distributeur
+            && $user->estMembreDe($organisation, RoleMembership::Distributeur);
+    }
 }

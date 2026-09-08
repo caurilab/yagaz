@@ -7,11 +7,15 @@ use App\Http\Controllers\CommandeController;
 use App\Http\Controllers\DepotCommandeController;
 use App\Http\Controllers\DepotController;
 use App\Http\Controllers\DepotStockController;
+use App\Http\Controllers\DistributeurController;
 use App\Http\Controllers\FormatBouteilleController;
 use App\Http\Controllers\LivraisonController;
 use App\Http\Controllers\LivreurController;
+use App\Http\Controllers\MandataireController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SiteController;
+use App\Http\Controllers\TourneeController;
 use Illuminate\Support\Facades\Route;
 
 // Point de contrôle de santé de l'API, sans authentification.
@@ -88,4 +92,20 @@ Route::middleware('auth:sanctum')->group(function () {
     // === Livreur — missions (contrat API doc 10, §5) ====================
     Route::get('/livreur/missions', [LivreurController::class, 'missions']);
     Route::patch('/livraisons/{livraison}/statut', [LivraisonController::class, 'statut']);
+
+    // === Mandataire — dépôts, réappros, tournées (contrat API doc 11, §1)
+    Route::get('/mandataires/{organisation:uuid}/depots', [MandataireController::class, 'depots']);
+    Route::get('/mandataires/{organisation:uuid}/reappros', [MandataireController::class, 'reappros']);
+    Route::get('/mandataires/{organisation:uuid}/tournees', [MandataireController::class, 'tournees']);
+    Route::post('/mandataires/{organisation:uuid}/tournees', [MandataireController::class, 'storeTournee']);
+    Route::patch('/tournees/{tournee:uuid}', [TourneeController::class, 'update']);
+
+    // === Distributeur — demande régionale agrégée (contrat API doc 11, §2)
+    Route::get('/distributeurs/{organisation:uuid}/demande', [DistributeurController::class, 'demande']);
+    Route::get('/distributeurs/{organisation:uuid}/zones', [DistributeurController::class, 'zones']);
+    Route::get('/distributeurs/{organisation:uuid}/volumes', [DistributeurController::class, 'volumes']);
+
+    // === Notifications (contrat API doc 11, §3) =========================
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::patch('/notifications/{alerte}', [NotificationController::class, 'update']);
 });

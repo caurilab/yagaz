@@ -8,6 +8,7 @@ use App\Enums\RoleMembership;
 use App\Enums\StatutCommande;
 use App\Enums\StatutLivraison;
 use App\Enums\StatutPaiement;
+use App\Enums\TypeAlerte;
 use App\Enums\TypeMouvementStock;
 use App\Models\Commande;
 use App\Models\FormatBouteille;
@@ -17,6 +18,7 @@ use App\Models\Organisation;
 use App\Models\Site;
 use App\Models\Stock;
 use App\Models\User;
+use App\Services\Notification\Notificateur;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -24,6 +26,11 @@ use Illuminate\Support\Facades\DB;
  * transitions autorisées (422 si illégale), mouvements de stock, propagation
  * avec la livraison — toujours en transaction. La logique ne doit jamais être
  * dispersée dans les contrôleurs (doc 10, section « Machine à états »).
+ *
+ * Notifie aussi le foyer concerné aux événements utiles (proposition de
+ * livraison, commande préparée — contrat API doc 11, §3) via `Notificateur`,
+ * sans jamais bloquer la transition métier si aucun destinataire n'est
+ * identifiable (site sans propriétaire connu, par exemple).
  */
 final class CycleCommande
 {
@@ -33,6 +40,8 @@ final class CycleCommande
      * par le PRD. Enregistrée à la création, jamais prélevée en v1.
      */
     private const int COMMISSION_G_PAR_BOUTEILLE = 50;
+
+    public function __construct(private readonly Notificateur $notificateur = new Notificateur) {}
 
     /**
      * Une commande créée par un foyer part directement `confirmee` (doc 10, §2).
@@ -80,6 +89,8 @@ final class CycleCommande
             'commission_g' => $this->calculerCommission($quantite),
         ]);
         $commande->save();
+
+        $this->notifierSiDestinataire($commande, $site, TypeAlerte::PropositionLivraison);
 
         return $commande;
     }
@@ -148,6 +159,8 @@ final class CycleCommande
             $commandeVerrouillee->statut = StatutCommande::Preparee;
             $commandeVerrouillee->save();
 
+            $this->notifierSiDestinataire($commandeVerrouillee, $commandeVerrouillee->site, TypeAlerte::CommandePreparee);
+
             return $commandeVerrouillee;
         });
     }
@@ -208,5 +221,27 @@ final class CycleCommande
     private function calculerCommission(int $quantite): int
     {
         return $quantite * self::COMMISSION_G_PAR_BOUTEILLE;
+    }
+
+    /**
+     * Notifie le foyer destinataire d'une commande, s'il est identifiable
+     * (contrat API doc 11, §3). N'échoue jamais faute de destinataire — la
+     * transition métier reste valide même sans notification possible.
+     */
+    private function notifierSiDestinataire(Commande $commande, ?Site $site, TypeAlerte $type): void
+    {
+        $destinataire = $this->notificateur->resoudreDestinataireFoyer($commande);
+
+        if ($destinataire === null) {
+            return;
+        }
+
+        $this->notificateur->notifier(
+            $destinataire,
+            $type,
+            ['commande_uuid' => $commande->uuid],
+            commande: $commande,
+            site: $site,
+        );
     }
 }
