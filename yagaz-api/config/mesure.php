@@ -61,4 +61,18 @@ return [
     // observé à partir des pentes de décroissance soutenues (ADR 0006).
     'fenetre_debit_jours' => (int) env('MESURE_FENETRE_DEBIT_JOURS', 14),
 
+    // Capteur de température de cuisine (ADR 0011). Au-dessus de ce seuil,
+    // une cuisson est considérée en cours (session ouverte/maintenue).
+    'seuil_cuisson_c' => (float) env('MESURE_SEUIL_CUISSON_C', 40),
+
+    // Au-dessus de ce seuil, la température est jugée dangereuse : alerte
+    // sécurité `temperature_elevee` adressée au foyer (ADR 0011).
+    'seuil_danger_c' => (float) env('MESURE_SEUIL_DANGER_C', 60),
+
+    // Anti-rebond (température soutenue) avant d'ouvrir/fermer une session de
+    // cuisson (ADR 0011). Non utilisé en v1 (voir la note d'implémentation de
+    // `TraitementTemperature::traiterCuisson()`), conservé pour calibrage
+    // futur du matériel réel.
+    'duree_min_cuisson_s' => (int) env('MESURE_DUREE_MIN_CUISSON_S', 120),
+
 ];

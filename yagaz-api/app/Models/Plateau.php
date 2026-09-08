@@ -60,4 +60,14 @@ class Plateau extends Model
     {
         return $this->hasMany(Mesure::class);
     }
+
+    /**
+     * Températures de cuisine reçues de ce plateau (ADR 0011).
+     *
+     * @return HasMany<Temperature, $this>
+     */
+    public function temperatures(): HasMany
+    {
+        return $this->hasMany(Temperature::class);
+    }
 }

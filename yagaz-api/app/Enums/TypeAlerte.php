@@ -11,6 +11,8 @@ namespace App\Enums;
  * dépôt) puis sa confirmation (notifie le mandataire). Dédiés plutôt que de
  * réutiliser `StockTension` (générique, non adressé à ce jour) : les deux
  * événements portent une commande précise et un destinataire différent.
+ * `TemperatureElevee` (ADR 0011) adresse le foyer quand la température de
+ * cuisine franchit `seuil_danger_c`.
  */
 enum TypeAlerte: string
 {
@@ -22,4 +24,5 @@ enum TypeAlerte: string
     case CommandeLivree = 'commande_livree';
     case ReapproPrepare = 'reappro_prepare';
     case ReapproConfirme = 'reappro_confirme';
+    case TemperatureElevee = 'temperature_elevee';
 }

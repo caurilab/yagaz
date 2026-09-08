@@ -17,6 +17,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PaiementController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SiteController;
+use App\Http\Controllers\TemperatureController;
 use App\Http\Controllers\TourneeController;
 use Illuminate\Support\Facades\Route;
 
@@ -66,6 +67,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // maillon automatique).
     Route::post('/sites/{site:uuid}/livreur-habituel', [SiteController::class, 'designerLivreurHabituel']);
     Route::delete('/sites/{site:uuid}/livreur-habituel', [SiteController::class, 'retirerLivreurHabituel']);
+    // Température de cuisine (ADR 0011) : état courant + cuisson en cours.
+    Route::get('/sites/{site:uuid}/temperature', [TemperatureController::class, 'show']);
 
     // === Formats (contrat API, §« Formats ») ============================
     Route::get('/formats', [FormatBouteilleController::class, 'index']);

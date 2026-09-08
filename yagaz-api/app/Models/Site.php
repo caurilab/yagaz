@@ -97,4 +97,24 @@ class Site extends Model
     {
         return $this->hasOne(LivreurHabituel::class);
     }
+
+    /**
+     * Températures de cuisine reçues sur ce site (ADR 0011).
+     *
+     * @return HasMany<Temperature, $this>
+     */
+    public function temperatures(): HasMany
+    {
+        return $this->hasMany(Temperature::class);
+    }
+
+    /**
+     * Sessions de cuisson détectées sur ce site (ADR 0011).
+     *
+     * @return HasMany<SessionCuisson, $this>
+     */
+    public function sessionsCuisson(): HasMany
+    {
+        return $this->hasMany(SessionCuisson::class);
+    }
 }
