@@ -195,3 +195,125 @@ export interface Depot {
   distance_km: number;
   disponible: boolean;
 }
+
+// --- Rôles et espaces (Phase 4, contrat 10 §1) ---
+
+export interface RoleDepot {
+  uuid: string;
+  nom: string;
+}
+
+export interface MesRoles {
+  foyer: boolean;
+  depots: RoleDepot[];
+  livreur: boolean;
+}
+
+export type EspaceType = 'foyer' | 'depot' | 'livreur';
+
+// --- Commandes (contrat 10 §2-3) ---
+
+export type StatutCommande =
+  | 'proposee'
+  | 'confirmee'
+  | 'preparee'
+  | 'en_livraison'
+  | 'livree'
+  | 'annulee';
+
+export interface Commande {
+  uuid: string;
+  site_uuid: string;
+  format: Format;
+  quantite: number;
+  depot_uuid: string;
+  statut: StatutCommande;
+  commission_g: number;
+  created_at: string;
+  /** Présent dès qu'une livraison a été affectée (contrat §2, §4). */
+  livraison: Livraison | null;
+}
+
+/**
+ * Vue dépôt d'une commande : mêmes champs, avec le site du foyer demandeur
+ * embarqué (le dépôt a besoin de l'adresse pour préparer/affecter, contrat §4).
+ */
+export interface CommandeDepot extends Commande {
+  site: Pick<Site, 'uuid' | 'nom' | 'adresse'>;
+}
+
+export interface CorpsCreationCommande {
+  site_uuid: string;
+  format_id: number;
+  quantite: number;
+  depot_uuid: string;
+}
+
+export interface CorpsReponseCommande {
+  accepte: boolean;
+}
+
+// --- Livraisons et livreurs (contrat 10 §5) ---
+
+export type StatutLivraison = 'affectee' | 'en_route' | 'livree' | 'vide_recupere';
+
+export interface Livraison {
+  id: number;
+  commande_uuid: string;
+  livreur_user_id: string | null;
+  livreur_nom: string | null;
+  statut: StatutLivraison;
+  vides_recuperes: number | null;
+  created_at: string;
+}
+
+export interface CorpsAffectationLivraison {
+  livreur_user_id?: string;
+}
+
+export interface CorpsMajStatutLivraison {
+  statut: Exclude<StatutLivraison, 'affectee'>;
+  vides_recuperes?: number;
+}
+
+/** Membre `livreur` d'un dépôt, pour la sélection à l'affectation (contrat §4/§6). */
+export interface MembreLivreur {
+  user_id: string;
+  nom: string;
+}
+
+/** Une ligne de la liste "missions" du livreur (contrat §5, UX §6). */
+export interface MissionLivreur {
+  livraison_id: number;
+  commande_uuid: string;
+  statut: StatutLivraison;
+  format: Format;
+  quantite: number;
+  site: Pick<Site, 'uuid' | 'nom' | 'adresse'>;
+  /** Pleines à déposer chez le foyer. */
+  a_deposer: number;
+  /** Vides à récupérer (estimation avant passage, confirmée par `vides_recuperes`). */
+  a_recuperer: number;
+  created_at: string;
+}
+
+// --- Stock dépôt (contrat 10 §4, §6) ---
+
+export interface StockFormat {
+  format: Format;
+  pleines: number;
+  vides: number;
+  seuil_plein_bas: number;
+}
+
+export interface CorpsAjustementStock {
+  pleines?: number;
+  vides?: number;
+  seuil_plein_bas?: number;
+}
+
+export interface CorpsCreationProposition {
+  site_uuid: string;
+  format_id: number;
+  quantite: number;
+}

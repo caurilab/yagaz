@@ -4,7 +4,20 @@
  * ou tout simplement le foyer hors ligne). Les vrais appels API restent
  * branchés en priorité - voir `avecRepliDemo` dans `src/data/DonneesContext.tsx`.
  */
-import type { Alerte, Bouteille, Format, Site, User } from './types';
+import type {
+  Alerte,
+  Bouteille,
+  Commande,
+  CommandeDepot,
+  Depot,
+  Format,
+  MembreLivreur,
+  MesRoles,
+  MissionLivreur,
+  Site,
+  StockFormat,
+  User,
+} from './types';
 
 /** Active/désactive le repli sur les fixtures quand l'appel réel échoue. */
 export const MODE_DEMO = true;
@@ -171,6 +184,178 @@ export const alertesDemo: Alerte[] = [
     statut: 'emise',
     message: 'Chez Maman : bouteille active presque vide - dernière valeur connue.',
     created_at: ilYA(9 * 60),
+  },
+];
+
+// --- Rôles et espaces (Phase 4) ---
+
+/**
+ * Fixture "multi-rôle" par défaut : ce compte démo a un foyer, gère un
+ * dépôt, et est aussi livreur - de quoi exercer le sélecteur d'espace.
+ */
+export const rolesDemo: MesRoles = {
+  foyer: true,
+  depots: [{ uuid: 'org-depot-sacre-coeur', nom: 'Dépôt Sacré-Cœur' }],
+  livreur: true,
+};
+
+const orgDepotDemoUuid = rolesDemo.depots[0].uuid;
+
+export const depotsDemo: Depot[] = [
+  {
+    uuid: orgDepotDemoUuid,
+    nom: 'Dépôt Sacré-Cœur',
+    adresse: 'Route de Ouakam, Dakar',
+    distance_km: 1.2,
+    disponible: true,
+  },
+  {
+    uuid: 'org-depot-ouakam',
+    nom: 'Dépôt Ouakam Plage',
+    adresse: 'Corniche Ouest, Dakar',
+    distance_km: 3.8,
+    disponible: true,
+  },
+];
+
+// --- Commandes - foyer (contrat 10 §2-3) ---
+
+export const commandesFoyerDemo: Commande[] = [
+  {
+    uuid: 'commande-en-livraison',
+    site_uuid: 'site-domicile',
+    format: formatsDemo[1],
+    quantite: 1,
+    depot_uuid: orgDepotDemoUuid,
+    statut: 'en_livraison',
+    commission_g: 150,
+    created_at: ilYA(90),
+    livraison: {
+      id: 1001,
+      commande_uuid: 'commande-en-livraison',
+      livreur_user_id: 'user-livreur-demo',
+      livreur_nom: 'Moussa Ndiaye',
+      statut: 'en_route',
+      vides_recuperes: null,
+      created_at: ilYA(40),
+    },
+  },
+  {
+    uuid: 'commande-proposition-maman',
+    site_uuid: 'site-maman',
+    format: formatsDemo[2],
+    quantite: 1,
+    depot_uuid: orgDepotDemoUuid,
+    statut: 'proposee',
+    commission_g: 200,
+    created_at: ilYA(20),
+    livraison: null,
+  },
+  {
+    uuid: 'commande-livree',
+    site_uuid: 'site-domicile',
+    format: formatsDemo[0],
+    quantite: 1,
+    depot_uuid: orgDepotDemoUuid,
+    statut: 'livree',
+    commission_g: 100,
+    created_at: ilYA(60 * 24 * 6),
+    livraison: {
+      id: 998,
+      commande_uuid: 'commande-livree',
+      livreur_user_id: 'user-livreur-demo',
+      livreur_nom: 'Moussa Ndiaye',
+      statut: 'vide_recupere',
+      vides_recuperes: 1,
+      created_at: ilYA(60 * 24 * 6),
+    },
+  },
+];
+
+// --- Dépôt - stock et commandes entrantes (contrat 10 §4) ---
+
+export const depotStocksDemo: StockFormat[] = [
+  { format: formatsDemo[0], pleines: 18, vides: 4, seuil_plein_bas: 10 },
+  { format: formatsDemo[1], pleines: 6, vides: 21, seuil_plein_bas: 12 },
+  { format: formatsDemo[2], pleines: 9, vides: 2, seuil_plein_bas: 5 },
+];
+
+export const depotLivreursDemo: MembreLivreur[] = [
+  { user_id: 'user-livreur-demo', nom: 'Moussa Ndiaye' },
+  { user_id: 'user-livreur-fatou', nom: 'Fatou Sarr' },
+];
+
+export const depotCommandesDemo: CommandeDepot[] = [
+  {
+    uuid: 'commande-a-preparer',
+    site_uuid: 'site-domicile',
+    site: { uuid: 'site-domicile', nom: 'Aïcha Diallo', adresse: 'Sacré-Cœur, Dakar' },
+    format: formatsDemo[1],
+    quantite: 2,
+    depot_uuid: orgDepotDemoUuid,
+    statut: 'confirmee',
+    commission_g: 150,
+    created_at: ilYA(15),
+    livraison: null,
+  },
+  {
+    uuid: 'commande-a-affecter',
+    site_uuid: 'site-diop',
+    site: { uuid: 'site-diop', nom: 'Famille Diop', adresse: 'Mermoz, Dakar' },
+    format: formatsDemo[0],
+    quantite: 1,
+    depot_uuid: orgDepotDemoUuid,
+    statut: 'preparee',
+    commission_g: 100,
+    created_at: ilYA(45),
+    livraison: null,
+  },
+  {
+    uuid: 'commande-en-livraison',
+    site_uuid: 'site-domicile',
+    site: { uuid: 'site-domicile', nom: 'Aïcha Diallo', adresse: 'Sacré-Cœur, Dakar' },
+    format: formatsDemo[1],
+    quantite: 1,
+    depot_uuid: orgDepotDemoUuid,
+    statut: 'en_livraison',
+    commission_g: 150,
+    created_at: ilYA(90),
+    livraison: {
+      id: 1001,
+      commande_uuid: 'commande-en-livraison',
+      livreur_user_id: 'user-livreur-demo',
+      livreur_nom: 'Moussa Ndiaye',
+      statut: 'en_route',
+      vides_recuperes: null,
+      created_at: ilYA(40),
+    },
+  },
+];
+
+// --- Livreur - missions (contrat 10 §5) ---
+
+export const missionsLivreurDemo: MissionLivreur[] = [
+  {
+    livraison_id: 1001,
+    commande_uuid: 'commande-en-livraison',
+    statut: 'en_route',
+    format: formatsDemo[1],
+    quantite: 1,
+    site: { uuid: 'site-domicile', nom: 'Aïcha Diallo - Sacré-Cœur', adresse: 'Sacré-Cœur, Dakar' },
+    a_deposer: 1,
+    a_recuperer: 1,
+    created_at: ilYA(40),
+  },
+  {
+    livraison_id: 1002,
+    commande_uuid: 'commande-a-livrer-diop',
+    statut: 'affectee',
+    format: formatsDemo[0],
+    quantite: 1,
+    site: { uuid: 'site-diop', nom: 'Famille Diop - Mermoz', adresse: 'Mermoz, Dakar' },
+    a_deposer: 1,
+    a_recuperer: 1,
+    created_at: ilYA(10),
   },
 ];
 

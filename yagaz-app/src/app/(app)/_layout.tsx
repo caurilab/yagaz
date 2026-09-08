@@ -46,6 +46,13 @@ export default function LayoutApp() {
         }}
       />
       <Tabs.Screen
+        name="commandes"
+        options={{
+          title: 'Commandes',
+          tabBarIcon: ({ focused }) => <IconeOnglet symbole="📦" focus={focused} />,
+        }}
+      />
+      <Tabs.Screen
         name="alertes"
         options={{
           title: 'Alertes',
@@ -72,6 +79,14 @@ export default function LayoutApp() {
         options={{
           href: null,
           title: 'Bouteille',
+          headerLeft: () => <BoutonRetour />,
+        }}
+      />
+      <Tabs.Screen
+        name="nouvelle-commande"
+        options={{
+          href: null,
+          title: 'Nouvelle commande',
           headerLeft: () => <BoutonRetour />,
         }}
       />

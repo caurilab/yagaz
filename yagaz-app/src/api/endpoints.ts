@@ -6,21 +6,36 @@ import { requeteApi } from './client';
 import type {
   Alerte,
   Bouteille,
+  Commande,
+  CommandeDepot,
+  CorpsAffectationLivraison,
+  CorpsAjustementStock,
   CorpsConnexion,
   CorpsCreationBouteille,
+  CorpsCreationCommande,
+  CorpsCreationProposition,
   CorpsCreationSite,
   CorpsInscription,
   CorpsMajAlerte,
   CorpsMajBouteille,
   CorpsMajSite,
+  CorpsMajStatutLivraison,
   CorpsPartageSite,
   CorpsPlateau,
   CorpsReglagesAlertes,
+  CorpsReponseCommande,
   Depot,
   Format,
+  Livraison,
+  MembreLivreur,
+  MesRoles,
+  MissionLivreur,
   PointMesure,
   ReponseAuth,
   Site,
+  StatutCommande,
+  StatutLivraison,
+  StockFormat,
   User,
 } from './types';
 
@@ -135,4 +150,79 @@ export function listerDepots(lat: number, lng: number, formatId: number) {
     format_id: String(formatId),
   });
   return requeteApi<{ data: Depot[] }>(`/depots?${params.toString()}`);
+}
+
+// --- Rôles et espaces (contrat 10 §1) ---
+
+export function mesRoles() {
+  return requeteApi<MesRoles>('/mes-roles');
+}
+
+// --- Commandes - foyer (contrat 10 §3) ---
+
+export function creerCommande(corps: CorpsCreationCommande) {
+  return requeteApi<{ data: Commande }>('/commandes', { methode: 'POST', corps });
+}
+
+export function listerCommandesFoyer() {
+  return requeteApi<{ data: Commande[] }>('/commandes');
+}
+
+export function commande(uuid: string) {
+  return requeteApi<{ data: Commande }>(`/commandes/${uuid}`);
+}
+
+export function repondreProposition(uuid: string, corps: CorpsReponseCommande) {
+  return requeteApi<{ data: Commande }>(`/commandes/${uuid}/reponse`, { methode: 'POST', corps });
+}
+
+// --- Dépôt - stock et commandes (contrat 10 §4) ---
+
+export function depotStocks(orgUuid: string) {
+  return requeteApi<{ data: StockFormat[] }>(`/depots/${orgUuid}/stocks`);
+}
+
+export function ajusterStock(orgUuid: string, formatId: number, corps: CorpsAjustementStock) {
+  return requeteApi<{ data: StockFormat }>(`/depots/${orgUuid}/stocks/${formatId}`, {
+    methode: 'PATCH',
+    corps,
+  });
+}
+
+export function depotCommandes(orgUuid: string, statut?: StatutCommande) {
+  const suffixe = statut ? `?statut=${statut}` : '';
+  return requeteApi<{ data: CommandeDepot[] }>(`/depots/${orgUuid}/commandes${suffixe}`);
+}
+
+export function preparerCommande(uuid: string) {
+  return requeteApi<{ data: Commande }>(`/commandes/${uuid}/preparer`, { methode: 'PATCH' });
+}
+
+export function affecterLivraison(uuid: string, corps: CorpsAffectationLivraison) {
+  return requeteApi<{ data: Livraison }>(`/commandes/${uuid}/livraison`, { methode: 'POST', corps });
+}
+
+export function creerProposition(orgUuid: string, corps: CorpsCreationProposition) {
+  return requeteApi<{ data: Commande }>(`/depots/${orgUuid}/propositions`, { methode: 'POST', corps });
+}
+
+/**
+ * Non listé explicitement au contrat 10 : extension minimale, même
+ * convention de route (`/depots/{orgUuid}/...`), pour peupler le
+ * sélecteur de livreur à l'affectation (§4 "le livreur doit être rattaché
+ * au dépôt"). À confirmer côté API.
+ */
+export function depotLivreurs(orgUuid: string) {
+  return requeteApi<{ data: MembreLivreur[] }>(`/depots/${orgUuid}/livreurs`);
+}
+
+// --- Livreur - missions (contrat 10 §5) ---
+
+export function livreurMissions(statut?: StatutLivraison) {
+  const suffixe = statut ? `?statut=${statut}` : '';
+  return requeteApi<{ data: MissionLivreur[] }>(`/livreur/missions${suffixe}`);
+}
+
+export function majStatutLivraison(id: number, corps: CorpsMajStatutLivraison) {
+  return requeteApi<{ data: Livraison }>(`/livraisons/${id}/statut`, { methode: 'PATCH', corps });
 }

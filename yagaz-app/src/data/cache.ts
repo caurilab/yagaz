@@ -38,4 +38,10 @@ export const CLES_CACHE = {
   formats: 'formats',
   alertes: 'alertes',
   siteActif: 'site_actif',
+  commandesFoyer: 'commandes_foyer',
+  espaceActif: 'espace_actif',
+  depotOrgActif: 'depot_org_actif',
+  depotStock: 'depot_stock',
+  depotCommandes: 'depot_commandes',
+  livreurMissions: 'livreur_missions',
 } as const;

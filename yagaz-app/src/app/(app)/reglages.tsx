@@ -7,6 +7,7 @@ import { Champ } from '../../components/Champ';
 import { useAuth } from '../../auth/AuthContext';
 import { majReglagesAlertes } from '../../api/endpoints';
 import { MODE_DEMO } from '../../api/demo';
+import { useEspace } from '../../espace/EspaceContext';
 import { couleurs, espacements, rayons } from '../../../theme/couleurs';
 import type { Canal } from '../../api/types';
 
@@ -18,6 +19,7 @@ const CANAUX: { valeur: Canal; libelle: string }[] = [
 
 export default function EcranReglages() {
   const { user, deconnecter } = useAuth();
+  const { espacesDisponibles, reinitialiserChoix } = useEspace();
   const [canaux, setCanaux] = useState<Canal[]>(['push']);
   const [livreurHabituel, setLivreurHabituel] = useState('');
   const [enCours, setEnCours] = useState(false);
@@ -93,6 +95,15 @@ export default function EcranReglages() {
         </View>
 
         <Bouton titre="Enregistrer les réglages" onPress={enregistrer} enCours={enCours} style={styles.boutonEnregistrer} />
+
+        {espacesDisponibles.length > 1 ? (
+          <Bouton
+            titre="Changer d'espace"
+            variante="contour"
+            onPress={reinitialiserChoix}
+            style={styles.boutonDeconnexion}
+          />
+        ) : null}
 
         <Bouton titre="Se déconnecter" variante="discret" onPress={confirmerDeconnexion} style={styles.boutonDeconnexion} />
       </ScrollView>
