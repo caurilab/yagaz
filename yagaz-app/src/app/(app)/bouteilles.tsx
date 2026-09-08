@@ -51,6 +51,7 @@ export default function EcranBouteilles() {
               <BouteilleGaz
                 couleur={couleurPourFormat(item.format, marques)}
                 code={item.format.code}
+                marqueNom={item.format.marque}
                 niveauPct={item.niveau.niveau_pct}
                 taille={86}
                 reflet={false}

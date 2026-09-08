@@ -178,6 +178,7 @@ function CarteBouteilleActive({
         <BouteilleGaz
           couleur={couleurMarqueBouteille}
           code={bouteille.format.code}
+          marqueNom={bouteille.format.marque}
           niveauPct={niveau.niveau_pct}
           taille={132}
         />
@@ -206,6 +207,7 @@ function CarteMiniature({ bouteille, marques }: { bouteille: Bouteille; marques:
       <BouteilleGaz
         couleur={couleurMarqueBouteille}
         code={bouteille.format.code}
+        marqueNom={bouteille.format.marque}
         niveauPct={bouteille.niveau.niveau_pct}
         taille={72}
         reflet={false}

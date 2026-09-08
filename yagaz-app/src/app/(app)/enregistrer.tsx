@@ -84,6 +84,7 @@ export default function EcranEnregistrerBouteille() {
               <BouteilleGaz
                 couleur={couleurPourFormat(format, marques)}
                 code={format.code}
+                marqueNom={format.marque}
                 niveauPct={100}
                 taille={62}
                 reflet={false}

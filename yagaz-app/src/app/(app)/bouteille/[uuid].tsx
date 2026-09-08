@@ -139,6 +139,7 @@ export default function EcranDetailBouteille() {
             <BouteilleGaz
               couleur={couleurBouteille}
               code={bouteille.format.code}
+              marqueNom={bouteille.format.marque}
               niveauPct={niveau.niveau_pct}
               taille={150}
             />

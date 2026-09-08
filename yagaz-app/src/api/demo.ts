@@ -54,18 +54,19 @@ export const utilisateurDemo: User = {
 /** Marques du référentiel (repli démo - mêmes couleurs que le contrat réel `/api/marques`). */
 export const marquesDemo: Marque[] = [
   { id: 1, nom: 'Total', couleur: '#E4032E' },
-  { id: 2, nom: 'Oryx', couleur: '#1E63B8' },
-  { id: 3, nom: 'Petro Ivoire', couleur: '#2E9E5B' },
+  { id: 2, nom: 'Oryx', couleur: '#29A9CE' },
+  { id: 3, nom: 'Petro Ivoire', couleur: '#26307A' },
   { id: 4, nom: 'Sodigaz', couleur: '#F08A24' },
-  { id: 5, nom: 'GESTOCI', couleur: '#7B4A2E' },
+  { id: 5, nom: 'Corlay', couleur: '#2FA84F' },
 ];
 
+/** Formats variés (B3/B6/B12/B24) pour bien voir les deux silhouettes (haute et trapue) en démo. */
 export const formatsDemo: Format[] = [
   { id: 1, code: 'B6', marque: 'Total', tare_nominale_g: 5200, contenance_gaz_g: 6000, couleur: '#E4032E' },
-  { id: 2, code: 'B12', marque: 'Oryx', tare_nominale_g: 14800, contenance_gaz_g: 12500, couleur: '#1E63B8' },
-  { id: 3, code: 'B38', marque: 'Petro Ivoire', tare_nominale_g: 34000, contenance_gaz_g: 38000, couleur: '#2E9E5B' },
+  { id: 2, code: 'B12', marque: 'Oryx', tare_nominale_g: 14800, contenance_gaz_g: 12500, couleur: '#29A9CE' },
+  { id: 3, code: 'B24', marque: 'Petro Ivoire', tare_nominale_g: 34000, contenance_gaz_g: 24000, couleur: '#26307A' },
   { id: 4, code: 'B12', marque: 'Sodigaz', tare_nominale_g: 14700, contenance_gaz_g: 12500, couleur: '#F08A24' },
-  { id: 5, code: 'B6', marque: 'GESTOCI', tare_nominale_g: 5100, contenance_gaz_g: 6000, couleur: '#7B4A2E' },
+  { id: 5, code: 'B3', marque: 'Corlay', tare_nominale_g: 3400, contenance_gaz_g: 3000, couleur: '#2FA84F' },
 ];
 
 export const sitesDemo: Site[] = [
@@ -417,14 +418,14 @@ export const notificationsLivreurDemo: Notification[] = [
     statut: 'emise',
     message: "Un foyer habituel a besoin d'une recharge.",
     created_at: ilYA(5),
-    contexte: { site_nom: 'Chez Maman', zone: 'Thiès', format_code: 'B38' },
+    contexte: { site_nom: 'Chez Maman', zone: 'Thiès', format_code: 'B24' },
   },
 ];
 
 /**
  * File actionnable du livreur habituel (ADR 0008, précision « maillon C »)
  * : cohérente avec `notificationsLivreurDemo` ci-dessus - même foyer
- * (« Chez Maman », Thiès, B38), pour que le rappel et la file pointent
+ * (« Chez Maman », Thiès, B24), pour que le rappel et la file pointent
  * démonstrativement vers la même proposition possible.
  */
 export const livreurFoyersEnTensionDemo: FoyerEnTensionLivreur[] = [
@@ -648,7 +649,7 @@ export const historiqueDemo: EvenementHistorique[] = [
     type: 'commande_confirmee',
     date: ilYA(60 * 24 * 8),
     titre: 'Commande confirmée',
-    detail: 'B38 - Petro Ivoire · 1 bouteille',
+    detail: 'B24 - Petro Ivoire · 1 bouteille',
     montant: 12000,
     statut: 'Confirmée',
     icone: 'commande',
@@ -782,7 +783,7 @@ export const analyseDemoParPeriode: Record<PeriodeAnalyse, Analyse> = {
       par_bouteille: [
         { libelle: 'B12 - Oryx', valeur: 10.1, couleur: '#1E63B8' },
         { libelle: 'B6 - Total', valeur: 2.3, couleur: '#E4032E' },
-        { libelle: 'B38 - Petro Ivoire', valeur: 1.2, couleur: '#2E9E5B' },
+        { libelle: 'B24 - Petro Ivoire', valeur: 1.2, couleur: '#26307A' },
       ],
       par_site: [
         { libelle: 'Domicile', valeur: 11.4, couleur: couleurs.rouge },
@@ -804,7 +805,7 @@ export const analyseDemoParPeriode: Record<PeriodeAnalyse, Analyse> = {
       par_bouteille: [
         { libelle: 'B12 - Oryx', valeur: 96, couleur: '#1E63B8' },
         { libelle: 'B6 - Total', valeur: 28, couleur: '#E4032E' },
-        { libelle: 'B38 - Petro Ivoire', valeur: 18, couleur: '#2E9E5B' },
+        { libelle: 'B24 - Petro Ivoire', valeur: 18, couleur: '#26307A' },
       ],
       par_site: [
         { libelle: 'Domicile', valeur: 118, couleur: couleurs.rouge },
