@@ -4,7 +4,7 @@
  * sans réinventer la logique métier - la transition est décidée côté API.
  */
 import { couleurs } from '../../theme/couleurs';
-import type { StatutCommande, StatutLivraison } from '../api/types';
+import type { StatutCommande, StatutLigneTournee, StatutLivraison, StatutTournee } from '../api/types';
 
 export const libellesStatutCommande: Record<StatutCommande, string> = {
   proposee: 'Proposition reçue',
@@ -52,4 +52,63 @@ export function libelleActionLivraison(statut: StatutLivraison): string | null {
   if (suivant === 'livree') return 'Marquer comme livrée';
   if (suivant === 'vide_recupere') return 'Vide récupéré';
   return null;
+}
+
+// --- Tournées mandataire (doc 11 §1, UX §4) ---
+
+export const libellesStatutTournee: Record<StatutTournee, string> = {
+  proposee: 'Proposée',
+  validee: 'Validée',
+  en_cours: 'En cours',
+  terminee: 'Terminée',
+};
+
+export const couleursStatutTournee: Record<StatutTournee, string> = {
+  proposee: couleurs.ambre,
+  validee: couleurs.rouge,
+  en_cours: couleurs.rouge,
+  terminee: couleurs.vertOk,
+};
+
+export const libellesStatutLigneTournee: Record<StatutLigneTournee, string> = {
+  a_faire: 'À faire',
+  arrive: 'Arrivé',
+  depose: 'Déposé',
+  vides_recuperes: 'Vides récupérés',
+};
+
+export const couleursStatutLigneTournee: Record<StatutLigneTournee, string> = {
+  a_faire: couleurs.grisNeutre,
+  arrive: couleurs.ambre,
+  depose: couleurs.rouge,
+  vides_recuperes: couleurs.vertOk,
+};
+
+/** Ordre de progression d'un arrêt (UX §4 : arrivé / déposé / vides récupérés). */
+const ORDRE_LIGNE_TOURNEE: StatutLigneTournee[] = ['a_faire', 'arrive', 'depose', 'vides_recuperes'];
+
+export function statutLigneTourneeSuivant(statut: StatutLigneTournee): StatutLigneTournee | null {
+  const index = ORDRE_LIGNE_TOURNEE.indexOf(statut);
+  return index >= 0 && index < ORDRE_LIGNE_TOURNEE.length - 1 ? ORDRE_LIGNE_TOURNEE[index + 1] : null;
+}
+
+export function libelleActionLigneTournee(statut: StatutLigneTournee): string | null {
+  const suivant = statutLigneTourneeSuivant(statut);
+  if (suivant === 'arrive') return 'Je suis arrivé';
+  if (suivant === 'depose') return 'Pleines déposées';
+  if (suivant === 'vides_recuperes') return 'Vides récupérés';
+  return null;
+}
+
+/**
+ * Statut d'un arrêt (plusieurs lignes/formats pour un même dépôt) : le
+ * moins avancé de ses lignes, pour faire avancer tout l'arrêt d'un même
+ * geste (UX §4 - un seul bouton par arrêt, pas par format).
+ */
+export function statutArretTournee(lignesStatuts: StatutLigneTournee[]): StatutLigneTournee {
+  let indexMin = ORDRE_LIGNE_TOURNEE.length - 1;
+  for (const statut of lignesStatuts) {
+    indexMin = Math.min(indexMin, ORDRE_LIGNE_TOURNEE.indexOf(statut));
+  }
+  return ORDRE_LIGNE_TOURNEE[Math.max(indexMin, 0)];
 }

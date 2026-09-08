@@ -10,12 +10,14 @@ const DESCRIPTIONS: Record<string, string> = {
   foyer: 'Suivre mes bouteilles et mes commandes.',
   depot: 'Gérer le stock et les commandes du comptoir.',
   livreur: 'Voir mes missions de livraison du jour.',
+  mandataire: 'Suivre la tournée du jour et mes dépôts.',
 };
 
 const SYMBOLES: Record<string, string> = {
   foyer: '🏠',
   depot: '🏬',
   livreur: '🛵',
+  mandataire: '🚚',
 };
 
 /**
@@ -57,11 +59,28 @@ export default function EcranChoisirEspace() {
               </Pressable>
             ));
           }
+          if (option.type === 'mandataire' && roles && roles.mandataires.length > 1) {
+            return roles.mandataires.map((mandataire) => (
+              <Pressable
+                key={mandataire.uuid}
+                style={styles.carte}
+                onPress={() => definirEspace('mandataire', mandataire.uuid)}
+                accessibilityRole="button">
+                <Text style={styles.symbole}>{SYMBOLES.mandataire}</Text>
+                <View style={styles.carteTexte}>
+                  <Text style={styles.carteTitre}>Mandataire - {mandataire.nom}</Text>
+                  <Text style={styles.carteDescription}>{DESCRIPTIONS.mandataire}</Text>
+                </View>
+              </Pressable>
+            ));
+          }
           return (
             <Pressable
               key={option.type}
               style={styles.carte}
-              onPress={() => definirEspace(option.type, roles?.depots[0]?.uuid)}
+              onPress={() =>
+                definirEspace(option.type, roles?.depots[0]?.uuid ?? roles?.mandataires[0]?.uuid)
+              }
               accessibilityRole="button">
               <Text style={styles.symbole}>{SYMBOLES[option.type]}</Text>
               <View style={styles.carteTexte}>

@@ -35,10 +35,12 @@ interface ContexteEspaceValeur {
   chargement: boolean;
   espaceActif: EspaceType | null;
   depotOrgActifUuid: string | null;
+  mandataireOrgActifUuid: string | null;
   /** Espaces que ce compte peut ouvrir (toujours au moins "foyer"). */
   espacesDisponibles: OptionEspace[];
   definirEspace: (espace: EspaceType, orgUuid?: string) => void;
   definirDepotOrgActif: (orgUuid: string) => void;
+  definirMandataireOrgActif: (orgUuid: string) => void;
   /** Réaffiche le sélecteur, pour "changer d'espace" depuis les réglages. */
   reinitialiserChoix: () => void;
 }
@@ -48,6 +50,7 @@ const ContexteEspace = createContext<ContexteEspaceValeur | null>(null);
 function libelleEspace(type: EspaceType): string {
   if (type === 'depot') return 'Dépôt';
   if (type === 'livreur') return 'Livreur';
+  if (type === 'mandataire') return 'Mandataire';
   return 'Foyer';
 }
 
@@ -58,6 +61,7 @@ export function EspaceProvider({ children }: { children: ReactNode }) {
   const [chargement, setChargement] = useState(true);
   const [espaceActif, setEspaceActif] = useState<EspaceType | null>(null);
   const [depotOrgActifUuid, setDepotOrgActifUuid] = useState<string | null>(null);
+  const [mandataireOrgActifUuid, setMandataireOrgActifUuid] = useState<string | null>(null);
 
   const dejaCharge = useRef(false);
 
@@ -67,6 +71,7 @@ export function EspaceProvider({ children }: { children: ReactNode }) {
       setRoles(null);
       setEspaceActif(null);
       setDepotOrgActifUuid(null);
+      setMandataireOrgActifUuid(null);
       setChargement(true);
       return;
     }
@@ -74,10 +79,11 @@ export function EspaceProvider({ children }: { children: ReactNode }) {
     dejaCharge.current = true;
 
     (async () => {
-      const [rolesRecus, espaceCache, orgCache] = await Promise.all([
+      const [rolesRecus, espaceCache, orgCache, orgMandataireCache] = await Promise.all([
         avecRepliDemo(() => api.mesRoles(), rolesDemo),
         lireCache<EspaceType>(CLES_CACHE.espaceActif),
         lireCache<string>(CLES_CACHE.depotOrgActif),
+        lireCache<string>(CLES_CACHE.mandataireOrgActif),
       ]);
       setRoles(rolesRecus);
 
@@ -98,6 +104,12 @@ export function EspaceProvider({ children }: { children: ReactNode }) {
         setDepotOrgActifUuid(rolesRecus.depots[0]?.uuid ?? null);
       }
 
+      if (orgMandataireCache && rolesRecus.mandataires.some((m) => m.uuid === orgMandataireCache)) {
+        setMandataireOrgActifUuid(orgMandataireCache);
+      } else {
+        setMandataireOrgActifUuid(rolesRecus.mandataires[0]?.uuid ?? null);
+      }
+
       setChargement(false);
     })();
   }, [estConnecte]);
@@ -107,6 +119,11 @@ export function EspaceProvider({ children }: { children: ReactNode }) {
     ecrireCache(CLES_CACHE.depotOrgActif, orgUuid);
   }, []);
 
+  const definirMandataireOrgActif = useCallback((orgUuid: string) => {
+    setMandataireOrgActifUuid(orgUuid);
+    ecrireCache(CLES_CACHE.mandataireOrgActif, orgUuid);
+  }, []);
+
   const definirEspace = useCallback(
     (espace: EspaceType, orgUuid?: string) => {
       setEspaceActif(espace);
@@ -114,8 +131,11 @@ export function EspaceProvider({ children }: { children: ReactNode }) {
       if (espace === 'depot' && orgUuid) {
         definirDepotOrgActif(orgUuid);
       }
+      if (espace === 'mandataire' && orgUuid) {
+        definirMandataireOrgActif(orgUuid);
+      }
     },
-    [definirDepotOrgActif]
+    [definirDepotOrgActif, definirMandataireOrgActif]
   );
 
   const reinitialiserChoix = useCallback(() => {
@@ -130,12 +150,25 @@ export function EspaceProvider({ children }: { children: ReactNode }) {
       chargement,
       espaceActif,
       depotOrgActifUuid,
+      mandataireOrgActifUuid,
       espacesDisponibles,
       definirEspace,
       definirDepotOrgActif,
+      definirMandataireOrgActif,
       reinitialiserChoix,
     }),
-    [roles, chargement, espaceActif, depotOrgActifUuid, espacesDisponibles, definirEspace, definirDepotOrgActif, reinitialiserChoix]
+    [
+      roles,
+      chargement,
+      espaceActif,
+      depotOrgActifUuid,
+      mandataireOrgActifUuid,
+      espacesDisponibles,
+      definirEspace,
+      definirDepotOrgActif,
+      definirMandataireOrgActif,
+      reinitialiserChoix,
+    ]
   );
 
   return <ContexteEspace.Provider value={valeur}>{children}</ContexteEspace.Provider>;
@@ -147,6 +180,7 @@ function calculerEspacesDisponibles(roles: MesRoles | null): OptionEspace[] {
   if (roles.foyer) options.push({ type: 'foyer', libelle: libelleEspace('foyer') });
   if (roles.depots.length > 0) options.push({ type: 'depot', libelle: libelleEspace('depot') });
   if (roles.livreur) options.push({ type: 'livreur', libelle: libelleEspace('livreur') });
+  if (roles.mandataires.length > 0) options.push({ type: 'mandataire', libelle: libelleEspace('mandataire') });
   return options.length > 0 ? options : [{ type: 'foyer', libelle: libelleEspace('foyer') }];
 }
 

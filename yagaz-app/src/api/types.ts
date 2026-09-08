@@ -203,13 +203,20 @@ export interface RoleDepot {
   nom: string;
 }
 
+/** Organisation `mandataire` dont l'utilisateur est membre (doc 11 §1). */
+export interface RoleMandataire {
+  uuid: string;
+  nom: string;
+}
+
 export interface MesRoles {
   foyer: boolean;
   depots: RoleDepot[];
   livreur: boolean;
+  mandataires: RoleMandataire[];
 }
 
-export type EspaceType = 'foyer' | 'depot' | 'livreur';
+export type EspaceType = 'foyer' | 'depot' | 'livreur' | 'mandataire';
 
 // --- Commandes (contrat 10 §2-3) ---
 
@@ -316,4 +323,75 @@ export interface CorpsCreationProposition {
   site_uuid: string;
   format_id: number;
   quantite: number;
+}
+
+// --- Mandataire (doc 11 §1) ---
+
+/** Vue consolidée d'un dépôt du mandataire : stock par format + tensions. */
+export interface DepotConsolide {
+  uuid: string;
+  nom: string;
+  stocks: StockFormat[];
+  derniere_activite_at: string | null;
+}
+
+export type StatutTournee = 'proposee' | 'validee' | 'en_cours' | 'terminee';
+
+/**
+ * Avancement d'un arrêt de tournée pour un format donné (UX §4 : arrivé /
+ * déposé / vides récupérés). `a_faire` est l'état initial d'une ligne
+ * validée, avant le passage du livreur/mandataire sur le terrain.
+ */
+export type StatutLigneTournee = 'a_faire' | 'arrive' | 'depose' | 'vides_recuperes';
+
+/** Dépôt embarqué dans une ligne de tournée (même principe que `CommandeDepot.site`). */
+export interface DepotTournee {
+  uuid: string;
+  nom: string;
+}
+
+export interface TourneeLigne {
+  id: number;
+  depot: DepotTournee;
+  format: Format;
+  pleines: number;
+  vides_a_recuperer: number;
+  statut: StatutLigneTournee;
+}
+
+export interface Tournee {
+  uuid: string;
+  date: string;
+  statut: StatutTournee;
+  livreur_user_id: string | null;
+  livreur_nom: string | null;
+  lignes: TourneeLigne[];
+  created_at: string;
+}
+
+export interface CorpsLigneTournee {
+  depot_uuid: string;
+  format_id: number;
+  pleines: number;
+  vides_a_recuperer: number;
+}
+
+export interface CorpsCreationTournee {
+  date: string;
+  livreur_user_id?: string;
+  lignes: CorpsLigneTournee[];
+}
+
+/** Ajustement d'une ligne existante (identifiée par son `id`) dans un PATCH `/tournees/{uuid}`. */
+export interface CorpsAjustementLigneTournee {
+  id: number;
+  statut?: StatutLigneTournee;
+  pleines?: number;
+  vides_a_recuperer?: number;
+}
+
+export interface CorpsAjustementTournee {
+  statut?: StatutTournee;
+  livreur_user_id?: string;
+  lignes?: CorpsAjustementLigneTournee[];
 }

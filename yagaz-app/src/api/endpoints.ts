@@ -10,11 +10,13 @@ import type {
   CommandeDepot,
   CorpsAffectationLivraison,
   CorpsAjustementStock,
+  CorpsAjustementTournee,
   CorpsConnexion,
   CorpsCreationBouteille,
   CorpsCreationCommande,
   CorpsCreationProposition,
   CorpsCreationSite,
+  CorpsCreationTournee,
   CorpsInscription,
   CorpsMajAlerte,
   CorpsMajBouteille,
@@ -25,6 +27,7 @@ import type {
   CorpsReglagesAlertes,
   CorpsReponseCommande,
   Depot,
+  DepotConsolide,
   Format,
   Livraison,
   MembreLivreur,
@@ -36,6 +39,7 @@ import type {
   StatutCommande,
   StatutLivraison,
   StockFormat,
+  Tournee,
   User,
 } from './types';
 
@@ -225,4 +229,22 @@ export function livreurMissions(statut?: StatutLivraison) {
 
 export function majStatutLivraison(id: number, corps: CorpsMajStatutLivraison) {
   return requeteApi<{ data: Livraison }>(`/livraisons/${id}/statut`, { methode: 'PATCH', corps });
+}
+
+// --- Mandataire - dépôts et tournées (doc 11 §1) ---
+
+export function mandataireDepots(orgUuid: string) {
+  return requeteApi<{ data: DepotConsolide[] }>(`/mandataires/${orgUuid}/depots`);
+}
+
+export function mandataireTournees(orgUuid: string) {
+  return requeteApi<{ data: Tournee[] }>(`/mandataires/${orgUuid}/tournees`);
+}
+
+export function creerTournee(orgUuid: string, corps: CorpsCreationTournee) {
+  return requeteApi<{ data: Tournee }>(`/mandataires/${orgUuid}/tournees`, { methode: 'POST', corps });
+}
+
+export function ajusterTournee(uuid: string, corps: CorpsAjustementTournee) {
+  return requeteApi<{ data: Tournee }>(`/tournees/${uuid}`, { methode: 'PATCH', corps });
 }

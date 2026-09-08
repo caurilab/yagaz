@@ -10,12 +10,14 @@ import type {
   Commande,
   CommandeDepot,
   Depot,
+  DepotConsolide,
   Format,
   MembreLivreur,
   MesRoles,
   MissionLivreur,
   Site,
   StockFormat,
+  Tournee,
   User,
 } from './types';
 
@@ -197,6 +199,7 @@ export const rolesDemo: MesRoles = {
   foyer: true,
   depots: [{ uuid: 'org-depot-sacre-coeur', nom: 'Dépôt Sacré-Cœur' }],
   livreur: true,
+  mandataires: [{ uuid: 'org-mandataire-dakar', nom: 'Mandataire Dakar' }],
 };
 
 const orgDepotDemoUuid = rolesDemo.depots[0].uuid;
@@ -356,6 +359,99 @@ export const missionsLivreurDemo: MissionLivreur[] = [
     a_deposer: 1,
     a_recuperer: 1,
     created_at: ilYA(10),
+  },
+];
+
+// --- Mandataire - dépôts consolidés et tournées (doc 11 §1) ---
+
+function dateJourDemo(decalageJours: number): string {
+  const d = new Date(maintenant);
+  d.setDate(d.getDate() + decalageJours);
+  return d.toISOString().slice(0, 10);
+}
+
+export const mandataireDepotsDemo: DepotConsolide[] = [
+  {
+    uuid: 'org-depot-sacre-coeur',
+    nom: 'Dépôt Sacré-Cœur',
+    stocks: [
+      { format: formatsDemo[0], pleines: 18, vides: 4, seuil_plein_bas: 10 },
+      { format: formatsDemo[1], pleines: 6, vides: 21, seuil_plein_bas: 12 },
+      { format: formatsDemo[2], pleines: 9, vides: 2, seuil_plein_bas: 5 },
+    ],
+    derniere_activite_at: ilYA(30),
+  },
+  {
+    uuid: 'org-depot-ouakam',
+    nom: 'Dépôt Ouakam Plage',
+    stocks: [
+      { format: formatsDemo[0], pleines: 4, vides: 14, seuil_plein_bas: 10 },
+      { format: formatsDemo[1], pleines: 22, vides: 3, seuil_plein_bas: 12 },
+    ],
+    derniere_activite_at: ilYA(240),
+  },
+];
+
+export const mandataireTourneesDemo: Tournee[] = [
+  {
+    uuid: 'tournee-du-jour',
+    date: dateJourDemo(0),
+    statut: 'en_cours',
+    livreur_user_id: 'user-livreur-demo',
+    livreur_nom: 'Moussa Ndiaye',
+    lignes: [
+      {
+        id: 1,
+        depot: { uuid: 'org-depot-sacre-coeur', nom: 'Dépôt Sacré-Cœur' },
+        format: formatsDemo[1],
+        pleines: 10,
+        vides_a_recuperer: 8,
+        statut: 'depose',
+      },
+      {
+        id: 2,
+        depot: { uuid: 'org-depot-sacre-coeur', nom: 'Dépôt Sacré-Cœur' },
+        format: formatsDemo[0],
+        pleines: 15,
+        vides_a_recuperer: 5,
+        statut: 'depose',
+      },
+      {
+        id: 3,
+        depot: { uuid: 'org-depot-ouakam', nom: 'Dépôt Ouakam Plage' },
+        format: formatsDemo[1],
+        pleines: 20,
+        vides_a_recuperer: 3,
+        statut: 'a_faire',
+      },
+    ],
+    created_at: ilYA(120),
+  },
+  {
+    uuid: 'tournee-hier',
+    date: dateJourDemo(-1),
+    statut: 'terminee',
+    livreur_user_id: 'user-livreur-demo',
+    livreur_nom: 'Moussa Ndiaye',
+    lignes: [
+      {
+        id: 4,
+        depot: { uuid: 'org-depot-sacre-coeur', nom: 'Dépôt Sacré-Cœur' },
+        format: formatsDemo[2],
+        pleines: 8,
+        vides_a_recuperer: 6,
+        statut: 'vides_recuperes',
+      },
+      {
+        id: 5,
+        depot: { uuid: 'org-depot-ouakam', nom: 'Dépôt Ouakam Plage' },
+        format: formatsDemo[0],
+        pleines: 12,
+        vides_a_recuperer: 9,
+        statut: 'vides_recuperes',
+      },
+    ],
+    created_at: ilYA(60 * 24 + 90),
   },
 ];
 

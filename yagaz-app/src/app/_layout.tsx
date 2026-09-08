@@ -29,8 +29,9 @@ export default function RootLayout() {
 }
 
 /**
- * Bascule (auth) / (app) / (depot) / (livreur) / choisir-espace selon
- * l'état de connexion et l'espace choisi (contrat 10 §1). Le splash natif
+ * Bascule (auth) / (app) / (depot) / (livreur) / (mandataire) / choisir-espace
+ * selon l'état de connexion et l'espace choisi (contrat 10 §1, doc 11 §1
+ * pour le mandataire). Le splash natif
  * reste affiché tant que le jeton persistant et les rôles n'ont pas été
  * relus (jamais de flash d'écran de connexion pour un utilisateur déjà
  * connecté, ni de flash du sélecteur d'espace pour un foyer simple).
@@ -61,6 +62,9 @@ function NavigationRacine() {
       </Stack.Protected>
       <Stack.Protected guard={estConnecte && espaceActif === 'livreur'}>
         <Stack.Screen name="(livreur)" />
+      </Stack.Protected>
+      <Stack.Protected guard={estConnecte && espaceActif === 'mandataire'}>
+        <Stack.Screen name="(mandataire)" />
       </Stack.Protected>
       <Stack.Protected guard={estConnecte && espaceActif === null}>
         <Stack.Screen name="choisir-espace" />

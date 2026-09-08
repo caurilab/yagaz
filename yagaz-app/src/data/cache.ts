@@ -44,4 +44,7 @@ export const CLES_CACHE = {
   depotStock: 'depot_stock',
   depotCommandes: 'depot_commandes',
   livreurMissions: 'livreur_missions',
+  mandataireOrgActif: 'mandataire_org_actif',
+  mandataireDepots: 'mandataire_depots',
+  mandataireTournees: 'mandataire_tournees',
 } as const;
