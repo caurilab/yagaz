@@ -2,13 +2,16 @@
 
 Photo de l'avancement, mise à jour en continu par l'archiviste.
 
-Dernière mise à jour : 2026-09-08
+Dernière mise à jour : 2026-09-08 (Phase 0 terminée)
 
 ## En un coup d'œil
 
-Le projet est en **phase de cadrage et d'amorçage**. Le concept, le modèle
-économique et l'architecture sont posés. Le code n'a pas encore commencé. Le
-prototype matériel est en cours de sourcing.
+Le projet est passé du cadrage au **développement**. **Phase 0 (Fondations)
+terminée** : monorepo Git, quatre sous-projets scaffoldés (API Laravel, web
+React 19, app Expo, firmware ESP32), infra locale Docker (TimescaleDB + MQTT +
+Redis), CI, auth de base et gestion des secrets. Le modèle de données v1 est
+conçu (`docs/07-modele-de-donnees.md`). Prochaine étape : Phase 1 (migrations et
+socle métier). Le prototype matériel reste en cours de sourcing.
 
 ## Fait
 
@@ -19,18 +22,24 @@ prototype matériel est en cours de sourcing.
 - Structure des agents et guidelines de collaboration.
 - Sourcing des composants du prototype identifié (kit HX711 + cellules 50 kg,
   ESP32 DevKit).
+- **Phase 0 — Fondations** (voir `docs/rapports/phase-0.md`) : dépôt Git,
+  scaffolding des 4 sous-projets, infra Docker (TimescaleDB + MQTT + Redis),
+  CI, auth Sanctum, secrets hors dépôt. ADR 0002/0003/0004.
+- **Modèle de données v1** conçu (`docs/07-modele-de-donnees.md`).
 
 ## En cours
 
+- **Phase 1 — Modèle de données et socle métier** : migrations à partir de
+  `docs/07-modele-de-donnees.md`, hypertable TimescaleDB, contraintes de
+  cloisonnement.
 - Commande des composants du prototype (3 plateaux de test).
-- Vérification d'un fournisseur ESP32 possiblement local (helectro.net).
 
 ## À venir
 
-- Code de test ESP32 : lecture HX711, calibrage, affichage du poids.
-- Validation de la chaîne de mesure avec un poids connu, puis une bouteille.
-- Initialisation des trois projets applicatifs (api, web, app).
-- Schéma de données initial et premières migrations.
+- Phase 2 : ingestion MQTT + chaîne de mesure + firmware ESP32 réel.
+- Phase 3 : app foyer complète. Phase 4 : dépôt + boucle de commande.
+- Phase 5 : mandataire + distributeur. Phase 6 : consolidation.
+- Démarrer l'infra Docker et exécuter les migrations (Docker Desktop requis).
 
 ## À trancher
 
