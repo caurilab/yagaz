@@ -20,7 +20,7 @@ jobs:
           POSTGRES_DB: yagaz
           POSTGRES_USER: yagaz
           POSTGRES_PASSWORD: yagaz_ci
-        ports: ["5432:5432"]
+        ports: ["5433:5432"]
         options: >-
           --health-cmd="pg_isready -U yagaz" --health-interval=10s
           --health-timeout=5s --health-retries=5
@@ -47,7 +47,7 @@ jobs:
         env:
           DB_CONNECTION: pgsql
           DB_HOST: 127.0.0.1
-          DB_PORT: 5432
+          DB_PORT: 5433
           DB_DATABASE: yagaz
           DB_USERNAME: yagaz
           DB_PASSWORD: yagaz_ci
@@ -56,6 +56,7 @@ jobs:
         env:
           DB_CONNECTION: pgsql
           DB_HOST: 127.0.0.1
+          DB_PORT: 5433
           DB_DATABASE: yagaz
           DB_USERNAME: yagaz
           DB_PASSWORD: yagaz_ci
@@ -64,7 +65,7 @@ jobs:
         env:
           DB_CONNECTION: pgsql
           DB_HOST: 127.0.0.1
-          DB_PORT: 5432
+          DB_PORT: 5433
           DB_DATABASE: yagaz
           DB_USERNAME: yagaz
           DB_PASSWORD: yagaz_ci
