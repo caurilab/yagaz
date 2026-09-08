@@ -24,6 +24,7 @@ class SiteUpdateRequest extends FormRequest
         return [
             'nom' => ['sometimes', 'string', 'max:255'],
             'adresse' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'zone' => ['sometimes', 'nullable', 'string', 'max:255'],
             'lat' => ['sometimes', 'nullable', 'numeric', 'between:-90,90'],
             'lng' => ['sometimes', 'nullable', 'numeric', 'between:-180,180'],
         ];

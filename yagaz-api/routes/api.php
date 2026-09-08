@@ -91,9 +91,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/depots/{organisation:uuid}/livreurs', [DepotController::class, 'livreurs']);
     Route::get('/depots/{organisation:uuid}/commandes', [DepotCommandeController::class, 'index']);
     Route::post('/depots/{organisation:uuid}/propositions', [DepotCommandeController::class, 'propositions']);
+    // File des foyers en tension de la zone de desserte (ADR 0009, maillon B).
+    Route::get('/depots/{organisation:uuid}/foyers-en-tension', [DepotCommandeController::class, 'foyersEnTension']);
 
-    // === Livreur — missions (contrat API doc 10, §5) ====================
+    // === Livreur — missions, propositions (contrat API doc 10, §5 ; ADR 0009 maillon C)
     Route::get('/livreur/missions', [LivreurController::class, 'missions']);
+    Route::post('/livreur/propositions', [LivreurController::class, 'propositions']);
     Route::patch('/livraisons/{livraison}/statut', [LivraisonController::class, 'statut']);
 
     // === Mandataire — dépôts, réappros, tournées (contrat API doc 11, §1)

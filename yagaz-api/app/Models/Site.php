@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * volontairement exclu — dérivé côté serveur de l'utilisateur authentifié
  * (ADR 0005), posé via `forceFill` dans `SiteController::store()`.
  */
-#[Fillable(['nom', 'adresse', 'lat', 'lng'])]
+#[Fillable(['nom', 'adresse', 'zone', 'lat', 'lng'])]
 class Site extends Model
 {
     /** @use HasFactory<SiteFactory> */

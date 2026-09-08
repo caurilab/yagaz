@@ -69,9 +69,6 @@ final class Notificateur
             $site = null;
         }
 
-        $canauxPreferes = ! empty($destinataire->canaux_alerte) ? $destinataire->canaux_alerte : [CanalAlerte::Push->value];
-        $canalPrincipal = CanalAlerte::tryFrom((string) $canauxPreferes[0]) ?? CanalAlerte::Push;
-
         $alerte = Alerte::create([
             'bouteille_id' => $bouteille?->id,
             'organisation_id' => $organisation?->id,
@@ -80,14 +77,82 @@ final class Notificateur
             'destinataire_user_id' => $destinataire->id,
             'type' => $type,
             'statut' => StatutAlerte::Emise,
-            'canal' => $canalPrincipal,
+            'canal' => $this->canalPrincipal($destinataire),
         ]);
+
+        $this->router($destinataire, $type, $donnees, $alerte);
+
+        return $alerte;
+    }
+
+    /**
+     * Notifie le livreur habituel d'un site en tension (ADR 0009, maillon A ;
+     * ADR 0008, étanchéité) avec l'information MINIMALE nécessaire pour agir —
+     * jamais le niveau exact, l'autonomie, l'historique de consommation, ni
+     * les autres bouteilles/sites du foyer. L'alerte créée ne porte donc
+     * JAMAIS de référence foyer (`bouteille_id`/`site_id` restent `null`,
+     * contrairement à `notifier()`) : seule `contexte` (colonne dédiée) porte
+     * cette projection minimale. On ne s'appuie pas ici sur l'invariant
+     * anti-fuite de `notifier()` (qui retirerait ces références de toute
+     * façon puisque le livreur n'a pas d'accès au site) : l'omission est
+     * explicite, pas un effet de bord.
+     *
+     * Anti-spam (ADR 0009) : pas de doublon tant qu'une alerte `seuil_bas`
+     * non résolue existe déjà pour ce livreur portant le même `site_nom` —
+     * la seule clé de rapprochement disponible ici, puisque `site_id` n'est
+     * justement jamais renseigné sur ce type d'alerte.
+     *
+     * @param  array{site_nom: ?string, zone: ?string, format_code: ?string}  $contexteMinimal
+     */
+    public function notifierLivreurHabituel(User $livreur, array $contexteMinimal): ?Alerte
+    {
+        $dejaNotifie = Alerte::where('destinataire_user_id', $livreur->id)
+            ->where('type', TypeAlerte::SeuilBas)
+            ->where('statut', '!=', StatutAlerte::Resolue)
+            ->where('contexte->site_nom', $contexteMinimal['site_nom'] ?? null)
+            ->exists();
+
+        if ($dejaNotifie) {
+            return null;
+        }
+
+        $alerte = Alerte::create([
+            'destinataire_user_id' => $livreur->id,
+            'type' => TypeAlerte::SeuilBas,
+            'statut' => StatutAlerte::Emise,
+            'canal' => $this->canalPrincipal($livreur),
+            'contexte' => $contexteMinimal,
+        ]);
+
+        $this->router($livreur, TypeAlerte::SeuilBas, $contexteMinimal, $alerte);
+
+        return $alerte;
+    }
+
+    /**
+     * Canal principal (le premier des préférences du destinataire, `push`
+     * par défaut), enregistré sur l'alerte pour traçabilité.
+     */
+    private function canalPrincipal(User $destinataire): CanalAlerte
+    {
+        $canauxPreferes = ! empty($destinataire->canaux_alerte) ? $destinataire->canaux_alerte : [CanalAlerte::Push->value];
+
+        return CanalAlerte::tryFrom((string) $canauxPreferes[0]) ?? CanalAlerte::Push;
+    }
+
+    /**
+     * Route vers le(s) canal(aux) préféré(s) du destinataire (défaut `push`
+     * si aucune préférence enregistrée).
+     *
+     * @param  array<string, mixed>  $donnees
+     */
+    private function router(User $destinataire, TypeAlerte $type, array $donnees, Alerte $alerte): void
+    {
+        $canauxPreferes = ! empty($destinataire->canaux_alerte) ? $destinataire->canaux_alerte : [CanalAlerte::Push->value];
 
         foreach ($canauxPreferes as $canal) {
             $this->canal->envoyer($destinataire, $type->value, $donnees + ['canal' => $canal, 'alerte_id' => $alerte->id]);
         }
-
-        return $alerte;
     }
 
     /**

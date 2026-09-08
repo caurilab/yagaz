@@ -242,4 +242,18 @@ class User extends Authenticatable
             ->where('niveau', NiveauAcces::Proprietaire->value)
             ->exists();
     }
+
+    /**
+     * L'utilisateur est-il le livreur habituel actif de ce site (ADR 0009,
+     * maillon C) ? Fondement du droit de proposer une livraison pour ce
+     * site sans y avoir d'accès foyer (`SitePolicy::proposerCommeLivreurHabituel`).
+     */
+    public function estLivreurHabituelDuSite(Site $site): bool
+    {
+        $livreurHabituel = $site->livreurHabituel;
+
+        return $livreurHabituel !== null
+            && $livreurHabituel->actif
+            && $livreurHabituel->livreur_user_id === $this->id;
+    }
 }

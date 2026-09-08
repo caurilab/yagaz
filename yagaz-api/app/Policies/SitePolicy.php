@@ -46,4 +46,15 @@ class SitePolicy
     {
         return $user->estProprietaireDuSite($site);
     }
+
+    /**
+     * Proposer une livraison en tant que livreur habituel (ADR 0009, maillon
+     * C ; autorisation tracée) : réservé au livreur habituel actif désigné
+     * pour CE site — jamais un livreur quelconque, jamais pour un site dont
+     * il n'est pas le livreur habituel.
+     */
+    public function proposerCommeLivreurHabituel(User $user, Site $site): bool
+    {
+        return $user->estLivreurHabituelDuSite($site);
+    }
 }

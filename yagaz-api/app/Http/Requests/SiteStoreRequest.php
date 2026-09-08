@@ -25,6 +25,7 @@ class SiteStoreRequest extends FormRequest
         return [
             'nom' => ['required', 'string', 'max:255'],
             'adresse' => ['nullable', 'string', 'max:255'],
+            'zone' => ['nullable', 'string', 'max:255'],
             'lat' => ['nullable', 'numeric', 'between:-90,90'],
             'lng' => ['nullable', 'numeric', 'between:-180,180'],
         ];

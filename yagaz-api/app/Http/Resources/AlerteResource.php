@@ -29,6 +29,7 @@ class AlerteResource extends JsonResource
             'type' => $this->type->value,
             'statut' => $this->statut->value,
             'canal' => $this->canal->value,
+            'contexte' => $this->contexte,
             'created_at' => $this->created_at,
         ];
     }

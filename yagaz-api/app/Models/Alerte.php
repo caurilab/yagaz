@@ -12,6 +12,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * Trace des franchissements de seuil et propositions, pour éviter le
  * re-spam — doc 07, §8 `alertes`.
+ *
+ * `contexte` (ADR 0008/0009, maillon A) porte une projection minimale
+ * dédiée quand l'alerte ne peut pas porter les références foyer complètes
+ * (ex. livreur habituel : `{site_nom, zone, format_code}`, sans `site_id`
+ * ni `bouteille_id`) — distinct des relations `bouteille`/`site` ci-dessous.
  */
 #[Guarded([])]
 class Alerte extends Model
@@ -27,6 +32,7 @@ class Alerte extends Model
             'type' => TypeAlerte::class,
             'statut' => StatutAlerte::class,
             'canal' => CanalAlerte::class,
+            'contexte' => 'array',
         ];
     }
 

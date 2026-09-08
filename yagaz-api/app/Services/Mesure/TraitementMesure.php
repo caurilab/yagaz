@@ -12,6 +12,7 @@ use App\Models\Bouteille;
 use App\Models\Mesure;
 use App\Models\NiveauCourant;
 use App\Models\Plateau;
+use App\Models\Site;
 use App\Services\Notification\Notificateur;
 use App\Traits\TronqueLesLogs;
 use Carbon\CarbonImmutable;
@@ -335,6 +336,11 @@ final class TraitementMesure
      * route aussi vers son(ses) canal(aux) préféré(s)) ; sinon elle reste
      * créée sans destinataire précis, comme avant (foyer sans propriétaire
      * enregistré — cas de test notamment).
+     *
+     * ADR 0009 (maillon A) : si le site a un livreur habituel actif, ce
+     * dernier est AUSSI notifié — jamais à la place du foyer — avec l'info
+     * minimale de l'ADR 0008 (`Notificateur::notifierLivreurHabituel()`).
+     * Purement automatique : aucune commande n'est créée à ce stade.
      */
     private function gererAlerteSeuilBas(Bouteille $bouteille, ?int $niveauAvant, int $niveauApres, float $poidsLisse): ?Alerte
     {
@@ -359,6 +365,9 @@ final class TraitementMesure
         }
 
         $site = $bouteille->site;
+
+        $this->notifierLivreurHabituelSiDefini($site, $bouteille);
+
         $proprietaire = $this->notificateur->proprietaireDuSite($site);
 
         if ($proprietaire !== null) {
@@ -376,6 +385,35 @@ final class TraitementMesure
             'type' => TypeAlerte::SeuilBas,
             'statut' => StatutAlerte::Emise,
             'canal' => CanalAlerte::Push,
+        ]);
+    }
+
+    /**
+     * Notifie le livreur habituel du site, s'il est défini et actif (ADR
+     * 0009, maillon A), avec l'information minimale de l'ADR 0008: nom
+     * d'affichage du site, zone, format de la bouteille concernée — jamais
+     * le niveau exact, l'autonomie, ni l'historique. N'échoue jamais faute
+     * de livreur habituel (rien à notifier) ni de livreur désigné (compte
+     * potentiellement supprimé) — le foyer reste notifié séparément.
+     */
+    private function notifierLivreurHabituelSiDefini(?Site $site, Bouteille $bouteille): void
+    {
+        $livreurHabituel = $site?->livreurHabituel;
+
+        if ($livreurHabituel === null || ! $livreurHabituel->actif) {
+            return;
+        }
+
+        $livreur = $livreurHabituel->livreur;
+
+        if ($livreur === null) {
+            return;
+        }
+
+        $this->notificateur->notifierLivreurHabituel($livreur, [
+            'site_nom' => $site->nom,
+            'zone' => $site->zone,
+            'format_code' => $bouteille->format?->code,
         ]);
     }
 

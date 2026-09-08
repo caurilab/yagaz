@@ -24,6 +24,7 @@ class SiteResource extends JsonResource
             'uuid' => $this->uuid,
             'nom' => $this->nom,
             'adresse' => $this->adresse,
+            'zone' => $this->zone,
             'lat' => $this->lat,
             'lng' => $this->lng,
             'niveau_acces' => $this->niveau_acces,
