@@ -5,8 +5,14 @@ HX711, lisse le signal, et publie le poids en MQTT vers la plateforme.
 
 ## État
 
-Squelette (Phase 0). La chaîne de mesure complète — lecture HX711, tare,
-calibrage, lissage, publication MQTT — est développée en **Phase 2**.
+Phase 2 : chaîne de mesure complète — lecture HX711, tare/calibrage
+persistés en NVS, lissage léger, échantillonnage adaptatif, Wi-Fi + MQTT
+(LWT, publication conforme à l'ADR 0003). Non compilé/flashé dans cet
+environnement : `pio run` reste à faire sur un poste équipé PlatformIO.
+
+Calibrage (commandes série, 115200 bauds) :
+- `TARE` : plateau nu, sans bouteille — remet le zéro électronique.
+- `CAL:<poids_g>` : poids connu posé — calcule et persiste le facteur d'échelle.
 
 ## Build (PlatformIO)
 
