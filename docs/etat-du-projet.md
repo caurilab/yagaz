@@ -16,10 +16,14 @@ de sécurité Opus par incrément, corrigé au fil de l'eau. **CI verte** : 168 
 backend, migrations sur vrai TimescaleDB, build web, typecheck app. Dépôt sur
 GitHub (`caurilab/yagaz`).
 
-Voir `docs/rapports/rapport-final.md` (v1) et
+**v2 — brique 1 (Paiement Mobile Money) livrée** derrière l'abstraction
+(simulateur + webhook signé + réconciliation ; app foyer câblée ; audit Opus
+corrigé). 185 tests backend verts. Briques v2 restantes (écran de cuisine,
+recettes, donnée agrégée) **en attente de leur préalable** (retour terrain,
+prototype éprouvé, densité du parc) — voir `docs/rapports/rapport-v2.md`.
+
+Voir aussi `docs/rapports/rapport-final.md` (v1) et
 `docs/rapports/rapport-cloture-concept-central.md` (déclenchement automatique).
-Prochaine étape : **feuille de route v2** (`docs/12-perspectives-v2.md`), en
-commençant par le paiement Mobile Money (derrière l'abstraction déjà isolée).
 Le prototype matériel reste en sourcing.
 
 ## Fait
