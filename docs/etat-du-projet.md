@@ -2,18 +2,18 @@
 
 Photo de l'avancement, mise à jour en continu par l'archiviste.
 
-Dernière mise à jour : 2026-09-08 (Phase 4 terminée)
+Dernière mise à jour : 2026-09-08 (Phase 5 terminée)
 
 ## En un coup d'œil
 
-Le projet est en **développement**. **Phases 0 à 4 terminées.** Fondations, socle
-de données + cloisonnement, ingestion MQTT + firmware, application foyer, et
-**boucle de commande** (foyer → dépôt → livraison, espaces dépôt et livreur).
-Chaque phase a fait l'objet d'un audit de sécurité Opus mené et corrigé. **CI
-verte** : 103 tests / 350 assertions, migrations sur vrai TimescaleDB, build web,
-typecheck app. Dépôt sur GitHub (`caurilab/yagaz`). Prochaine étape : Phase 5
-(mandataire + distributeur, dashboards web). Le prototype matériel reste en cours
-de sourcing.
+Le projet est en **développement**. **Phases 0 à 5 terminées.** Fondations, socle
+de données + cloisonnement, ingestion MQTT + firmware, application foyer, boucle
+de commande, et **mandataire + distributeur** (dashboards web React 19, agrégats
+régionaux étanches au foyer, service de notifications). Chaque phase a fait
+l'objet d'un audit de sécurité Opus mené et corrigé. **CI verte** : 131 tests /
+442 assertions, migrations sur vrai TimescaleDB, build web, typecheck app. Dépôt
+sur GitHub (`caurilab/yagaz`). Prochaine étape : Phase 6 (consolidation, rapport
+final). Le prototype matériel reste en cours de sourcing.
 
 ## Fait
 
@@ -41,20 +41,21 @@ de sourcing.
 - **Phase 4 — Dépôt et boucle de commande** (voir `docs/rapports/phase-4.md`) :
   cycle commande/livraison transactionnel, stock, espaces dépôt et livreur,
   suivi foyer, audit sécurité corrigé. CI verte.
+- **Phase 5 — Mandataire et distributeur** (voir `docs/rapports/phase-5.md`) :
+  vue consolidée + tournées mandataire (web + mobile), agrégats régionaux
+  distributeur (étanches au foyer), notifications, audit sécurité corrigé. CI verte.
 
 ## En cours
 
-- **Phase 5 — Mandataire et distributeur** : app mandataire (tournée, vue
-  consolidée), dashboards web (mandataire + distributeur, React 19), agrégats
-  régionaux. Notifications (service multi-canal + liaison alertes).
+- **Phase 6 — Consolidation** : non-régression bout en bout, revue produit
+  globale, nettoyage, rapport final + recommandations.
 - Commande des composants du prototype (3 plateaux de test).
 
 ## À venir
 
-- Phase 6 : consolidation (non-régression bout en bout, revue produit, rapport
-  final + recommandations).
 - Démarrer l'infra Docker (ou créer la base `yagaz` locale) et exécuter les
   migrations. Activer TLS MQTT avant prod (ADR 0007). Flasher/calibrer le firmware.
+- Brancher les vrais canaux de notification (push/SMS/WhatsApp).
 
 ## À trancher
 
