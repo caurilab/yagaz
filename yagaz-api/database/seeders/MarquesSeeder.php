@@ -25,6 +25,8 @@ class MarquesSeeder extends Seeder
             ['nom' => 'Corlay', 'couleur' => '#2FA84F'],         // vert
             ['nom' => 'Sodigaz', 'couleur' => '#F08A24'],        // orange
             ['nom' => 'GESTOCI', 'couleur' => '#7B4A2E'],        // marron
+            ['nom' => 'Shell Gas', 'couleur' => '#0A5AA0'],      // bleu
+            ['nom' => 'SIMAM', 'couleur' => '#F4B41A'],          // jaune
         ];
 
         foreach ($marques as $marque) {

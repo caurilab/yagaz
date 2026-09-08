@@ -10,10 +10,12 @@ use Illuminate\Database\Seeder;
  * Référentiel des formats de bouteille courants en Afrique de l'Ouest, pour
  * les deux marques principales (Total, Oryx) — doc 07, §4 `formats_bouteille`.
  *
- * Valeurs indicatives réalistes (tare à vide / masse de gaz à pleine charge) :
- * - B6  : bouteille 6 kg  — tare ≈ 7 000 g,  gaz ≈ 6 000 g
- * - B12 : bouteille 12 kg — tare ≈ 13 000 g, gaz ≈ 12 500 g
- * - B24 : bouteille 24 kg — tare ≈ 22 000 g, gaz ≈ 24 000 g
+ * Formats réels observés en Côte d'Ivoire (voir _gaz/), valeurs indicatives
+ * (tare à vide / masse de gaz à pleine charge) :
+ * - B6  : bouteille 6 kg   — tare ≈ 7 000 g,  gaz ≈ 6 000 g   (trapue)
+ * - B12 : bouteille 12,5 kg — tare ≈ 13 000 g, gaz ≈ 12 500 g (haute)
+ * - B32 : bouteille 32 kg  — tare ≈ 30 000 g, gaz ≈ 32 000 g  (grande)
+ * - B35 : bouteille 35 kg  — tare ≈ 33 000 g, gaz ≈ 35 000 g  (grande)
  * Les tares réelles varient légèrement selon le fabricant ; ce sont les
  * valeurs nominales gravées, affinées ensuite par calibrage (doc 07, §4).
  *
@@ -28,7 +30,8 @@ class FormatsBouteilleSeeder extends Seeder
         $formats = [
             ['code' => 'B6', 'tare_nominale_g' => 7000, 'contenance_gaz_g' => 6000],
             ['code' => 'B12', 'tare_nominale_g' => 13000, 'contenance_gaz_g' => 12500],
-            ['code' => 'B24', 'tare_nominale_g' => 22000, 'contenance_gaz_g' => 24000],
+            ['code' => 'B32', 'tare_nominale_g' => 30000, 'contenance_gaz_g' => 32000],
+            ['code' => 'B35', 'tare_nominale_g' => 33000, 'contenance_gaz_g' => 35000],
         ];
 
         $marques = ['Total', 'Oryx'];
