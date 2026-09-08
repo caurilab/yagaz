@@ -2,18 +2,19 @@
 
 Photo de l'avancement, mise à jour en continu par l'archiviste.
 
-Dernière mise à jour : 2026-09-08 (Phase 1 terminée)
+Dernière mise à jour : 2026-09-08 (Phase 2 terminée)
 
 ## En un coup d'œil
 
-Le projet est en **développement**. **Phases 0 et 1 terminées.** Phase 0 :
-monorepo Git, quatre sous-projets scaffoldés, infra Docker, CI, auth de base,
-secrets hors dépôt. Phase 1 : schéma de données complet (21 migrations, 17
-modèles, hypertable TimescaleDB), multi-sites, cloisonnement des acteurs
-(policies + tests), audit de sécurité mené et corrigé. **CI verte** (migrations
-sur vrai TimescaleDB, tests, build web, typecheck app). Le dépôt est sur GitHub
-(`caurilab/yagaz`). Prochaine étape : Phase 2 (ingestion MQTT + chaîne de mesure
-+ firmware). Le prototype matériel reste en cours de sourcing.
+Le projet est en **développement**. **Phases 0, 1 et 2 terminées.** Phase 0 :
+monorepo, scaffolding, infra Docker, CI, secrets. Phase 1 : schéma complet (21
+migrations, hypertable Timescale), multi-sites, cloisonnement (policies + tests),
+audit sécurité. Phase 2 : chaîne d'ingestion MQTT (service de traitement,
+calibrage tare, niveau/autonomie, alertes), firmware ESP32, ACL par appareil,
+audit sécurité de l'ingestion mené et corrigé (dont un anti panne-sèche
+critique). **CI verte** (migrations sur vrai TimescaleDB + 35 tests). Dépôt sur
+GitHub (`caurilab/yagaz`). Prochaine étape : Phase 3 (app foyer). Le prototype
+matériel reste en cours de sourcing.
 
 ## Fait
 
@@ -31,20 +32,22 @@ sur vrai TimescaleDB, tests, build web, typecheck app). Le dépôt est sur GitHu
 - **Phase 1 — Modèle de données et socle métier** (voir `docs/rapports/phase-1.md`) :
   21 migrations, 17 modèles, hypertable TimescaleDB, multi-sites, cloisonnement
   (12 policies + tests), audit sécurité corrigé. ADR 0005. CI verte.
+- **Phase 2 — Ingestion et chaîne de mesure** (voir `docs/rapports/phase-2.md`) :
+  service d'ingestion MQTT, calibrage tare, niveau/autonomie, alertes, firmware
+  ESP32, ACL par appareil, audit sécurité corrigé. ADR 0006/0007. CI verte.
 
 ## En cours
 
-- **Phase 2 — Ingestion et chaîne de mesure** : worker MQTT, traitement robuste
-  (aberrations, doublons, trous), conversion poids → niveau → autonomie, gestion
-  de la tare, firmware ESP32 de test.
+- **Phase 3 — App foyer** : contrat d'API foyer, écrans (niveau/autonomie,
+  multi-bouteilles, multi-sites, enregistrement, alertes), robustesse hors ligne.
 - Commande des composants du prototype (3 plateaux de test).
 
 ## À venir
 
-- Phase 2 : ingestion MQTT + chaîne de mesure + firmware ESP32 réel.
-- Phase 3 : app foyer complète. Phase 4 : dépôt + boucle de commande.
-- Phase 5 : mandataire + distributeur. Phase 6 : consolidation.
-- Démarrer l'infra Docker et exécuter les migrations (Docker Desktop requis).
+- Phase 4 : dépôt + boucle de commande. Phase 5 : mandataire + distributeur.
+- Phase 6 : consolidation.
+- Démarrer l'infra Docker (ou créer la base `yagaz` locale) et exécuter les
+  migrations. Activer TLS MQTT avant prod (ADR 0007). Flasher/calibrer le firmware.
 
 ## À trancher
 
