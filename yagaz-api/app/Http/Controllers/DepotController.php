@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\RoleMembership;
 use App\Enums\TypeOrganisation;
 use App\Http\Requests\DepotIndexRequest;
 use App\Http\Resources\DepotResource;
+use App\Http\Resources\UserPubliqueResource;
 use App\Models\Organisation;
 use App\Services\Geo\Distance;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 /**
@@ -38,5 +41,22 @@ class DepotController extends Controller
             ->values();
 
         return DepotResource::collection($depots);
+    }
+
+    /**
+     * Livreurs rattachés à un dépôt, pour l'affectation d'une livraison
+     * (contrat API doc 10, §4). Réservé au gérant du dépôt ; projection
+     * minimale (uuid + nom), pas de PII inutile.
+     */
+    public function livreurs(Request $request, Organisation $organisation): AnonymousResourceCollection
+    {
+        abort_unless($request->user()->can('gererDepot', $organisation), 404);
+
+        $livreurs = $organisation->users()
+            ->wherePivot('role', RoleMembership::Livreur->value)
+            ->wherePivot('actif', true)
+            ->get();
+
+        return UserPubliqueResource::collection($livreurs);
     }
 }

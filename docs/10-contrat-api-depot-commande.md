@@ -49,6 +49,7 @@ Accès : membre `gerant_depot` de l'organisation (policy). Périmètre borné à
 |---|---|---|
 | GET | `/api/depots/{orgUuid}/stocks` | Stock par format : `pleines`, `vides`, `seuil_plein_bas`, tension éventuelle. |
 | PATCH | `/api/depots/{orgUuid}/stocks/{format_id}` | `{ pleines?, vides?, seuil_plein_bas? }` — ajustement manuel (journalisé en `mouvements_stock`). |
+| GET | `/api/depots/{orgUuid}/livreurs` | Livreurs rattachés au dépôt (uuid + nom), pour l'affectation d'une livraison. Réservé au gérant. |
 | GET | `/api/depots/{orgUuid}/commandes` | File des commandes entrantes des foyers (filtre `?statut`). |
 | PATCH | `/api/commandes/{uuid}/preparer` | Dépôt marque `preparee` (décrémente le stock `pleines` du format, mouvement `vente`). |
 | POST | `/api/commandes/{uuid}/livraison` | `{ livreur_user_id? }` → crée une `livraison` (`affectee`) et passe la commande en file de livraison. Le livreur doit être rattaché au dépôt. |
