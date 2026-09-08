@@ -19,15 +19,20 @@ import * as api from '../api/endpoints';
 import {
   MODE_DEMO,
   depotCommandesDemo,
+  depotFoyersEnTensionDemo,
   depotLivreursDemo,
+  depotReapprosDemo,
   depotStocksDemo,
   executerAvecSource,
 } from '../api/demo';
 import type {
   CommandeDepot,
   CorpsAjustementStock,
+  CorpsConfirmationReappro,
   CorpsCreationProposition,
+  FoyerEnTension,
   MembreLivreur,
+  Reappro,
   StockFormat,
 } from '../api/types';
 import { useEspace } from '../espace/EspaceContext';
@@ -37,6 +42,8 @@ import type { StatutSync } from './DonneesContext';
 interface DonneesDepotCache {
   stocks: StockFormat[];
   commandes: CommandeDepot[];
+  foyersEnTension: FoyerEnTension[];
+  reappros: Reappro[];
 }
 
 interface ContexteDepotValeur {
@@ -45,6 +52,8 @@ interface ContexteDepotValeur {
   stocks: StockFormat[];
   commandes: CommandeDepot[];
   livreurs: MembreLivreur[];
+  foyersEnTension: FoyerEnTension[];
+  reappros: Reappro[];
   chargementInitial: boolean;
   statutSync: StatutSync;
   rafraichir: () => Promise<void>;
@@ -52,6 +61,8 @@ interface ContexteDepotValeur {
   preparerCommande: (uuid: string) => Promise<void>;
   affecterLivraison: (uuid: string, livreurUserId?: string) => Promise<void>;
   creerProposition: (corps: CorpsCreationProposition) => Promise<void>;
+  proposerDepuisTension: (foyer: FoyerEnTension) => Promise<void>;
+  confirmerReappro: (uuid: string, corps?: CorpsConfirmationReappro) => Promise<void>;
 }
 
 const ContexteDepot = createContext<ContexteDepotValeur | null>(null);
@@ -64,6 +75,8 @@ export function DepotProvider({ children }: { children: ReactNode }) {
   const [stocks, setStocks] = useState<StockFormat[]>([]);
   const [commandes, setCommandes] = useState<CommandeDepot[]>([]);
   const [livreurs, setLivreurs] = useState<MembreLivreur[]>([]);
+  const [foyersEnTension, setFoyersEnTension] = useState<FoyerEnTension[]>([]);
+  const [reappros, setReappros] = useState<Reappro[]>([]);
   const [statutSync, setStatutSync] = useState<StatutSync>('chargement');
   const [chargementInitial, setChargementInitial] = useState(true);
   const dernierOrgCharge = useRef<string | null>(null);
@@ -74,6 +87,8 @@ export function DepotProvider({ children }: { children: ReactNode }) {
       if (cache) {
         setStocks(cache.stocks);
         setCommandes(cache.commandes);
+        setFoyersEnTension(cache.foyersEnTension ?? []);
+        setReappros(cache.reappros ?? []);
         setChargementInitial(false);
       }
     })();
@@ -95,14 +110,26 @@ export function DepotProvider({ children }: { children: ReactNode }) {
         () => api.depotLivreurs(orgUuid).then((r) => r.data),
         depotLivreursDemo
       );
+      const { data: foyersRecus } = await executerAvecSource(
+        () => api.depotFoyersEnTension(orgUuid).then((r) => r.data),
+        depotFoyersEnTensionDemo
+      );
+      const { data: reapprosRecus } = await executerAvecSource(
+        () => api.depotReappros(orgUuid, 'proposee').then((r) => r.data),
+        depotReapprosDemo
+      );
 
       setStocks(stocksRecus);
       setCommandes(commandesRecues);
       setLivreurs(livreursRecus);
+      setFoyersEnTension(foyersRecus);
+      setReappros(reapprosRecus);
       setStatutSync(sourceStocks === 'demo' || sourceCommandes === 'demo' ? 'hors_ligne' : 'synchronise');
       await ecrireCache<DonneesDepotCache>(CLES_CACHE.depotCommandes, {
         stocks: stocksRecus,
         commandes: commandesRecues,
+        foyersEnTension: foyersRecus,
+        reappros: reapprosRecus,
       });
     } catch {
       setStatutSync('hors_ligne');
@@ -231,6 +258,54 @@ export function DepotProvider({ children }: { children: ReactNode }) {
     [orgUuid, stocks]
   );
 
+  /**
+   * Propose une livraison depuis la file des foyers en tension (ADR 0009
+   * §B/§C) : le site_uuid vient de la file elle-même, jamais d'une saisie
+   * manuelle. Retire l'entrée de la file dès l'envoi (anti-doublon local).
+   */
+  const proposerDepuisTension = useCallback(
+    async (foyer: FoyerEnTension) => {
+      if (!orgUuid) return;
+      const corps: CorpsCreationProposition = { site_uuid: foyer.site_uuid, format_id: foyer.format.id, quantite: 1 };
+      try {
+        const { data } = await api.creerProposition(orgUuid, corps);
+        setCommandes((precedent) => [
+          { ...data, site: { uuid: foyer.site_uuid, nom: foyer.nom, adresse: null } },
+          ...precedent,
+        ]);
+      } catch (erreur) {
+        if (!MODE_DEMO) throw erreur;
+        setCommandes((precedent) => [
+          {
+            uuid: `proposition-locale-${Date.now()}`,
+            site_uuid: foyer.site_uuid,
+            site: { uuid: foyer.site_uuid, nom: foyer.nom, adresse: null },
+            format: foyer.format,
+            quantite: 1,
+            depot_uuid: orgUuid,
+            statut: 'proposee',
+            commission_g: 0,
+            created_at: new Date().toISOString(),
+            livraison: null,
+          },
+          ...precedent,
+        ]);
+      }
+      setFoyersEnTension((precedent) => precedent.filter((f) => f.site_uuid !== foyer.site_uuid));
+    },
+    [orgUuid]
+  );
+
+  /** Confirme (et ajuste au besoin) un réappro proposé par la plateforme (ADR 0009 §D). */
+  const confirmerReappro = useCallback(async (uuid: string, corps: CorpsConfirmationReappro = {}) => {
+    try {
+      await api.confirmerReappro(uuid, corps);
+    } catch (erreur) {
+      if (!MODE_DEMO) throw erreur;
+    }
+    setReappros((precedent) => precedent.filter((r) => r.uuid !== uuid));
+  }, []);
+
   const valeur = useMemo<ContexteDepotValeur>(
     () => ({
       orgUuid,
@@ -238,6 +313,8 @@ export function DepotProvider({ children }: { children: ReactNode }) {
       stocks,
       commandes,
       livreurs,
+      foyersEnTension,
+      reappros,
       chargementInitial,
       statutSync,
       rafraichir,
@@ -245,6 +322,8 @@ export function DepotProvider({ children }: { children: ReactNode }) {
       preparerCommande,
       affecterLivraison,
       creerProposition,
+      proposerDepuisTension,
+      confirmerReappro,
     }),
     [
       orgUuid,
@@ -252,6 +331,8 @@ export function DepotProvider({ children }: { children: ReactNode }) {
       stocks,
       commandes,
       livreurs,
+      foyersEnTension,
+      reappros,
       chargementInitial,
       statutSync,
       rafraichir,
@@ -259,6 +340,8 @@ export function DepotProvider({ children }: { children: ReactNode }) {
       preparerCommande,
       affecterLivraison,
       creerProposition,
+      proposerDepuisTension,
+      confirmerReappro,
     ]
   );
 

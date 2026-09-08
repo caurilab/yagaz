@@ -26,6 +26,13 @@ export default function LayoutLivreur() {
           }}
         />
         <Tabs.Screen
+          name="notifications"
+          options={{
+            title: 'Notifications',
+            tabBarIcon: ({ focused }) => <IconeOnglet symbole="🔔" focus={focused} />,
+          }}
+        />
+        <Tabs.Screen
           name="reglages"
           options={{
             title: 'Réglages',

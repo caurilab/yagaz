@@ -18,26 +18,33 @@ import type {
   CorpsCreationSite,
   CorpsCreationTournee,
   CorpsInscription,
+  CorpsConfirmationReappro,
   CorpsMajAlerte,
   CorpsMajBouteille,
+  CorpsMajNotification,
   CorpsMajSite,
   CorpsMajStatutLivraison,
   CorpsPartageSite,
   CorpsPlateau,
+  CorpsPropositionLivreur,
   CorpsReglagesAlertes,
   CorpsReponseCommande,
   Depot,
   DepotConsolide,
   Format,
+  FoyerEnTension,
   Livraison,
   MembreLivreur,
   MesRoles,
   MissionLivreur,
+  Notification,
   PointMesure,
+  Reappro,
   ReponseAuth,
   Site,
   StatutCommande,
   StatutLivraison,
+  StatutNotification,
   StockFormat,
   Tournee,
   User,
@@ -145,6 +152,18 @@ export function majReglagesAlertes(corps: CorpsReglagesAlertes) {
   return requeteApi<void>('/me/reglages-alertes', { methode: 'PATCH', corps });
 }
 
+// --- Notifications (doc 11 §3) ---
+
+export function notifications(statut?: StatutNotification) {
+  const suffixe = statut ? `?statut=${statut}` : '';
+  return requeteApi<{ data: Notification[] }>(`/notifications${suffixe}`);
+}
+
+export function marquerNotificationVue(id: number) {
+  const corps: CorpsMajNotification = { statut: 'vue' };
+  return requeteApi<{ data: Notification }>(`/notifications/${id}`, { methode: 'PATCH', corps });
+}
+
 // --- Dépôts (lecture seule) ---
 
 export function listerDepots(lat: number, lng: number, formatId: number) {
@@ -210,6 +229,21 @@ export function creerProposition(orgUuid: string, corps: CorpsCreationPropositio
   return requeteApi<{ data: Commande }>(`/depots/${orgUuid}/propositions`, { methode: 'POST', corps });
 }
 
+/** File des foyers de la zone de desserte du dépôt en tension (ADR 0009 §B). */
+export function depotFoyersEnTension(orgUuid: string) {
+  return requeteApi<{ data: FoyerEnTension[] }>(`/depots/${orgUuid}/foyers-en-tension`);
+}
+
+/** Réappros préparés par la plateforme pour ce dépôt, à confirmer/ajuster (ADR 0009 §D). */
+export function depotReappros(orgUuid: string, statut?: StatutCommande) {
+  const suffixe = statut ? `?statut=${statut}` : '';
+  return requeteApi<{ data: Reappro[] }>(`/depots/${orgUuid}/reappros${suffixe}`);
+}
+
+export function confirmerReappro(uuid: string, corps: CorpsConfirmationReappro = {}) {
+  return requeteApi<{ data: Reappro }>(`/commandes/${uuid}/confirmer-reappro`, { methode: 'POST', corps });
+}
+
 /**
  * Livreurs rattachés au dépôt (contrat doc 10, §4), pour peupler le sélecteur
  * de livreur à l'affectation d'une livraison. Réservé au gérant du dépôt.
@@ -227,6 +261,11 @@ export function livreurMissions(statut?: StatutLivraison) {
 
 export function majStatutLivraison(id: number, corps: CorpsMajStatutLivraison) {
   return requeteApi<{ data: Livraison }>(`/livraisons/${id}/statut`, { methode: 'PATCH', corps });
+}
+
+/** Proposition d'un livreur habituel depuis une notification de tension (ADR 0009 §C). */
+export function livreurProposition(corps: CorpsPropositionLivreur) {
+  return requeteApi<{ data: Commande }>('/livreur/propositions', { methode: 'POST', corps });
 }
 
 // --- Mandataire - dépôts et tournées (doc 11 §1) ---

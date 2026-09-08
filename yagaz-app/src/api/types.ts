@@ -186,6 +186,36 @@ export interface CorpsReglagesAlertes {
   livreur_habituel?: string;
 }
 
+// --- Notifications (doc 11 §3, ADR 0008/0009) ---
+
+/**
+ * Sous-ensemble minimal transmis au livreur habituel pour un foyer en
+ * tension (ADR 0008) : jamais de niveau, d'autonomie, d'historique, ni
+ * d'identifiant de site/bouteille - seulement de quoi apporter la bonne
+ * recharge au bon endroit.
+ */
+export interface ContexteNotification {
+  site_nom: string;
+  zone: string;
+  format_code: string;
+}
+
+export type StatutNotification = 'emise' | 'vue' | 'resolue';
+
+export interface Notification {
+  id: number;
+  type: string;
+  statut: StatutNotification;
+  message: string;
+  created_at: string;
+  /** Présent uniquement pour les notifications de tension adressées à un livreur habituel (ADR 0008) - jamais de site_uuid/bouteille_uuid pour celles-ci. */
+  contexte?: ContexteNotification;
+}
+
+export interface CorpsMajNotification {
+  statut: 'vue';
+}
+
 // --- Dépôts (lecture seule, Phase 3) ---
 
 export interface Depot {
@@ -323,6 +353,53 @@ export interface CorpsCreationProposition {
   site_uuid: string;
   format_id: number;
   quantite: number;
+}
+
+// --- Déclenchement automatique (ADR 0009) : file dépôt et réappros ---
+
+/**
+ * Entrée de la file dépôt (ADR 0009 §B) : foyer de la zone de desserte dont
+ * une bouteille active est en tension, présentée de façon actionnable -
+ * plus de saisie d'UUID à l'aveugle côté dépôt.
+ */
+export interface FoyerEnTension {
+  site_uuid: string;
+  nom: string;
+  zone: string;
+  format: Format;
+  distance_km: number;
+}
+
+/**
+ * Réappro préparé par la plateforme pour ce dépôt (origine=depot, ADR 0009
+ * §D) : le dépôt confirme/ajuste la quantité avant qu'il n'apparaisse comme
+ * réappro ferme au mandataire.
+ */
+export interface Reappro {
+  uuid: string;
+  format: Format;
+  quantite: number;
+  statut: StatutCommande;
+  created_at: string;
+}
+
+export interface CorpsConfirmationReappro {
+  quantite?: number;
+}
+
+/**
+ * Proposition envoyée par un livreur habituel depuis une notification de
+ * tension (ADR 0009 §C). `site_uuid` reste optionnel : la notification reçue
+ * par le livreur ne le contient jamais (ADR 0008) - `notification_id` permet
+ * au serveur de retrouver le foyer visé sans que l'app ne manipule son
+ * identifiant.
+ */
+export interface CorpsPropositionLivreur {
+  notification_id?: number;
+  site_uuid?: string;
+  format_id: number;
+  quantite: number;
+  depot_uuid?: string;
 }
 
 // --- Mandataire (doc 11 §1) ---

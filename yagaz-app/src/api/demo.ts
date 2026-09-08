@@ -12,9 +12,12 @@ import type {
   Depot,
   DepotConsolide,
   Format,
+  FoyerEnTension,
   MembreLivreur,
   MesRoles,
   MissionLivreur,
+  Notification,
+  Reappro,
   Site,
   StockFormat,
   Tournee,
@@ -332,6 +335,41 @@ export const depotCommandesDemo: CommandeDepot[] = [
       vides_recuperes: null,
       created_at: ilYA(40),
     },
+  },
+];
+
+// --- Déclenchement automatique (ADR 0009) : file dépôt et réappros ---
+
+export const depotFoyersEnTensionDemo: FoyerEnTension[] = [
+  {
+    site_uuid: 'site-maman',
+    nom: 'Chez Maman',
+    zone: 'Thiès',
+    format: formatsDemo[2],
+    distance_km: 2.4,
+  },
+];
+
+export const depotReapprosDemo: Reappro[] = [
+  {
+    uuid: 'reappro-b12-sacre-coeur',
+    format: formatsDemo[1],
+    quantite: 15,
+    statut: 'proposee',
+    created_at: ilYA(180),
+  },
+];
+
+// --- Notifications (doc 11 §3, ADR 0008) ---
+
+export const notificationsLivreurDemo: Notification[] = [
+  {
+    id: 501,
+    type: 'tension_foyer_habituel',
+    statut: 'emise',
+    message: "Un foyer habituel a besoin d'une recharge.",
+    created_at: ilYA(5),
+    contexte: { site_nom: 'Chez Maman', zone: 'Thiès', format_code: 'B38' },
   },
 ];
 

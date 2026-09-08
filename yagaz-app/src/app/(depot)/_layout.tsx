@@ -40,6 +40,13 @@ export default function LayoutDepot() {
           }}
         />
         <Tabs.Screen
+          name="reappros"
+          options={{
+            title: 'Réappros',
+            tabBarIcon: ({ focused }) => <IconeOnglet symbole="🔁" focus={focused} />,
+          }}
+        />
+        <Tabs.Screen
           name="reglages"
           options={{
             title: 'Réglages',
