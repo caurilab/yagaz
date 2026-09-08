@@ -211,10 +211,8 @@ export function creerProposition(orgUuid: string, corps: CorpsCreationPropositio
 }
 
 /**
- * Non listé explicitement au contrat 10 : extension minimale, même
- * convention de route (`/depots/{orgUuid}/...`), pour peupler le
- * sélecteur de livreur à l'affectation (§4 "le livreur doit être rattaché
- * au dépôt"). À confirmer côté API.
+ * Livreurs rattachés au dépôt (contrat doc 10, §4), pour peupler le sélecteur
+ * de livreur à l'affectation d'une livraison. Réservé au gérant du dépôt.
  */
 export function depotLivreurs(orgUuid: string) {
   return requeteApi<{ data: MembreLivreur[] }>(`/depots/${orgUuid}/livreurs`);

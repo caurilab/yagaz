@@ -2,18 +2,23 @@
 
 Photo de l'avancement, mise à jour en continu par l'archiviste.
 
-Dernière mise à jour : 2026-09-08 (Phase 5 terminée)
+Dernière mise à jour : 2026-09-08 (cycle v1 terminé — 6 phases)
 
 ## En un coup d'œil
 
-Le projet est en **développement**. **Phases 0 à 5 terminées.** Fondations, socle
-de données + cloisonnement, ingestion MQTT + firmware, application foyer, boucle
-de commande, et **mandataire + distributeur** (dashboards web React 19, agrégats
-régionaux étanches au foyer, service de notifications). Chaque phase a fait
-l'objet d'un audit de sécurité Opus mené et corrigé. **CI verte** : 131 tests /
-442 assertions, migrations sur vrai TimescaleDB, build web, typecheck app. Dépôt
-sur GitHub (`caurilab/yagaz`). Prochaine étape : Phase 6 (consolidation, rapport
-final). Le prototype matériel reste en cours de sourcing.
+**Les six phases du plan sont construites, testées et sécurisées.** Fondations,
+socle de données + cloisonnement, ingestion MQTT + firmware, application foyer,
+boucle de commande (foyer → dépôt → livreur), mandataire + distributeur
+(dashboards web, agrégats étanches au foyer), et consolidation (revue produit +
+rapport final). Un audit de sécurité Opus par phase, corrigé au fil de l'eau.
+**CI verte** : 131 tests / 442 assertions, migrations sur vrai TimescaleDB, build
+web, typecheck app. Dépôt sur GitHub (`caurilab/yagaz`).
+
+Le **rapport final** (`docs/rapports/rapport-final.md`) récapitule tout et liste
+les recommandations. Reste à compléter pour une v1 « concept complet » : le
+**déclenchement automatique de la chaîne** au seuil bas (alerte → livreur/dépôt),
+la boucle de réappro dépôt → mandataire, et trois compléments (i18n, carte, tare
+par photo) — voir le rapport final §6-7. Le prototype matériel reste en sourcing.
 
 ## Fait
 
@@ -44,18 +49,18 @@ final). Le prototype matériel reste en cours de sourcing.
 - **Phase 5 — Mandataire et distributeur** (voir `docs/rapports/phase-5.md`) :
   vue consolidée + tournées mandataire (web + mobile), agrégats régionaux
   distributeur (étanches au foyer), notifications, audit sécurité corrigé. CI verte.
+- **Phase 6 — Consolidation** (voir `docs/rapports/phase-6.md` et
+  `rapport-final.md`) : non-régression, revue produit globale, rapport final +
+  recommandations.
 
-## En cours
+## À venir (recommandations — voir rapport final §6-7)
 
-- **Phase 6 — Consolidation** : non-régression bout en bout, revue produit
-  globale, nettoyage, rapport final + recommandations.
-- Commande des composants du prototype (3 plateaux de test).
-
-## À venir
-
-- Démarrer l'infra Docker (ou créer la base `yagaz` locale) et exécuter les
-  migrations. Activer TLS MQTT avant prod (ADR 0007). Flasher/calibrer le firmware.
-- Brancher les vrais canaux de notification (push/SMS/WhatsApp).
+- **Compléter le trigger de la chaîne** : notifier le livreur habituel / le dépôt
+  au seuil bas, boucle réappro dépôt → mandataire, file des foyers en tension.
+- **Compléments d'expérience** : multilingue (i18n), carte des dépôts, tare par photo.
+- **Mise en prod** : infra réelle + migrations, TLS MQTT (ADR 0007), provisioning
+  des plateaux, vrais canaux de notification (push/SMS/WhatsApp).
+- **Matériel** : compiler/flasher/calibrer le firmware, trancher secteur/batterie.
 
 ## À trancher
 
