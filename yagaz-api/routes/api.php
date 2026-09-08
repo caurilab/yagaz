@@ -124,10 +124,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/commandes', [CommandeController::class, 'store']);
     Route::get('/commandes/{commande:uuid}', [CommandeController::class, 'show']);
     Route::post('/commandes/{commande:uuid}/reponse', [CommandeController::class, 'reponse']);
+    // Suivi/ETA (timeline d'étapes + estimation avant livraison) : même accès
+    // que `show` (`CommandePolicy::view`).
+    Route::get('/commandes/{commande:uuid}/suivi', [CommandeController::class, 'suivi']);
     // Paiement Mobile Money (ADR 0010, v2 brique 1) : réservé au foyer
     // propriétaire (policy `payer`) d'une commande `confirmee`.
     Route::post('/commandes/{commande:uuid}/paiement', [PaiementController::class, 'initier']);
     Route::get('/commandes/{commande:uuid}/paiement', [PaiementController::class, 'show']);
+    // Reçu de paiement (données seulement, pas de PDF) : réservé au foyer
+    // propriétaire (même policy `payer`).
+    Route::get('/commandes/{commande:uuid}/recu', [PaiementController::class, 'recu']);
 
     // === Dépôt — commandes et livraison (contrat API doc 10, §4) ========
     Route::patch('/commandes/{commande:uuid}/preparer', [CommandeController::class, 'preparer']);

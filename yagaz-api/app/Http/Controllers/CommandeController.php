@@ -14,6 +14,7 @@ use App\Models\Organisation;
 use App\Models\Site;
 use App\Models\User;
 use App\Services\Commande\CycleCommande;
+use App\Services\Commande\SuiviCommande;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -27,7 +28,10 @@ class CommandeController extends Controller
 {
     private const array RELATIONS = ['site', 'format', 'cibleOrg', 'livraison.livreur'];
 
-    public function __construct(private readonly CycleCommande $cycle) {}
+    public function __construct(
+        private readonly CycleCommande $cycle,
+        private readonly SuiviCommande $suiviCommande,
+    ) {}
 
     public function index(Request $request): AnonymousResourceCollection
     {
@@ -63,6 +67,18 @@ class CommandeController extends Controller
         abort_unless($request->user()->can('view', $commande), 404);
 
         return new CommandeResource($commande->load(self::RELATIONS));
+    }
+
+    /**
+     * `GET /api/commandes/{uuid}/suivi` : timeline d'étapes + ETA estimée
+     * (contrat API). Même périmètre d'accès que `show` (`CommandePolicy::view`)
+     * — le foyer demandeur ou l'organisation cible.
+     */
+    public function suivi(Request $request, Commande $commande): JsonResponse
+    {
+        abort_unless($request->user()->can('view', $commande), 404);
+
+        return response()->json(['data' => $this->suiviCommande->suivi($commande)]);
     }
 
     public function reponse(CommandeReponseRequest $request, Commande $commande): CommandeResource
