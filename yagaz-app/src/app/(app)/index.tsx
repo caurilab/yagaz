@@ -8,6 +8,7 @@ import { BadgeEtat } from '../../components/BadgeEtat';
 import { BandeauSync } from '../../components/BandeauSync';
 import { Bouton } from '../../components/Bouton';
 import { BouteilleGaz } from '../../components/BouteilleGaz';
+import { EncartConnecterMateriel } from '../../components/EncartConnecterMateriel';
 import { EncartTemperature } from '../../components/EncartTemperature';
 import { SelecteurSite } from '../../components/SelecteurSite';
 import { useAuth } from '../../auth/AuthContext';
@@ -99,7 +100,12 @@ export default function EcranAccueilFoyer() {
               <BandeauSync texte="Connexion indisponible - dernières valeurs connues affichées" />
             ) : null}
 
-            <CarteBouteilleActive bouteille={bouteilleActive} nomSite={siteActif?.nom} marques={marques} />
+            <CarteBouteilleActive
+              bouteille={bouteilleActive}
+              nomSite={siteActif?.nom}
+              marques={marques}
+              aBalance={siteActif?.a_balance ?? true}
+            />
 
             <Pressable style={styles.lienGererBouteilles} onPress={() => router.push('/bouteilles')}>
               <Text style={styles.texteLienGererBouteilles}>Gérer mes bouteilles</Text>
@@ -107,7 +113,11 @@ export default function EcranAccueilFoyer() {
             </Pressable>
 
             <View style={styles.blocTemperature}>
-              <EncartTemperature temperature={temperature} siteUuid={siteActif?.uuid} />
+              <EncartTemperature
+                temperature={temperature}
+                siteUuid={siteActif?.uuid}
+                connecte={siteActif?.a_temperature ?? true}
+              />
             </View>
 
             {autresBouteilles.length > 0 ? (
@@ -153,10 +163,13 @@ function CarteBouteilleActive({
   bouteille,
   nomSite,
   marques,
+  aBalance,
 }: {
   bouteille: Bouteille;
   nomSite?: string;
   marques: Marque[];
+  /** `a_balance` du site (gating ADR 0012) : `false` grise le niveau/l'autonomie avec un CTA vers Matériels. */
+  aBalance: boolean;
 }) {
   const { niveau } = bouteille;
   const couleurMarqueBouteille = couleurPourFormat(bouteille.format, marques);
@@ -169,33 +182,40 @@ function CarteBouteilleActive({
             Bouteille active{nomSite ? ` - ${nomSite}` : ''} · {bouteille.format.marque}
           </Text>
         </View>
-        <BadgeEtat etat={niveau.etat} />
+        {aBalance ? <BadgeEtat etat={niveau.etat} /> : null}
       </View>
 
-      {!niveau.frais ? <BandeauSync texte="Dernière valeur connue - hors ligne" variante="alerte" /> : null}
+      {aBalance && !niveau.frais ? <BandeauSync texte="Dernière valeur connue - hors ligne" variante="alerte" /> : null}
 
       <View style={styles.heroNiveau}>
         <BouteilleGaz
-          couleur={couleurMarqueBouteille}
+          couleur={aBalance ? couleurMarqueBouteille : null}
           code={bouteille.format.code}
           marqueNom={bouteille.format.marque}
-          niveauPct={niveau.niveau_pct}
+          niveauPct={aBalance ? niveau.niveau_pct : undefined}
           taille={132}
         />
         <View style={styles.blocAutonomie}>
-          <Text style={styles.chiffreAutonomie}>{formaterAutonomie(niveau.autonomie_heures)}</Text>
+          <Text style={[styles.chiffreAutonomie, !aBalance && styles.chiffreAutonomieDesactive]}>
+            {aBalance ? formaterAutonomie(niveau.autonomie_heures) : '--'}
+          </Text>
           <Text style={styles.libelleAutonomie}>d'autonomie restante</Text>
         </View>
       </View>
 
-      <View style={styles.barreNiveau}>
-        <View style={[styles.barreNiveauRemplie, { width: `${Math.max(0, Math.min(100, niveau.niveau_pct))}%` }]} />
-      </View>
-      <Text style={styles.texteNiveauSecondaire}>Niveau : {niveau.niveau_pct} %</Text>
-
-      {niveau.estimation ? (
-        <Text style={styles.texteEstimation}>Estimation en cours d'affinage</Text>
-      ) : null}
+      {aBalance ? (
+        <>
+          <View style={styles.barreNiveau}>
+            <View style={[styles.barreNiveauRemplie, { width: `${Math.max(0, Math.min(100, niveau.niveau_pct))}%` }]} />
+          </View>
+          <Text style={styles.texteNiveauSecondaire}>Niveau : {niveau.niveau_pct} %</Text>
+          {niveau.estimation ? (
+            <Text style={styles.texteEstimation}>Estimation en cours d'affinage</Text>
+          ) : null}
+        </>
+      ) : (
+        <EncartConnecterMateriel texte="Connectez votre pèse-bouteille pour voir le niveau" />
+      )}
     </Pressable>
   );
 }
@@ -391,6 +411,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: couleurs.texteDoux,
     marginTop: espacements.xs,
+  },
+  chiffreAutonomieDesactive: {
+    color: couleurs.grisNeutre,
   },
   barreNiveau: {
     height: 10,

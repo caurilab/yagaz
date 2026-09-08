@@ -33,7 +33,13 @@
           "imageWidth": 76
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Yagaz a besoin de la caméra pour scanner le QR code de votre matériel."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

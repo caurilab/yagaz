@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { router } from 'expo-router';
-import { Alert, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BadgeStatutCommande, BadgeStatutPaiement } from '../../components/BadgeStatut';
@@ -136,6 +136,19 @@ export default function EcranCommandesFoyer() {
                   />
                 </View>
               ) : null}
+
+              {item.statut !== 'proposee' && item.statut !== 'annulee' ? (
+                <View style={styles.accesRangee}>
+                  {item.statut === 'confirmee' || item.statut === 'preparee' || item.statut === 'en_livraison' ? (
+                    <Pressable style={styles.lienAcces} onPress={() => router.push(`/suivi/${item.uuid}`)}>
+                      <Text style={styles.texteLienAcces}>Suivre la commande</Text>
+                    </Pressable>
+                  ) : null}
+                  <Pressable style={styles.lienAcces} onPress={() => router.push(`/recu/${item.uuid}`)}>
+                    <Text style={styles.texteLienAcces}>Voir le reçu</Text>
+                  </Pressable>
+                </View>
+              ) : null}
             </View>
           );
         }}
@@ -215,5 +228,19 @@ const styles = StyleSheet.create({
   },
   boutonAction: {
     flex: 1,
+  },
+  accesRangee: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: espacements.lg,
+    marginTop: espacements.md,
+  },
+  lienAcces: {
+    paddingVertical: espacements.xs,
+  },
+  texteLienAcces: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: couleurs.rouge,
   },
 });

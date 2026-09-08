@@ -16,6 +16,7 @@ import type {
   CorpsConnexion,
   CorpsCreationBouteille,
   CorpsCreationCommande,
+  CorpsCreationEquipement,
   CorpsCreationProposition,
   CorpsCreationSite,
   CorpsCreationTournee,
@@ -24,6 +25,7 @@ import type {
   CorpsConfirmationReappro,
   CorpsMajAlerte,
   CorpsMajBouteille,
+  CorpsMajEquipement,
   CorpsMajNotification,
   CorpsMajSite,
   CorpsMajStatutLivraison,
@@ -34,6 +36,7 @@ import type {
   CorpsReponseCommande,
   Depot,
   DepotConsolide,
+  Equipement,
   EvenementHistorique,
   Format,
   FoyerEnTension,
@@ -49,12 +52,14 @@ import type {
   PeriodeTemperature,
   PointMesure,
   Reappro,
+  RecuPaiement,
   ReponseAuth,
   Site,
   StatutCommande,
   StatutLivraison,
   StatutNotification,
   StockFormat,
+  SuiviCommande,
   TemperatureAnalyse,
   TemperatureSite,
   Tournee,
@@ -154,6 +159,24 @@ export function mesuresBouteille(uuid: string, depuis?: string, pas: 'heure' = '
   return requeteApi<{ data: PointMesure[] }>(`/bouteilles/${uuid}/mesures?${params.toString()}`);
 }
 
+// --- Équipements (registre unifié foyer, ADR 0012) ---
+
+export function listerEquipements() {
+  return requeteApi<{ data: Equipement[] }>('/equipements');
+}
+
+export function creerEquipement(corps: CorpsCreationEquipement) {
+  return requeteApi<{ data: Equipement }>('/equipements', { methode: 'POST', corps });
+}
+
+export function majEquipement(uuid: string, corps: CorpsMajEquipement) {
+  return requeteApi<{ data: Equipement }>(`/equipements/${uuid}`, { methode: 'PATCH', corps });
+}
+
+export function supprimerEquipement(uuid: string) {
+  return requeteApi<void>(`/equipements/${uuid}`, { methode: 'DELETE' });
+}
+
 // --- Alertes ---
 
 export function listerAlertes(statut?: 'emise') {
@@ -224,6 +247,16 @@ export function initierPaiement(uuid: string) {
 /** Statut courant du paiement d'une commande (à poller jusqu'à `regle`/`echoue`/`expire`). */
 export function statutPaiement(uuid: string) {
   return requeteApi<{ data: Paiement }>(`/commandes/${uuid}/paiement`);
+}
+
+/** Timeline d'étapes + ETA estimée d'une commande jusqu'à la livraison. */
+export function suiviCommande(uuid: string) {
+  return requeteApi<{ data: SuiviCommande }>(`/commandes/${uuid}/suivi`);
+}
+
+/** Reçu du paiement d'une commande (réglé, ou estimé si encore « à la livraison »). */
+export function recuCommande(uuid: string) {
+  return requeteApi<{ data: RecuPaiement }>(`/commandes/${uuid}/recu`);
 }
 
 // --- Dépôt - stock et commandes (contrat 10 §4) ---

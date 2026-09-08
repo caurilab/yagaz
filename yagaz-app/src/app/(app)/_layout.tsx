@@ -117,6 +117,30 @@ export default function LayoutApp() {
           headerLeft: () => <BoutonRetour />,
         }}
       />
+      <Tabs.Screen
+        name="materiels"
+        options={{
+          href: null,
+          title: 'Matériels',
+          headerLeft: () => <BoutonRetour />,
+        }}
+      />
+      <Tabs.Screen
+        name="suivi/[uuid]"
+        options={{
+          href: null,
+          title: 'Suivi de commande',
+          headerLeft: () => <BoutonRetour />,
+        }}
+      />
+      <Tabs.Screen
+        name="recu/[uuid]"
+        options={{
+          href: null,
+          title: 'Reçu',
+          headerLeft: () => <BoutonRetour />,
+        }}
+      />
     </Tabs>
   );
 }

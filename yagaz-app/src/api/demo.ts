@@ -8,11 +8,14 @@ import type {
   Alerte,
   Analyse,
   Bouteille,
+  CleEtapeSuivi,
   Commande,
   CommandeDepot,
   CorpsHistorique,
   Depot,
   DepotConsolide,
+  Equipement,
+  EtapeSuivi,
   EvenementHistorique,
   Format,
   FoyerEnTension,
@@ -31,8 +34,11 @@ import type {
   PointSerieConsommation,
   PointTemperatureHoraire,
   Reappro,
+  RecuPaiement,
   Site,
+  StatutCommande,
   StockFormat,
+  SuiviCommande,
   TemperatureAnalyse,
   TemperatureSite,
   Tournee,
@@ -83,6 +89,11 @@ export const sitesDemo: Site[] = [
     niveau_acces: 'proprietaire',
     nb_bouteilles: 3,
     a_alerte_active: true,
+    // Balance et capteur de température connectés (cf. `equipementsDemo`) -
+    // écran non encore affecté à ce site (ADR 0012, gating).
+    a_balance: true,
+    a_temperature: true,
+    a_ecran: false,
   },
   {
     uuid: 'site-maman',
@@ -93,6 +104,10 @@ export const sitesDemo: Site[] = [
     niveau_acces: 'lecture',
     nb_bouteilles: 1,
     a_alerte_active: true,
+    // Aucun équipement affecté à ce site - démontre l'état grisé/CTA.
+    a_balance: false,
+    a_temperature: false,
+    a_ecran: false,
   },
 ];
 
@@ -217,6 +232,46 @@ export const alertesDemo: Alerte[] = [
     statut: 'emise',
     message: 'Chez Maman : bouteille active presque vide - dernière valeur connue.',
     created_at: ilYA(9 * 60),
+  },
+];
+
+// --- Équipements (registre unifié foyer, ADR 0012) : repli démo ---
+
+/**
+ * Cohérent avec les capacités `a_balance`/`a_temperature`/`a_ecran` de
+ * `sitesDemo` ci-dessus : Domicile a une balance et un capteur de
+ * température actifs, un écran encore non affecté attend d'être connecté.
+ */
+export const equipementsDemo: Equipement[] = [
+  {
+    uuid: 'equip-balance-domicile',
+    type: 'balance',
+    reference: 'BAL-DKR-2201',
+    statut: 'actif',
+    site: { uuid: 'site-domicile', nom: 'Domicile' },
+    dernier_vu_at: ilYA(8),
+    created_at: ilYA(60 * 24 * 40),
+    updated_at: ilYA(8),
+  },
+  {
+    uuid: 'equip-temperature-domicile',
+    type: 'temperature',
+    reference: 'TEMP-DKR-0091',
+    statut: 'actif',
+    site: { uuid: 'site-domicile', nom: 'Domicile' },
+    dernier_vu_at: ilYA(18),
+    created_at: ilYA(60 * 24 * 20),
+    updated_at: ilYA(18),
+  },
+  {
+    uuid: 'equip-ecran-a-connecter',
+    type: 'ecran',
+    reference: 'ECR-DKR-0004',
+    statut: 'a_connecter',
+    site: null,
+    dernier_vu_at: null,
+    created_at: ilYA(60 * 3),
+    updated_at: ilYA(60 * 3),
   },
 ];
 
@@ -953,4 +1008,86 @@ export function statutPaiementDemo(commandeUuid: string): Paiement {
     etat.paiement = { ...etat.paiement, statut: 'regle' };
   }
   return etat.paiement;
+}
+
+// --- Suivi de commande (contrat API `GET /commandes/{uuid}/suivi`) : repli démo ---
+
+const ORDRE_ETAPES_SUIVI_DEMO: CleEtapeSuivi[] = ['passee', 'confirmee', 'preparee', 'en_livraison', 'livree'];
+
+const LIBELLES_ETAPES_SUIVI_DEMO: Record<CleEtapeSuivi, string> = {
+  passee: 'Commande passée',
+  confirmee: 'Commande confirmée',
+  preparee: 'Commande préparée',
+  en_livraison: 'En livraison',
+  livree: 'Livrée',
+};
+
+function indexEtapeAtteinteDemo(statut: StatutCommande): number {
+  switch (statut) {
+    case 'confirmee':
+      return 1;
+    case 'preparee':
+      return 2;
+    case 'en_livraison':
+      return 3;
+    case 'livree':
+      return 4;
+    default:
+      return 0;
+  }
+}
+
+/**
+ * Repli démo du suivi d'une commande (même timeline que
+ * `App\Services\Commande\SuiviCommande`, dérivée de son statut courant) -
+ * dates approximées, pas d'ETA GPS live (même limitation documentée côté API).
+ */
+export function suiviCommandeDemo(commande: Commande): SuiviCommande {
+  const indexAtteint = indexEtapeAtteinteDemo(commande.statut);
+  const etapes: EtapeSuivi[] = ORDRE_ETAPES_SUIVI_DEMO.map((cle, position) => ({
+    cle,
+    libelle: LIBELLES_ETAPES_SUIVI_DEMO[cle],
+    atteinte: position <= indexAtteint,
+    date: position <= indexAtteint ? ilYA((indexAtteint - position) * 25 + 5) : null,
+    courante: position === indexAtteint,
+  }));
+
+  const enLivraison = commande.statut === 'en_livraison';
+
+  return {
+    etapes,
+    statut_courant: commande.statut,
+    livraison: {
+      statut: commande.livraison?.statut ?? null,
+      livreur: commande.livraison?.livreur_nom ?? null,
+    },
+    distance_km: enLivraison || commande.statut === 'preparee' ? 3.4 : null,
+    eta_minutes: enLivraison ? 18 : null,
+  };
+}
+
+// --- Reçu de paiement (contrat API `GET /commandes/{uuid}/recu`) : repli démo ---
+
+/** Repli démo du reçu d'une commande - même hypothèse de tarif que `PaiementController` (6 500 FCFA/bouteille). */
+export function recuCommandeDemo(commande: Commande): RecuPaiement {
+  const paiementConnu = paiementsDemoParCommande.get(commande.uuid)?.paiement;
+  const montantEstime = commande.quantite * 6_500;
+  const statutPaiementDemoValeur = paiementConnu?.statut ?? commande.statut_paiement;
+  const nomSite = sitesDemo.find((s) => s.uuid === commande.site_uuid)?.nom ?? 'Mon site';
+
+  return {
+    reference: paiementConnu?.reference ?? (statutPaiementDemoValeur === 'regle' ? `DEMO-${commande.uuid.slice(-6).toUpperCase()}` : null),
+    montant: paiementConnu?.montant ?? montantEstime,
+    devise: paiementConnu?.devise ?? 'XOF',
+    statut_paiement: statutPaiementDemoValeur,
+    mode_paiement: commande.mode_paiement,
+    date: commande.created_at,
+    commande: {
+      uuid: commande.uuid,
+      format: { code: commande.format.code, marque: commande.format.marque },
+      quantite: commande.quantite,
+      depot: { nom: 'Dépôt Sacré-Cœur' },
+    },
+    site: { nom: nomSite },
+  };
 }

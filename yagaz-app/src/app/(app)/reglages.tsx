@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import { router } from 'expo-router';
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Bouton } from '../../components/Bouton';
 import { Champ } from '../../components/Champ';
+import { Icone } from '../../components/icones';
 import { useAuth } from '../../auth/AuthContext';
 import { majReglagesAlertes } from '../../api/endpoints';
 import { MODE_DEMO } from '../../api/demo';
@@ -81,6 +83,15 @@ export default function EcranReglages() {
             </Pressable>
           ))}
         </View>
+
+        <Text style={styles.sectionTitre}>Matériel connecté</Text>
+        <Pressable style={styles.carteLien} onPress={() => router.push('/materiels')}>
+          <View style={styles.ligneLien}>
+            <Icone nom="ecran" taille={20} couleur={couleurs.rouge} />
+            <Text style={styles.texteLien}>Matériels (balance, capteur, écran)</Text>
+          </View>
+          <Icone nom="chevron" taille={18} couleur={couleurs.texteDoux} />
+        </Pressable>
 
         <Text style={styles.sectionTitre}>Livreur habituel</Text>
         <View style={styles.carte}>
@@ -173,6 +184,32 @@ const styles = StyleSheet.create({
   libelleCanal: {
     fontSize: 15,
     color: couleurs.texte,
+  },
+  carteLien: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: couleurs.carte,
+    borderRadius: rayons.xl,
+    padding: espacements.lg,
+    marginBottom: espacements.lg,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
+  },
+  ligneLien: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espacements.sm,
+    flexShrink: 1,
+  },
+  texteLien: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: couleurs.texte,
+    flexShrink: 1,
   },
   boutonEnregistrer: {
     marginTop: espacements.sm,

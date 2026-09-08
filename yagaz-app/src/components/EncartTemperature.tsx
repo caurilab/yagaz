@@ -10,6 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { couleurs, espacements, rayons } from '../../theme/couleurs';
 import type { TemperatureSite } from '../api/types';
+import { EncartConnecterMateriel } from './EncartConnecterMateriel';
 
 /** Seuil d'alerte visuelle - la sécurité (notification `temperature_elevee`) reste côté API. */
 export const SEUIL_TEMPERATURE_ELEVEE_C = 60;
@@ -17,11 +18,27 @@ export const SEUIL_TEMPERATURE_ELEVEE_C = 60;
 export function EncartTemperature({
   temperature,
   siteUuid,
+  connecte = true,
 }: {
   temperature: TemperatureSite | null;
   /** Site dont dépend cette température - présent, rend l'encart tappable vers le détail. */
   siteUuid?: string | null;
+  /** `a_temperature` du site (gating ADR 0012) : `false` grise l'encart avec un CTA vers Matériels. */
+  connecte?: boolean;
 }) {
+  if (!connecte) {
+    return (
+      <View style={styles.carte}>
+        <View style={styles.libelleAvecIcone}>
+          <Ionicons name="thermometer-outline" size={18} color={couleurs.grisNeutre} />
+          <Text style={styles.libelle}>Température cuisine</Text>
+        </View>
+        <Text style={styles.chiffreDesactive}>-- °C</Text>
+        <EncartConnecterMateriel texte="Connectez votre capteur de température" />
+      </View>
+    );
+  }
+
   if (!temperature) return null;
 
   const elevee = temperature.temp_courante_c >= SEUIL_TEMPERATURE_ELEVEE_C;
@@ -122,6 +139,11 @@ const styles = StyleSheet.create({
   },
   chiffreAlerte: {
     color: couleurs.danger,
+  },
+  chiffreDesactive: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: couleurs.grisNeutre,
   },
   texteAlerte: {
     fontSize: 12,

@@ -9,6 +9,7 @@ import { BandeauSync } from '../../../components/BandeauSync';
 import { Bouton } from '../../../components/Bouton';
 import { BouteilleGaz } from '../../../components/BouteilleGaz';
 import { Champ } from '../../../components/Champ';
+import { EncartConnecterMateriel } from '../../../components/EncartConnecterMateriel';
 import { EncartTemperature } from '../../../components/EncartTemperature';
 import { SelecteurFormat } from '../../../components/SelecteurFormat';
 import { useDonnees } from '../../../data/DonneesContext';
@@ -24,8 +25,10 @@ const SEUIL_MAX = 50;
 
 export default function EcranDetailBouteille() {
   const { uuid } = useLocalSearchParams<{ uuid: string }>();
-  const { bouteilles, formats, marques, modifierBouteille, supprimerBouteille, rafraichir } = useDonnees();
+  const { sites, bouteilles, formats, marques, modifierBouteille, supprimerBouteille, rafraichir } = useDonnees();
   const bouteille = bouteilles.find((b) => b.uuid === uuid);
+  const site = sites.find((s) => s.uuid === bouteille?.site_uuid);
+  const aBalance = site?.a_balance ?? true;
   const { temperature } = useTemperatureSite(bouteille?.site_uuid);
 
   const [modeEdition, setModeEdition] = useState(false);
@@ -149,7 +152,7 @@ export default function EcranDetailBouteille() {
             </Text>
           </View>
           <View style={styles.enTeteActions}>
-            <BadgeEtat etat={niveau.etat} />
+            {aBalance ? <BadgeEtat etat={niveau.etat} /> : null}
             {!modeEdition ? (
               <Pressable onPress={demarrerEdition} hitSlop={10} style={styles.boutonModifier}>
                 <Ionicons name="create-outline" size={20} color={couleurs.rouge} />
@@ -159,34 +162,46 @@ export default function EcranDetailBouteille() {
           </View>
         </View>
 
-        {!niveau.frais ? <BandeauSync texte="Dernière valeur connue - hors ligne" variante="alerte" /> : null}
+        {aBalance && !niveau.frais ? <BandeauSync texte="Dernière valeur connue - hors ligne" variante="alerte" /> : null}
 
         <View style={styles.carte}>
           <View style={styles.heroNiveau}>
             <BouteilleGaz
-              couleur={couleurBouteille}
+              couleur={aBalance ? couleurBouteille : null}
               code={bouteille.format.code}
               marqueNom={bouteille.format.marque}
-              niveauPct={niveau.niveau_pct}
+              niveauPct={aBalance ? niveau.niveau_pct : undefined}
               taille={150}
             />
             <View style={styles.blocAutonomie}>
-              <Text style={styles.chiffreAutonomie}>{formaterAutonomie(niveau.autonomie_heures)}</Text>
+              <Text style={[styles.chiffreAutonomie, !aBalance && styles.chiffreDesactive]}>
+                {aBalance ? formaterAutonomie(niveau.autonomie_heures) : '--'}
+              </Text>
               <Text style={styles.libelle}>d'autonomie restante</Text>
             </View>
           </View>
 
-          <View style={styles.barreNiveau}>
-            <View style={[styles.barreNiveauRemplie, { width: `${Math.max(0, Math.min(100, niveau.niveau_pct))}%` }]} />
-          </View>
-          <Text style={styles.texteSecondaire}>Niveau : {niveau.niveau_pct} % ({niveau.gaz_g} g)</Text>
-          {niveau.estimation ? (
-            <Text style={styles.texteEstimation}>Estimation en cours d'affinage</Text>
-          ) : null}
+          {aBalance ? (
+            <>
+              <View style={styles.barreNiveau}>
+                <View style={[styles.barreNiveauRemplie, { width: `${Math.max(0, Math.min(100, niveau.niveau_pct))}%` }]} />
+              </View>
+              <Text style={styles.texteSecondaire}>Niveau : {niveau.niveau_pct} % ({niveau.gaz_g} g)</Text>
+              {niveau.estimation ? (
+                <Text style={styles.texteEstimation}>Estimation en cours d'affinage</Text>
+              ) : null}
+            </>
+          ) : (
+            <EncartConnecterMateriel texte="Connectez votre pèse-bouteille pour voir le niveau" />
+          )}
         </View>
 
         <View style={styles.blocTemperature}>
-          <EncartTemperature temperature={temperature} siteUuid={bouteille.site_uuid} />
+          <EncartTemperature
+            temperature={temperature}
+            siteUuid={bouteille.site_uuid}
+            connecte={site?.a_temperature ?? true}
+          />
         </View>
 
         {!modeEdition ? (
@@ -401,6 +416,9 @@ const styles = StyleSheet.create({
   libelle: {
     fontSize: 15,
     color: couleurs.texteDoux,
+  },
+  chiffreDesactive: {
+    color: couleurs.grisNeutre,
   },
   barreNiveau: {
     alignSelf: 'stretch',

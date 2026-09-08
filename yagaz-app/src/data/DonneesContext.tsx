@@ -19,6 +19,7 @@ import {
   MODE_DEMO,
   alertesDemo,
   bouteillesDemo,
+  equipementsDemo,
   executerAvecSource,
   formatsDemo,
   marquesDemo,
@@ -28,7 +29,9 @@ import type {
   Alerte,
   Bouteille,
   CorpsCreationBouteille,
+  CorpsCreationEquipement,
   CorpsMajBouteille,
+  Equipement,
   Format,
   Marque,
   RoleBouteille,
@@ -45,6 +48,7 @@ interface DonneesCache {
   formats: Format[];
   marques: Marque[];
   alertes: Alerte[];
+  equipements: Equipement[];
 }
 
 interface ContexteDonneesValeur {
@@ -57,6 +61,7 @@ interface ContexteDonneesValeur {
   formats: Format[];
   marques: Marque[];
   alertes: Alerte[];
+  equipements: Equipement[];
   statutSync: StatutSync;
   derniereSyncAt: string | null;
   chargementInitial: boolean;
@@ -68,6 +73,10 @@ interface ContexteDonneesValeur {
   /** Suppression d'une bouteille (contrat DELETE /bouteilles/{uuid}) - autorisation gérée côté API. */
   supprimerBouteille: (uuid: string) => Promise<void>;
   majAlerteStatut: (id: number, statut: 'vue' | 'resolue') => Promise<void>;
+  /** Enregistrement d'un équipement (balance/température/écran - ADR 0012), affecté au site actif par défaut. */
+  enregistrerEquipement: (corps: CorpsCreationEquipement) => Promise<Equipement>;
+  /** Suppression d'un équipement (contrat DELETE /equipements/{uuid}). */
+  supprimerEquipement: (uuid: string) => Promise<void>;
 }
 
 const ContexteDonnees = createContext<ContexteDonneesValeur | null>(null);
@@ -99,6 +108,7 @@ export function DonneesProvider({ children }: { children: ReactNode }) {
   const [formats, setFormats] = useState<Format[]>([]);
   const [marques, setMarques] = useState<Marque[]>([]);
   const [alertes, setAlertes] = useState<Alerte[]>([]);
+  const [equipements, setEquipements] = useState<Equipement[]>([]);
   const [statutSync, setStatutSync] = useState<StatutSync>('chargement');
   const [derniereSyncAt, setDerniereSyncAt] = useState<string | null>(null);
   const [chargementInitial, setChargementInitial] = useState(true);
@@ -116,6 +126,7 @@ export function DonneesProvider({ children }: { children: ReactNode }) {
         setFormats(cache.formats);
         setMarques(cache.marques ?? []);
         setAlertes(cache.alertes);
+        setEquipements(cache.equipements ?? []);
         setSiteActifUuid(siteActifCache ?? cache.sites[0]?.uuid ?? null);
         setChargementInitial(false);
       }
@@ -162,11 +173,18 @@ export function DonneesProvider({ children }: { children: ReactNode }) {
       );
       if (sourceAlertes === 'demo') uneSourceDemo = true;
 
+      const { data: equipementsRecus, source: sourceEquipements } = await executerAvecSource(
+        () => api.listerEquipements().then((r) => r.data),
+        equipementsDemo
+      );
+      if (sourceEquipements === 'demo') uneSourceDemo = true;
+
       setSites(sitesRecus);
       setFormats(formatsRecus);
       setMarques(marquesRecues);
       setBouteillesParSite(bouteillesRecues);
       setAlertes(alertesRecues);
+      setEquipements(equipementsRecus);
       setSiteActifUuid((precedent) => precedent ?? sitesRecus[0]?.uuid ?? null);
 
       const maintenant = new Date().toISOString();
@@ -179,6 +197,7 @@ export function DonneesProvider({ children }: { children: ReactNode }) {
         formats: formatsRecus,
         marques: marquesRecues,
         alertes: alertesRecues,
+        equipements: equipementsRecus,
       });
     } catch {
       // Ni l'API ni le repli démo n'ont répondu (MODE_DEMO désactivé) :
@@ -217,11 +236,27 @@ export function DonneesProvider({ children }: { children: ReactNode }) {
           formats,
           marques,
           alertes,
+          equipements,
         });
         return suivant;
       });
     },
-    [sites, formats, marques, alertes]
+    [sites, formats, marques, alertes, equipements]
+  );
+
+  const appliquerEquipements = useCallback(
+    (valeur: Equipement[]) => {
+      setEquipements(valeur);
+      ecrireCache<DonneesCache>(CLES_CACHE.sites, {
+        sites,
+        bouteillesParSite,
+        formats,
+        marques,
+        alertes,
+        equipements: valeur,
+      });
+    },
+    [sites, bouteillesParSite, formats, marques, alertes]
   );
 
   const activerBouteille = useCallback(
@@ -357,6 +392,45 @@ export function DonneesProvider({ children }: { children: ReactNode }) {
     setAlertes((precedent) => precedent.map((a) => (a.id === id ? { ...a, statut } : a)));
   }, []);
 
+  const enregistrerEquipement = useCallback(
+    async (corps: CorpsCreationEquipement): Promise<Equipement> => {
+      try {
+        const { data } = await api.creerEquipement(corps);
+        appliquerEquipements([...equipements, data]);
+        return data;
+      } catch (erreur) {
+        if (!MODE_DEMO) throw erreur;
+        const siteUuidCible = corps.site_uuid ?? siteActifUuid;
+        const site = siteUuidCible ? sites.find((s) => s.uuid === siteUuidCible) ?? null : null;
+        const nouveau: Equipement = {
+          uuid: genererUuidLocal('equipement'),
+          type: corps.type,
+          reference: corps.reference,
+          statut: 'actif',
+          site: site ? { uuid: site.uuid, nom: site.nom } : null,
+          dernier_vu_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        appliquerEquipements([...equipements, nouveau]);
+        return nouveau;
+      }
+    },
+    [equipements, sites, siteActifUuid, appliquerEquipements]
+  );
+
+  const supprimerEquipement = useCallback(
+    async (uuid: string) => {
+      try {
+        await api.supprimerEquipement(uuid);
+      } catch (erreur) {
+        if (!MODE_DEMO) throw erreur;
+      }
+      appliquerEquipements(equipements.filter((e) => e.uuid !== uuid));
+    },
+    [equipements, appliquerEquipements]
+  );
+
   const siteActif = useMemo(() => sites.find((s) => s.uuid === siteActifUuid) ?? null, [sites, siteActifUuid]);
   const bouteilles = useMemo(
     () => (siteActifUuid ? bouteillesParSite[siteActifUuid] ?? [] : []),
@@ -375,6 +449,7 @@ export function DonneesProvider({ children }: { children: ReactNode }) {
       formats,
       marques,
       alertes,
+      equipements,
       statutSync,
       derniereSyncAt,
       chargementInitial,
@@ -384,6 +459,8 @@ export function DonneesProvider({ children }: { children: ReactNode }) {
       modifierBouteille,
       supprimerBouteille,
       majAlerteStatut,
+      enregistrerEquipement,
+      supprimerEquipement,
     }),
     [
       sites,
@@ -395,6 +472,7 @@ export function DonneesProvider({ children }: { children: ReactNode }) {
       formats,
       marques,
       alertes,
+      equipements,
       statutSync,
       derniereSyncAt,
       chargementInitial,
@@ -404,6 +482,8 @@ export function DonneesProvider({ children }: { children: ReactNode }) {
       modifierBouteille,
       supprimerBouteille,
       majAlerteStatut,
+      enregistrerEquipement,
+      supprimerEquipement,
     ]
   );
 

@@ -66,6 +66,15 @@ export interface Site {
   niveau_acces: NiveauAcces;
   nb_bouteilles: number;
   a_alerte_active: boolean;
+  /**
+   * Capacités dérivées des équipements actifs du site (ADR 0012 - multi-
+   * équipements) : l'app grise le niveau de gaz / la température / l'écran
+   * tant que la capacité correspondante est fausse (aucun équipement `actif`
+   * de ce type affecté au site).
+   */
+  a_balance: boolean;
+  a_temperature: boolean;
+  a_ecran: boolean;
 }
 
 export interface CorpsCreationSite {
@@ -660,4 +669,79 @@ export interface TemperatureAnalyse {
 
 export interface CorpsTemperatureAnalyse {
   periode?: PeriodeTemperature;
+}
+
+// --- Équipements (registre unifié foyer, ADR 0012) ---
+
+export type TypeEquipement = 'balance' | 'temperature' | 'ecran';
+export type StatutEquipement = 'a_connecter' | 'actif' | 'hors_service';
+
+export interface Equipement {
+  uuid: string;
+  type: TypeEquipement;
+  reference: string;
+  statut: StatutEquipement;
+  site: { uuid: string; nom: string } | null;
+  dernier_vu_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CorpsCreationEquipement {
+  type: TypeEquipement;
+  reference: string;
+  site_uuid?: string;
+}
+
+export interface CorpsMajEquipement {
+  /** `null` pour retirer l'affectation au site. */
+  site_uuid?: string | null;
+  statut?: StatutEquipement;
+}
+
+// --- Suivi de commande (contrat API, `GET /commandes/{uuid}/suivi`) ---
+
+export type CleEtapeSuivi = 'passee' | 'confirmee' | 'preparee' | 'en_livraison' | 'livree';
+
+export interface EtapeSuivi {
+  cle: CleEtapeSuivi;
+  libelle: string;
+  atteinte: boolean;
+  date: string | null;
+  courante: boolean;
+}
+
+export interface SuiviLivraisonCommande {
+  statut: StatutLivraison | null;
+  livreur: string | null;
+}
+
+export interface SuiviCommande {
+  etapes: EtapeSuivi[];
+  statut_courant: StatutCommande;
+  livraison: SuiviLivraisonCommande;
+  /** Distance à vol d'oiseau dépôt <-> site - jamais de position GPS live. */
+  distance_km: number | null;
+  /** Estimation grossière (vitesse urbaine moyenne), non nulle seulement en `en_livraison`. */
+  eta_minutes: number | null;
+}
+
+// --- Reçu de paiement (contrat API, `GET /commandes/{uuid}/recu`) ---
+
+export interface RecuCommandeDetail {
+  uuid: string;
+  format: { code: string; marque: string } | null;
+  quantite: number;
+  depot: { nom: string } | null;
+}
+
+export interface RecuPaiement {
+  reference: string | null;
+  montant: number;
+  devise: string;
+  statut_paiement: StatutPaiement;
+  mode_paiement: ModePaiement;
+  date: string | null;
+  commande: RecuCommandeDetail;
+  site: { nom: string } | null;
 }

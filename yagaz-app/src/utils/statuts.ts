@@ -4,7 +4,14 @@
  * sans réinventer la logique métier - la transition est décidée côté API.
  */
 import { couleurs } from '../../theme/couleurs';
-import type { StatutCommande, StatutLigneTournee, StatutLivraison, StatutPaiement, StatutTournee } from '../api/types';
+import type {
+  StatutCommande,
+  StatutEquipement,
+  StatutLigneTournee,
+  StatutLivraison,
+  StatutPaiement,
+  StatutTournee,
+} from '../api/types';
 
 export const libellesStatutCommande: Record<StatutCommande, string> = {
   proposee: 'Proposition reçue',
@@ -70,6 +77,20 @@ export function libelleActionLivraison(statut: StatutLivraison): string | null {
   if (suivant === 'vide_recupere') return 'Vide récupéré';
   return null;
 }
+
+// --- Équipements (registre unifié foyer, ADR 0012) ---
+
+export const libellesStatutEquipement: Record<StatutEquipement, string> = {
+  a_connecter: 'À connecter',
+  actif: 'Actif',
+  hors_service: 'Hors ligne',
+};
+
+export const couleursStatutEquipement: Record<StatutEquipement, string> = {
+  a_connecter: couleurs.ambre,
+  actif: couleurs.vertOk,
+  hors_service: couleurs.grisNeutre,
+};
 
 // --- Tournées mandataire (doc 11 §1, UX §4) ---
 
