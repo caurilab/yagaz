@@ -1,0 +1,129 @@
+.login {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--degrade-accent);
+  padding: 24px;
+}
+
+.login__card {
+  width: 100%;
+  max-width: 400px;
+  background: var(--carte);
+  border-radius: var(--rayon-carte);
+  box-shadow: var(--ombre-douce-hover);
+  padding: 36px 32px;
+}
+
+.login__logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.login__logo-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--degrade-accent);
+  color: #fff;
+  font-weight: 700;
+  font-size: 17px;
+}
+
+.login__logo-text {
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--texte);
+  letter-spacing: -0.2px;
+}
+
+.login__card h1 {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--texte);
+  letter-spacing: -0.3px;
+}
+
+.login__sous-titre {
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--texte-doux);
+}
+
+.login__form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 28px;
+}
+
+.login__champ {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--texte);
+}
+
+.login__champ input {
+  padding: 12px 14px;
+  border-radius: var(--rayon-controle);
+  border: 1px solid var(--bordure);
+  background: var(--fond);
+  font-size: 14px;
+}
+
+.login__champ input:focus {
+  outline: none;
+  border-color: var(--rouge);
+  background: var(--carte);
+}
+
+.login__erreur {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--rouge);
+  background: var(--rouge-clair);
+  border-radius: var(--rayon-controle);
+  padding: 10px 12px;
+}
+
+.login__submit {
+  margin-top: 4px;
+  padding: 12px 16px;
+  border: none;
+  border-radius: var(--rayon-controle);
+  background: var(--degrade-accent);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.login__submit:hover {
+  opacity: 0.92;
+}
+
+.login__submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.login__demo {
+  margin-top: 20px;
+  padding: 12px 14px;
+  border-radius: var(--rayon-controle);
+  background: var(--rouge-clair);
+  color: var(--rouge);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.5;
+}

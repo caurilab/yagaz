@@ -44,14 +44,54 @@
   letter-spacing: -0.2px;
 }
 
+.app-shell__espace-switch {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  margin: 0 8px 20px;
+  background: var(--fond);
+  border-radius: var(--rayon-controle);
+}
+
+.app-shell__espace-btn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--texte-doux);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.app-shell__espace-btn:hover {
+  color: var(--texte);
+}
+
+.app-shell__espace-btn--active {
+  background: var(--carte);
+  color: var(--rouge);
+  box-shadow: var(--ombre-douce);
+}
+
 .app-shell__nav {
   flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .app-shell__nav ul {
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.app-shell__nav--secondaire {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--bordure);
 }
 
 .app-shell__nav-link {
@@ -83,6 +123,26 @@
 .app-shell__sidebar-footer {
   padding-top: 16px;
   border-top: 1px solid var(--bordure);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.app-shell__logout {
+  border: 1px solid var(--bordure);
+  background: transparent;
+  color: var(--texte-doux);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 9px 10px;
+  border-radius: var(--rayon-controle);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.app-shell__logout:hover {
+  border-color: var(--rouge);
+  color: var(--rouge);
 }
 
 .app-shell__user {

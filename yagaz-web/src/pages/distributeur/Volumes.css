@@ -1,0 +1,119 @@
+.volumes {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-top: 4px;
+}
+
+.volumes__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.volumes__header h1 {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  color: var(--texte);
+}
+
+.volumes__header p {
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--texte-doux);
+  max-width: 560px;
+}
+
+.volumes__toggle {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  background: var(--carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
+}
+
+.volumes__toggle-btn {
+  border: none;
+  background: transparent;
+  padding: 7px 12px;
+  border-radius: 7px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--texte-doux);
+  cursor: pointer;
+}
+
+.volumes__toggle-btn--actif {
+  background: var(--degrade-accent);
+  color: #fff;
+}
+
+.volumes__resume {
+  display: flex;
+  gap: 16px;
+}
+
+.volumes__resume-item {
+  flex: 1;
+  background: var(--carte);
+  border-radius: var(--rayon-carte);
+  border: 1px solid var(--bordure);
+  box-shadow: var(--ombre-douce);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.volumes__resume-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--texte-doux);
+}
+
+.volumes__resume-valeur {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--texte);
+  letter-spacing: -0.4px;
+}
+
+.volumes__resume-valeur--hausse {
+  color: var(--vert-ok);
+}
+
+.volumes__resume-valeur--baisse {
+  color: var(--rouge);
+}
+
+.volumes__panel {
+  background: var(--carte);
+  border-radius: var(--rayon-carte);
+  border: 1px solid var(--bordure);
+  box-shadow: var(--ombre-douce);
+  padding: 22px 24px;
+}
+
+.volumes__panel h2 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--texte);
+  margin-bottom: 14px;
+}
+
+.volumes__vide {
+  padding: 40px 24px;
+  text-align: center;
+  color: var(--texte-doux);
+  font-size: 14px;
+}
+
+@media (max-width: 700px) {
+  .volumes__resume {
+    flex-direction: column;
+  }
+}

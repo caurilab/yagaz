@@ -45,15 +45,20 @@
   color: var(--texte);
 }
 
-.overview__panel-badge {
-  font-size: 11px;
+.overview__panel-link {
+  font-size: 12.5px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
   color: var(--rouge);
-  background: var(--rouge-clair);
-  padding: 4px 10px;
-  border-radius: 999px;
+}
+
+.overview__panel-link:hover {
+  text-decoration: underline;
+}
+
+.overview__vide {
+  font-size: 13.5px;
+  color: var(--texte-doux);
+  padding: 12px 0;
 }
 
 .overview__list {
@@ -87,7 +92,7 @@
 .overview__list-valeur {
   font-weight: 700;
   color: var(--rouge);
-  min-width: 48px;
+  min-width: 72px;
   text-align: right;
 }
 

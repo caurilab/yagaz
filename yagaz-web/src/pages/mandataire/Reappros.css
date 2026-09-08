@@ -1,0 +1,138 @@
+.reappros {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-top: 4px;
+}
+
+.reappros__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.reappros__header h1 {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  color: var(--texte);
+}
+
+.reappros__header p {
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--texte-doux);
+  max-width: 560px;
+}
+
+.reappros__cta {
+  flex-shrink: 0;
+  padding: 11px 18px;
+  border-radius: var(--rayon-controle);
+  background: var(--degrade-accent);
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.reappros__cta:hover {
+  opacity: 0.92;
+}
+
+.reappros__table-wrap {
+  background: var(--carte);
+  border-radius: var(--rayon-carte);
+  border: 1px solid var(--bordure);
+  box-shadow: var(--ombre-douce);
+  overflow-x: auto;
+}
+
+.reappros__vide {
+  padding: 40px 24px;
+  text-align: center;
+  color: var(--texte-doux);
+  font-size: 14px;
+}
+
+.reappros__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+  min-width: 640px;
+}
+
+.reappros__table th {
+  text-align: left;
+  padding: 12px 14px;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--texte-doux);
+  border-bottom: 1px solid var(--bordure);
+  background: var(--fond);
+}
+
+.reappros__table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--bordure);
+}
+
+.reappros__table tr:last-child td {
+  border-bottom: none;
+}
+
+.reappros__nom {
+  font-weight: 700;
+  color: var(--texte);
+}
+
+.reappros__quantite {
+  font-weight: 700;
+  color: var(--rouge);
+}
+
+.reappros__statut {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  color: var(--texte-doux);
+  background: var(--fond);
+}
+
+.reappros__statut--proposee {
+  color: var(--rouge);
+  background: var(--rouge-clair);
+}
+
+.reappros__statut--confirmee {
+  color: #1d6fd6;
+  background: #e8f1fd;
+}
+
+.reappros__statut--preparee,
+.reappros__statut--en_livraison {
+  color: #b9790a;
+  background: #fdf1de;
+}
+
+.reappros__statut--livree {
+  color: var(--vert-ok);
+  background: #e7f9f0;
+}
+
+.reappros__statut--annulee {
+  color: var(--texte-doux);
+  background: var(--fond);
+}
+
+.reappros__date {
+  color: var(--texte-doux);
+  white-space: nowrap;
+}

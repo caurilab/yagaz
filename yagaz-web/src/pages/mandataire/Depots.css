@@ -1,0 +1,115 @@
+.mandataire-depots {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-top: 4px;
+}
+
+.mandataire-depots__header h1 {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  color: var(--texte);
+}
+
+.mandataire-depots__header p {
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--texte-doux);
+}
+
+.mandataire-depots__table-wrap {
+  background: var(--carte);
+  border-radius: var(--rayon-carte);
+  border: 1px solid var(--bordure);
+  box-shadow: var(--ombre-douce);
+  overflow-x: auto;
+}
+
+.mandataire-depots__vide {
+  padding: 40px 24px;
+  text-align: center;
+  color: var(--texte-doux);
+  font-size: 14px;
+}
+
+.mandataire-depots__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+  min-width: 760px;
+}
+
+.mandataire-depots__table thead th {
+  text-align: center;
+  padding: 12px 14px;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--texte-doux);
+  border-bottom: 1px solid var(--bordure);
+  background: var(--fond);
+}
+
+.mandataire-depots__th-depot {
+  text-align: left !important;
+}
+
+.mandataire-depots__th-format {
+  border-left: 1px solid var(--bordure);
+}
+
+.mandataire-depots__sub-th {
+  border-left: 1px solid var(--bordure);
+}
+
+.mandataire-depots__table tbody td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--bordure);
+  text-align: center;
+}
+
+.mandataire-depots__table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.mandataire-depots__nom {
+  text-align: left !important;
+  font-weight: 700;
+  color: var(--texte);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.mandataire-depots__row--tension {
+  background: var(--rouge-clair);
+}
+
+.mandataire-depots__badge {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: #fff;
+  background: var(--rouge);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.mandataire-depots__num {
+  font-variant-numeric: tabular-nums;
+  color: var(--texte);
+}
+
+.mandataire-depots__num--tension {
+  color: var(--rouge);
+  font-weight: 700;
+}
+
+.mandataire-depots__date {
+  color: var(--texte-doux);
+  white-space: nowrap;
+}
