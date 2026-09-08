@@ -9,7 +9,7 @@ use App\Http\Requests\SitePartageRequest;
 use App\Http\Requests\SiteStoreRequest;
 use App\Http\Requests\SiteUpdateRequest;
 use App\Http\Resources\SiteResource;
-use App\Http\Resources\UserResource;
+use App\Http\Resources\UserPubliqueResource;
 use App\Models\Alerte;
 use App\Models\Site;
 use App\Models\SiteAcces;
@@ -38,10 +38,13 @@ class SiteController extends Controller
 
     public function store(SiteStoreRequest $request): JsonResponse
     {
-        $site = Site::create([
-            ...$request->validated(),
-            'cree_par' => $request->user()->id,
-        ]);
+        // `cree_par` est dérivé côté serveur (ADR 0005) : `forceFill` plutôt
+        // que le mass assignment de `create()`, car `Site` ne déclare comme
+        // fillable que les champs saisissables par le client (audit
+        // sécurité, [INFO] $fillable explicite).
+        $site = new Site($request->validated());
+        $site->forceFill(['cree_par' => $request->user()->id]);
+        $site->save();
 
         SiteAcces::forceCreate([
             'site_id' => $site->id,
@@ -75,11 +78,21 @@ class SiteController extends Controller
         $this->autoriserSite($request->user(), $site, 'partager');
 
         $beneficiaire = User::where('telephone', $request->validated('telephone'))->firstOrFail();
-        $niveau = $request->validated('niveau');
+        $niveau = NiveauAcces::from($request->validated('niveau'));
 
         $acces = SiteAcces::where('site_id', $site->id)->where('user_id', $beneficiaire->id)->first();
 
         if ($acces !== null) {
+            // Un site doit toujours garder au moins un propriétaire (audit
+            // sécurité, [FAIBLE] protection du dernier propriétaire) :
+            // rétrograder le dernier propriétaire est refusé, comme le
+            // retirer.
+            if ($acces->niveau === NiveauAcces::Proprietaire
+                && $niveau !== NiveauAcces::Proprietaire
+                && $this->estDernierProprietaire($site)) {
+                abort(422, 'Impossible de rétrograder le dernier propriétaire du site.');
+            }
+
             $acces->forceFill(['niveau' => $niveau])->save();
         } else {
             SiteAcces::forceCreate([
@@ -91,8 +104,11 @@ class SiteController extends Controller
 
         return response()->json([
             'message' => 'Accès partagé.',
-            'utilisateur' => new UserResource($beneficiaire),
-            'niveau' => $niveau,
+            // Projection minimale pour un tiers (audit sécurité, [FAIBLE]
+            // fuite de PII) : ni email ni réglages/livreur, réservés à
+            // `/api/me`.
+            'utilisateur' => new UserPubliqueResource($beneficiaire),
+            'niveau' => $niveau->value,
         ], 201);
     }
 
@@ -100,9 +116,29 @@ class SiteController extends Controller
     {
         $this->autoriserSite($request->user(), $site, 'partager');
 
+        $acces = SiteAcces::where('site_id', $site->id)->where('user_id', $user->id)->first();
+
+        // Un site doit toujours garder au moins un propriétaire (audit
+        // sécurité, [FAIBLE] protection du dernier propriétaire).
+        if ($acces?->niveau === NiveauAcces::Proprietaire && $this->estDernierProprietaire($site)) {
+            abort(422, 'Impossible de retirer le dernier propriétaire du site.');
+        }
+
         SiteAcces::where('site_id', $site->id)->where('user_id', $user->id)->delete();
 
         return response()->noContent();
+    }
+
+    /**
+     * Le site n'a-t-il plus qu'un seul propriétaire ? Garde-fou avant un
+     * retrait/rétrogradation de partage (audit sécurité, [FAIBLE] protection
+     * du dernier propriétaire).
+     */
+    private function estDernierProprietaire(Site $site): bool
+    {
+        return SiteAcces::where('site_id', $site->id)
+            ->where('niveau', NiveauAcces::Proprietaire->value)
+            ->count() === 1;
     }
 
     /**

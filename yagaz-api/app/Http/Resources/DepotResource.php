@@ -11,6 +11,11 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * `GET /api/depots`). Lecture seule en Phase 3 : pas de création de
  * commande.
  *
+ * Projection minimale (audit sécurité, [FAIBLE] `GET /depots` expose trop) :
+ * ni stock exact (`stock_pleines`, donnée commerciale), ni coordonnées
+ * précises du dépôt (`lat`/`lng`) — seule `distance_km` (arrondie) est
+ * exposée.
+ *
  * @mixin Organisation
  */
 class DepotResource extends JsonResource
@@ -25,12 +30,8 @@ class DepotResource extends JsonResource
         return [
             'uuid' => $this->uuid,
             'nom' => $this->nom,
-            'zone' => $this->zone,
-            'lat' => $this->lat,
-            'lng' => $this->lng,
-            'distance_km' => $this->distance_km,
+            'distance_km' => $this->distance_km !== null ? round($this->distance_km, 1) : null,
             'disponible' => $stock !== null && $stock->pleines > 0,
-            'stock_pleines' => $stock?->pleines,
         ];
     }
 }

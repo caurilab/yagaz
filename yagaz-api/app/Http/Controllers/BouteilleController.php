@@ -59,8 +59,12 @@ class BouteilleController extends Controller
                 ? TareSource::from($validated['tare_source'])
                 : (isset($validated['tare_g']) ? TareSource::Saisie : TareSource::Nominale);
 
-            $bouteille = Bouteille::create([
-                'site_id' => $site->id,
+            // `site_id` est dérivé du site de la route (ADR 0005), jamais du
+            // corps de la requête : posé par affectation directe de
+            // propriété plutôt que par le mass assignment de `create()`, car
+            // `Bouteille` ne déclare pas `site_id` comme fillable (audit
+            // sécurité, [INFO] $fillable explicite).
+            $bouteille = new Bouteille([
                 'format_id' => $validated['format_id'],
                 'tare_g' => $validated['tare_g'] ?? null,
                 'tare_source' => $tareSource,
@@ -71,6 +75,8 @@ class BouteilleController extends Controller
                 // unique partiel « une seule active par site ».
                 'role_bouteille' => RoleBouteille::Secours,
             ]);
+            $bouteille->site_id = $site->id;
+            $bouteille->save();
 
             if ($roleSouhaite === RoleBouteille::Active) {
                 $this->promouvoirActive($bouteille);

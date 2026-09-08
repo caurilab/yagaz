@@ -81,6 +81,25 @@ class SiteApiTest extends TestCase
         $this->getJson("/api/sites/{$siteA->uuid}")->assertNotFound();
     }
 
+    public function test_patch_site_ignore_cree_par_injecte(): void
+    {
+        [$proprietaire, $site] = $this->foyerAvecSite();
+        $intrus = User::factory()->create();
+
+        Sanctum::actingAs($proprietaire);
+
+        $reponse = $this->patchJson("/api/sites/{$site->uuid}", [
+            'nom' => 'Nouveau nom',
+            // Tentative de mass-assignment : ignoré (audit sécurité, [INFO]
+            // $fillable explicite).
+            'cree_par' => $intrus->id,
+        ]);
+
+        $reponse->assertOk();
+        $this->assertSame($proprietaire->id, $site->fresh()->cree_par);
+        $this->assertSame('Nouveau nom', $site->fresh()->nom);
+    }
+
     public function test_un_observateur_voit_le_site_mais_ne_peut_pas_le_modifier(): void
     {
         [, $site] = $this->foyerAvecSite();
@@ -110,6 +129,12 @@ class SiteApiTest extends TestCase
         ]);
 
         $reponse->assertCreated();
+        $reponse->assertJsonStructure(['message', 'utilisateur' => ['uuid', 'nom'], 'niveau']);
+        // Projection minimale du bénéficiaire pour un tiers (audit sécurité,
+        // [FAIBLE] fuite de PII) : ni email ni réglages/livreur.
+        $this->assertArrayNotHasKey('email', $reponse->json('utilisateur'));
+        $this->assertArrayNotHasKey('reglages_alertes', $reponse->json('utilisateur'));
+        $this->assertArrayNotHasKey('telephone', $reponse->json('utilisateur'));
 
         $this->assertDatabaseHas('site_acces', [
             'site_id' => $site->id,
@@ -141,6 +166,59 @@ class SiteApiTest extends TestCase
         ])->assertForbidden();
 
         $this->assertDatabaseMissing('site_acces', ['user_id' => $cible->id]);
+    }
+
+    public function test_impossible_de_retirer_le_dernier_proprietaire(): void
+    {
+        [$proprietaire, $site] = $this->foyerAvecSite();
+
+        Sanctum::actingAs($proprietaire);
+
+        $reponse = $this->deleteJson("/api/sites/{$site->uuid}/partages/{$proprietaire->uuid}");
+
+        $reponse->assertStatus(422);
+        $this->assertDatabaseHas('site_acces', [
+            'site_id' => $site->id,
+            'user_id' => $proprietaire->id,
+            'niveau' => NiveauAcces::Proprietaire->value,
+        ]);
+    }
+
+    public function test_impossible_de_retrograder_le_dernier_proprietaire(): void
+    {
+        [$proprietaire, $site] = $this->foyerAvecSite();
+        $proprietaire->forceFill(['telephone' => '+221770005555'])->save();
+
+        Sanctum::actingAs($proprietaire);
+
+        $reponse = $this->postJson("/api/sites/{$site->uuid}/partages", [
+            'telephone' => '+221770005555',
+            'niveau' => 'observateur',
+        ]);
+
+        $reponse->assertStatus(422);
+        $this->assertDatabaseHas('site_acces', [
+            'site_id' => $site->id,
+            'user_id' => $proprietaire->id,
+            'niveau' => NiveauAcces::Proprietaire->value,
+        ]);
+    }
+
+    public function test_un_second_proprietaire_peut_etre_retire(): void
+    {
+        [$proprietaire, $site] = $this->foyerAvecSite();
+        $second = User::factory()->create();
+        SiteAcces::forceCreate([
+            'site_id' => $site->id,
+            'user_id' => $second->id,
+            'niveau' => NiveauAcces::Proprietaire->value,
+        ]);
+
+        Sanctum::actingAs($proprietaire);
+
+        $this->deleteJson("/api/sites/{$site->uuid}/partages/{$second->uuid}")->assertNoContent();
+
+        $this->assertDatabaseMissing('site_acces', ['site_id' => $site->id, 'user_id' => $second->id]);
     }
 
     public function test_le_proprietaire_retire_un_acces_partage(): void

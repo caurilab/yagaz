@@ -6,7 +6,6 @@ use App\Http\Controllers\BouteilleController;
 use App\Http\Controllers\DepotController;
 use App\Http\Controllers\FormatBouteilleController;
 use App\Http\Controllers\SiteController;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 // Point de contrôle de santé de l'API, sans authentification.
@@ -18,16 +17,15 @@ Route::get('/health', function () {
     ]);
 });
 
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
-
 // === Authentification (contrat API, §« Authentification ») =============
 // register/login sont les seules routes ouvertes (contrat API,
-// §« Conventions générales »).
+// §« Conventions générales »). Throttle strict par IP+téléphone (limiteur
+// `auth`, défini dans AppServiceProvider::boot()) : freine le bruteforce de
+// mot de passe et l'énumération de téléphones déjà inscrits via `register`
+// (audit sécurité, [ÉLEVÉ] rate-limiting, [MOYEN] énumération register).
 
-Route::post('/auth/register', [AuthController::class, 'register']);
-Route::post('/auth/login', [AuthController::class, 'login']);
+Route::post('/auth/register', [AuthController::class, 'register'])->middleware('throttle:auth');
+Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:auth');
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);

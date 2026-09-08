@@ -202,6 +202,62 @@ class BouteilleApiTest extends TestCase
             ->assertJsonPath('data.plateau_uid', null);
     }
 
+    public function test_le_site_id_injecte_dans_le_corps_est_ignore(): void
+    {
+        [$foyer, $site] = $this->foyerAvecSite();
+        [, $autreSite] = $this->foyerAvecSite();
+        $format = FormatBouteille::factory()->create();
+
+        Sanctum::actingAs($foyer);
+
+        $reponse = $this->postJson("/api/sites/{$site->uuid}/bouteilles", [
+            'format_id' => $format->id,
+            // Tentative de mass-assignment : la bouteille doit être créée
+            // sur le site de l'URL, jamais sur celui-ci (audit sécurité,
+            // [INFO] $fillable explicite).
+            'site_id' => $autreSite->id,
+        ]);
+
+        $reponse->assertCreated();
+
+        $bouteille = Bouteille::where('uuid', $reponse->json('data.uuid'))->firstOrFail();
+        $this->assertSame($site->id, $bouteille->site_id);
+        $this->assertNotSame($autreSite->id, $bouteille->site_id);
+    }
+
+    public function test_le_plateau_d_un_autre_site_est_refuse(): void
+    {
+        [$foyer, $site] = $this->foyerAvecSite();
+        [, $autreSite] = $this->foyerAvecSite();
+        $bouteille = Bouteille::factory()->create(['site_id' => $site->id]);
+        $plateauAutreSite = Plateau::factory()->actif()->create(['site_id' => $autreSite->id]);
+
+        Sanctum::actingAs($foyer);
+
+        $this->postJson("/api/bouteilles/{$bouteille->uuid}/plateau", [
+            'plateau_uid' => $plateauAutreSite->uid,
+        ])->assertUnprocessable();
+
+        $format = FormatBouteille::factory()->create();
+        $this->postJson("/api/sites/{$site->uuid}/bouteilles", [
+            'format_id' => $format->id,
+            'plateau_uid' => $plateauAutreSite->uid,
+        ])->assertUnprocessable();
+    }
+
+    public function test_le_plateau_non_actif_est_refuse(): void
+    {
+        [$foyer, $site] = $this->foyerAvecSite();
+        $bouteille = Bouteille::factory()->create(['site_id' => $site->id]);
+        $plateauInactif = Plateau::factory()->create(['site_id' => $site->id]);
+
+        Sanctum::actingAs($foyer);
+
+        $this->postJson("/api/bouteilles/{$bouteille->uuid}/plateau", [
+            'plateau_uid' => $plateauInactif->uid,
+        ])->assertUnprocessable();
+    }
+
     public function test_supprime_une_bouteille(): void
     {
         [$foyer, $site] = $this->foyerAvecSite();

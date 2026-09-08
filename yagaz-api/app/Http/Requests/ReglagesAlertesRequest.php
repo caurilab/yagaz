@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Enums\CanalAlerte;
+use App\Http\Requests\Concerns\NormaliseTelephone;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -15,9 +16,23 @@ use Illuminate\Validation\Rule;
  */
 class ReglagesAlertesRequest extends FormRequest
 {
+    use NormaliseTelephone;
+
     public function authorize(): bool
     {
         return true;
+    }
+
+    /**
+     * Normalise `livreur_habituel` AVANT la validation (quand renseigné),
+     * pour que la recherche (`exists:users,telephone`) porte sur la forme
+     * normalisée (audit sécurité, [MOYEN] normalisation du téléphone).
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->filled('livreur_habituel')) {
+            $this->merge(['livreur_habituel' => $this->normaliserTelephone($this->input('livreur_habituel'))]);
+        }
     }
 
     /**
@@ -28,7 +43,7 @@ class ReglagesAlertesRequest extends FormRequest
         return [
             'canaux' => ['required', 'array'],
             'canaux.*' => [Rule::enum(CanalAlerte::class)],
-            'livreur_habituel' => ['sometimes', 'nullable', 'string', 'exists:users,telephone'],
+            'livreur_habituel' => ['sometimes', 'nullable', 'string', $this->regleFormatTelephone(), 'exists:users,telephone'],
         ];
     }
 }

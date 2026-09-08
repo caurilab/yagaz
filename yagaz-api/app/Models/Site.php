@@ -4,7 +4,7 @@ namespace App\Models;
 
 use App\Traits\HasUuid;
 use Database\Factories\SiteFactory;
-use Illuminate\Database\Eloquent\Attributes\Guarded;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,8 +14,13 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * Une adresse physique où se trouvent des bouteilles — doc 07, §3 `sites`.
+ *
+ * `$fillable` explicite (audit sécurité, [INFO] `$fillable` explicite) :
+ * seuls les champs saisissables par le client via l'API. `cree_par` en est
+ * volontairement exclu — dérivé côté serveur de l'utilisateur authentifié
+ * (ADR 0005), posé via `forceFill` dans `SiteController::store()`.
  */
-#[Guarded([])]
+#[Fillable(['nom', 'adresse', 'lat', 'lng'])]
 class Site extends Model
 {
     /** @use HasFactory<SiteFactory> */

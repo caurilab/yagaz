@@ -6,7 +6,7 @@ use App\Enums\RoleBouteille;
 use App\Enums\TareSource;
 use App\Traits\HasUuid;
 use Database\Factories\BouteilleFactory;
-use Illuminate\Database\Eloquent\Attributes\Guarded;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -16,8 +16,13 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 /**
  * Une bouteille suivie par un foyer, posée (ou non) sur un plateau — doc 07,
  * §4 `bouteilles`.
+ *
+ * `$fillable` explicite (audit sécurité, [INFO] `$fillable` explicite) :
+ * seuls les champs saisissables par le client via l'API. `site_id` en est
+ * volontairement exclu — dérivé côté serveur du site de la route (ADR 0005),
+ * posé par affectation directe de propriété dans `BouteilleController`.
  */
-#[Guarded([])]
+#[Fillable(['format_id', 'tare_g', 'tare_source', 'tare_fiable', 'role_bouteille', 'seuil_bas_pct', 'plateau_id'])]
 class Bouteille extends Model
 {
     /** @use HasFactory<BouteilleFactory> */

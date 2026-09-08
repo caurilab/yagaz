@@ -47,4 +47,24 @@ class DepotApiTest extends TestCase
 
         $this->getJson('/api/depots')->assertUnprocessable();
     }
+
+    public function test_la_reponse_ne_contient_ni_stock_pleines_ni_coordonnees(): void
+    {
+        $format = FormatBouteille::factory()->create();
+
+        $depot = Organisation::factory()->depot()->create(['lat' => 14.70, 'lng' => -17.45]);
+        Stock::create(['organisation_id' => $depot->id, 'format_id' => $format->id, 'pleines' => 10, 'vides' => 2]);
+
+        Sanctum::actingAs(User::factory()->create());
+
+        $reponse = $this->getJson("/api/depots?lat=14.6928&lng=-17.4467&format_id={$format->id}");
+
+        $reponse->assertOk();
+        $reponse->assertJsonStructure(['data' => [['uuid', 'nom', 'distance_km', 'disponible']]]);
+        $depotJson = $reponse->json('data.0');
+        $this->assertArrayNotHasKey('stock_pleines', $depotJson);
+        $this->assertArrayNotHasKey('lat', $depotJson);
+        $this->assertArrayNotHasKey('lng', $depotJson);
+        $this->assertArrayNotHasKey('zone', $depotJson);
+    }
 }

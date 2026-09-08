@@ -18,6 +18,14 @@ use Illuminate\Validation\ValidationException;
  */
 class AuthController extends Controller
 {
+    /**
+     * Hash bcrypt factice (jamais atteint par un mot de passe réel) : sert à
+     * exécuter `Hash::check()` même quand le téléphone ne correspond à aucun
+     * compte, pour que la durée de la réponse ne révèle pas l'existence d'un
+     * compte (audit sécurité, [INFO] durcir le login — oracle temporel).
+     */
+    private const MOT_DE_PASSE_FACTICE = '$2y$12$O0zZNzHFlwWC9wOHCl4DS.c2BYSezqoHNX7WiUuZ7qvx5SAN8IykK';
+
     public function register(RegisterRequest $request): JsonResponse
     {
         $validated = $request->validated();
@@ -41,7 +49,12 @@ class AuthController extends Controller
 
         $user = User::where('telephone', $validated['telephone'])->first();
 
-        if (! $user || ! Hash::check($validated['mot_de_passe'], $user->password)) {
+        // Toujours exécuter Hash::check (même hash factice si l'utilisateur
+        // n'existe pas) : le temps de calcul ne doit pas dépendre de
+        // l'existence du compte.
+        $motDePasseValide = Hash::check($validated['mot_de_passe'], $user->password ?? self::MOT_DE_PASSE_FACTICE);
+
+        if (! $user || ! $motDePasseValide) {
             throw ValidationException::withMessages([
                 'telephone' => ['Identifiants invalides.'],
             ]);

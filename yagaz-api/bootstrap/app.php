@@ -13,7 +13,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // Throttle global du groupe API (audit sécurité, [ÉLEVÉ]
+        // rate-limiting) : pose `throttle:api` (limiteur défini dans
+        // AppServiceProvider::boot()) sur toutes les routes de `routes/api.php`.
+        $middleware->throttleApi();
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

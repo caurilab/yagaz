@@ -81,6 +81,50 @@ class AuthApiTest extends TestCase
         $reponse->assertUnprocessable();
     }
 
+    public function test_register_normalise_le_telephone_avant_stockage(): void
+    {
+        $reponse = $this->postJson('/api/auth/register', [
+            'nom' => 'Foyer Normalisé',
+            'telephone' => '00221 77.000-00-06',
+            'mot_de_passe' => 'un-mot-de-passe',
+        ]);
+
+        $reponse->assertCreated();
+        $this->assertDatabaseHas('users', ['telephone' => '+221770000006']);
+    }
+
+    public function test_register_refuse_les_variantes_d_un_telephone_deja_pris(): void
+    {
+        User::factory()->create(['telephone' => '+221770000001']);
+
+        // Même numéro, écrit sans indicatif "+" ni "00", avec des espaces.
+        $reponse = $this->postJson('/api/auth/register', [
+            'nom' => 'Doublon variante',
+            'telephone' => '221 77 000 00 01',
+            'mot_de_passe' => 'un-mot-de-passe',
+        ]);
+
+        $reponse->assertUnprocessable();
+        $reponse->assertJsonValidationErrors(['telephone']);
+    }
+
+    public function test_login_fonctionne_avec_les_variantes_du_meme_telephone(): void
+    {
+        User::factory()->create([
+            'telephone' => '+221770000007',
+            'password' => 'mot-de-passe-correct',
+        ]);
+
+        foreach (['+221770000007', '00221770000007', '221 77 000 00 07'] as $variante) {
+            $reponse = $this->postJson('/api/auth/login', [
+                'telephone' => $variante,
+                'mot_de_passe' => 'mot-de-passe-correct',
+            ]);
+
+            $reponse->assertOk();
+        }
+    }
+
     public function test_me_exige_un_token(): void
     {
         $this->getJson('/api/me')->assertUnauthorized();
@@ -95,6 +139,14 @@ class AuthApiTest extends TestCase
 
         $reponse->assertOk();
         $reponse->assertJsonPath('user.telephone', '+221770000005');
+    }
+
+    public function test_la_route_residuelle_get_user_n_existe_plus(): void
+    {
+        $user = User::factory()->create();
+        $token = $user->createToken('api')->plainTextToken;
+
+        $this->withHeader('Authorization', "Bearer {$token}")->getJson('/api/user')->assertNotFound();
     }
 
     public function test_logout_revoque_le_jeton_courant(): void
