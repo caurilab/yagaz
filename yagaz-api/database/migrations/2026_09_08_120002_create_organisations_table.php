@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -28,6 +29,14 @@ return new class extends Migration
             $table->boolean('abonnement_actif')->default(false);
             $table->timestampsTz();
         });
+
+        // Anti-cycle hiérarchie (une organisation ne peut pas être son propre
+        // parent). SQLite ne supporte pas ADD CONSTRAINT CHECK en ALTER, donc
+        // limité à pgsql (prod) ; en test (sqlite), le cloisonnement applicatif
+        // reste la garde-fou.
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement('ALTER TABLE organisations ADD CONSTRAINT organisations_parent_pas_soi CHECK (parent_id IS NULL OR parent_id <> id)');
+        }
     }
 
     public function down(): void

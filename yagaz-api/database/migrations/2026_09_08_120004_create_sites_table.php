@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('adresse')->nullable();
             $table->decimal('lat', 10, 7)->nullable();
             $table->decimal('lng', 10, 7)->nullable();
-            $table->foreignId('cree_par')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('cree_par')->constrained('users')->restrictOnDelete();
             $table->timestampsTz();
         });
     }

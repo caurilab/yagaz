@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Enums\NiveauAcces;
 use App\Enums\RoleBouteille;
-use App\Enums\StatutPlateau;
 use App\Enums\TareSource;
 use App\Models\Bouteille;
 use App\Models\FormatBouteille;
@@ -55,7 +54,7 @@ class DemoSeeder extends Seeder
             'cree_par' => $foyer->id,
         ]);
 
-        SiteAcces::query()->create([
+        SiteAcces::query()->forceCreate([
             'site_id' => $site->id,
             'user_id' => $foyer->id,
             'niveau' => NiveauAcces::Proprietaire,

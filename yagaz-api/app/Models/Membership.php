@@ -3,16 +3,20 @@
 namespace App\Models;
 
 use App\Enums\RoleMembership;
-use Illuminate\Database\Eloquent\Attributes\Guarded;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * Rattache un `user` à une `organisation` avec un rôle — doc 07, §2 `memberships`.
+ *
+ * Table d'autorisation : aucune colonne n'est mass-assignable (le rôle et
+ * l'organisation ne doivent jamais provenir d'une requête utilisateur sans
+ * passer par `forceCreate`/`forceFill` explicite et contrôlé).
  */
-#[Guarded([])]
 class Membership extends Model
 {
+    protected $fillable = [];
+
     protected function casts(): array
     {
         return [

@@ -6,6 +6,7 @@ use App\Enums\AlimPlateau;
 use App\Enums\StatutPlateau;
 use Database\Factories\PlateauFactory;
 use Illuminate\Database\Eloquent\Attributes\Guarded;
+use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * Le capteur physique (plateau de pesée) — doc 07, §4 `plateaux`.
  */
 #[Guarded([])]
+#[Hidden(['secret_hash'])]
 class Plateau extends Model
 {
     /** @use HasFactory<PlateauFactory> */

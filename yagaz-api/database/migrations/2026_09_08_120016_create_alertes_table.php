@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -21,6 +22,13 @@ return new class extends Migration
             $table->string('canal');
             $table->timestampTz('created_at')->useCurrent();
         });
+
+        // Une alerte doit toujours cibler quelque chose (bouteille ou
+        // organisation), jamais orpheline. SQLite ne supporte pas ADD
+        // CONSTRAINT CHECK en ALTER, donc limité à pgsql (prod).
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement('ALTER TABLE alertes ADD CONSTRAINT alertes_cible_presente CHECK (bouteille_id IS NOT NULL OR organisation_id IS NOT NULL)');
+        }
     }
 
     public function down(): void

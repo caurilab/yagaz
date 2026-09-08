@@ -35,7 +35,7 @@ class CloisonnementTest extends TestCase
     {
         $user = User::factory()->create();
         $site = Site::factory()->create(['cree_par' => $user->id]);
-        SiteAcces::create([
+        SiteAcces::forceCreate([
             'site_id' => $site->id,
             'user_id' => $user->id,
             'niveau' => $niveau->value,
@@ -72,7 +72,7 @@ class CloisonnementTest extends TestCase
         // Cas central : surveiller la bouteille d'un proche à distance.
         [$proprietaire, $site] = $this->foyerAvecSite();
         $observateur = User::factory()->create();
-        SiteAcces::create([
+        SiteAcces::forceCreate([
             'site_id' => $site->id,
             'user_id' => $observateur->id,
             'niveau' => NiveauAcces::Observateur->value,
@@ -114,7 +114,7 @@ class CloisonnementTest extends TestCase
         $depotY = Organisation::factory()->depot()->create();
 
         $gerant = User::factory()->create();
-        Membership::create([
+        Membership::forceCreate([
             'user_id' => $gerant->id,
             'organisation_id' => $depotX->id,
             'role' => RoleMembership::GerantDepot->value,
@@ -139,7 +139,7 @@ class CloisonnementTest extends TestCase
         $autreDepot = Organisation::factory()->depot()->create(['parent_id' => $autreMandataire->id]);
 
         $mandataireUser = User::factory()->create();
-        Membership::create([
+        Membership::forceCreate([
             'user_id' => $mandataireUser->id,
             'organisation_id' => $mandataire->id,
             'role' => RoleMembership::Mandataire->value,
@@ -167,7 +167,7 @@ class CloisonnementTest extends TestCase
         $autreDepot = Organisation::factory()->depot()->create(['parent_id' => $autreDistributeur->id]);
 
         $distUser = User::factory()->create();
-        Membership::create([
+        Membership::forceCreate([
             'user_id' => $distUser->id,
             'organisation_id' => $distributeur->id,
             'role' => RoleMembership::Distributeur->value,
@@ -183,7 +183,7 @@ class CloisonnementTest extends TestCase
     {
         $depot = Organisation::factory()->depot()->create();
         $user = User::factory()->create();
-        Membership::create([
+        Membership::forceCreate([
             'user_id' => $user->id,
             'organisation_id' => $depot->id,
             'role' => RoleMembership::GerantDepot->value,
@@ -200,7 +200,7 @@ class CloisonnementTest extends TestCase
     {
         $depot = Organisation::factory()->depot()->create();
         $livreur = User::factory()->create();
-        Membership::create([
+        Membership::forceCreate([
             'user_id' => $livreur->id,
             'organisation_id' => $depot->id,
             'role' => RoleMembership::Livreur->value,
@@ -223,7 +223,7 @@ class CloisonnementTest extends TestCase
         $depot = Organisation::factory()->depot()->create(['parent_id' => $mandataire->id]);
 
         $gerant = User::factory()->create();
-        Membership::create([
+        Membership::forceCreate([
             'user_id' => $gerant->id,
             'organisation_id' => $depot->id,
             'role' => RoleMembership::GerantDepot->value,
@@ -231,7 +231,7 @@ class CloisonnementTest extends TestCase
         ]);
 
         $mandataireUser = User::factory()->create();
-        Membership::create([
+        Membership::forceCreate([
             'user_id' => $mandataireUser->id,
             'organisation_id' => $mandataire->id,
             'role' => RoleMembership::Mandataire->value,

@@ -60,16 +60,12 @@ jobs:
           DB_DATABASE: yagaz
           DB_USERNAME: yagaz
           DB_PASSWORD: yagaz_ci
+      # Les tests tournent sur SQLite en mémoire (phpunit.xml) : rapides,
+      # isolés, agnostiques de la base. La compatibilité PostgreSQL/TimescaleDB
+      # du schéma est validée par le step "Migrations" ci-dessus (RefreshDatabase
+      # ne peut pas droper une hypertable Timescale en lot, d'où ce choix).
       - name: Tests
         run: php artisan test
-        env:
-          DB_CONNECTION: pgsql
-          DB_HOST: 127.0.0.1
-          DB_PORT: 5433
-          DB_DATABASE: yagaz
-          DB_USERNAME: yagaz
-          DB_PASSWORD: yagaz_ci
-          REDIS_HOST: 127.0.0.1
 
   web:
     name: Web React — build

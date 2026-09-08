@@ -36,11 +36,12 @@ class CommandePolicy
     }
 
     /**
-     * Faire avancer une commande : l'organisation cible qui la traite.
+     * Faire avancer une commande : l'organisation cible qui la traite,
+     * en gestion directe (pas via la hiérarchie ascendante).
      */
     public function update(User $user, Commande $commande): bool
     {
         return $commande->cibleOrg !== null
-            && $user->peutVoirOrganisation($commande->cibleOrg);
+            && $user->peutGererOrganisation($commande->cibleOrg);
     }
 }
