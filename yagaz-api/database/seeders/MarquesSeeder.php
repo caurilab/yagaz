@@ -17,12 +17,14 @@ class MarquesSeeder extends Seeder
 {
     public function run(): void
     {
+        // Couleurs réelles observées sur les bouteilles CI (voir _gaz/), éditables.
         $marques = [
-            ['nom' => 'Oryx', 'couleur' => '#1E63B8'],
-            ['nom' => 'Total', 'couleur' => '#E4032E'],
-            ['nom' => 'Petro Ivoire', 'couleur' => '#2E9E5B'],
-            ['nom' => 'Sodigaz', 'couleur' => '#F08A24'],
-            ['nom' => 'GESTOCI', 'couleur' => '#7B4A2E'],
+            ['nom' => 'Oryx', 'couleur' => '#29A9CE'],          // cyan
+            ['nom' => 'Total', 'couleur' => '#E4032E'],          // rouge
+            ['nom' => 'Petro Ivoire', 'couleur' => '#26307A'],   // bleu marine
+            ['nom' => 'Corlay', 'couleur' => '#2FA84F'],         // vert
+            ['nom' => 'Sodigaz', 'couleur' => '#F08A24'],        // orange
+            ['nom' => 'GESTOCI', 'couleur' => '#7B4A2E'],        // marron
         ];
 
         foreach ($marques as $marque) {

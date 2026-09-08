@@ -71,6 +71,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/sites/{site:uuid}/livreur-habituel', [SiteController::class, 'retirerLivreurHabituel']);
     // Température de cuisine (ADR 0011) : état courant + cuisson en cours.
     Route::get('/sites/{site:uuid}/temperature', [TemperatureController::class, 'show']);
+    // Analyses température/cuisson (ADR 0011, extension) : courbe horaire,
+    // pic, histogramme des cuissons par heure, fréquence — cloisonné site.
+    Route::get('/sites/{site:uuid}/temperature/analyse', [TemperatureController::class, 'analyse']);
 
     // === Historique unifié et analyses foyer (doc 13, §1 et §2) ==========
     // Timeline (commandes/paiements/alertes/cuisson) et agrégats de
