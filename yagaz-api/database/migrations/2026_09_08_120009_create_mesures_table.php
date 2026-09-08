@@ -10,19 +10,20 @@ use Illuminate\Support\Facades\Schema;
  * Hypertable TimescaleDB en production (PostgreSQL) ; table classique sur
  * SQLite (tests), le comportement métier restant identique.
  *
- * Écart au doc 07 : la clé primaire documentée est composite
- * (plateau_id, mesure_at), mal supportée par Eloquent. On garde un `id`
- * bigint auto-incrémenté comme clé primaire technique, tout en conservant :
- * - l'index unique (plateau_id, seq) qui porte l'idempotence réelle ;
- * - l'index (plateau_id, mesure_at) pour les requêtes de série temporelle,
- *   qui joue le rôle de la PK documentée.
+ * Clé primaire : TimescaleDB impose que tout index unique d'une hypertable
+ * inclue la colonne de partitionnement (`mesure_at`). On adopte donc une clé
+ * primaire composite (plateau_id, mesure_at, seq) qui :
+ * - est valide pour l'hypertable (elle contient `mesure_at`) ;
+ * - porte l'idempotence : un message retransmis (mêmes plateau, ts et seq) est
+ *   rejeté comme doublon ;
+ * - sert d'index de série temporelle (préfixe plateau_id, mesure_at).
+ * (Écart assumé au doc 07 §5, qui prévoyait un `id` technique.)
  */
 return new class extends Migration
 {
     public function up(): void
     {
         Schema::create('mesures', function (Blueprint $table) {
-            $table->id();
             $table->foreignId('plateau_id')->constrained('plateaux')->cascadeOnDelete();
             $table->foreignId('bouteille_id')->nullable()->constrained('bouteilles')->nullOnDelete();
             $table->timestampTz('mesure_at'); // horodatage plateau (ADR 0003, `ts`)
@@ -34,14 +35,24 @@ return new class extends Migration
             $table->integer('rssi')->nullable();
             $table->decimal('temp_c', 5, 2)->nullable();
 
-            $table->unique(['plateau_id', 'seq']);
-            $table->index(['plateau_id', 'mesure_at']);
+            // PK composite incluant la colonne de partition (obligatoire Timescale).
+            $table->primary(['plateau_id', 'mesure_at', 'seq']);
         });
 
-        // Transformation en hypertable TimescaleDB : uniquement sur PostgreSQL.
-        // Les agrégats continus (Phase 2) ne sont volontairement pas créés ici.
+        // Transformation en hypertable TimescaleDB, uniquement si l'extension
+        // est présente (prod/CI via l'image timescale, ou dev Docker). Sur un
+        // PostgreSQL local sans TimescaleDB, `mesures` reste une table classique :
+        // les données sont identiques, seules les optimisations séries temporelles
+        // (chunks, agrégats continus) sont absentes. Les agrégats continus
+        // arriveront en Phase 2. SQLite : table classique également.
         if (DB::getDriverName() === 'pgsql') {
-            DB::statement("SELECT create_hypertable('mesures', 'mesure_at', if_not_exists => TRUE, migrate_data => TRUE)");
+            $timescaleInstalle = DB::selectOne(
+                "SELECT 1 AS ok FROM pg_extension WHERE extname = 'timescaledb'"
+            );
+
+            if ($timescaleInstalle !== null) {
+                DB::statement("SELECT create_hypertable('mesures', 'mesure_at', if_not_exists => TRUE, migrate_data => TRUE)");
+            }
         }
     }
 

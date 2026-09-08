@@ -9,10 +9,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * Chaque pesée reçue d'un plateau (ADR 0003) — doc 07, §5 `mesures`.
  *
- * Écart au doc 07 : la table n'a pas les colonnes `created_at`/`updated_at`
- * standard de Laravel (elle porte `mesure_at`/`recu_at`), et sa clé primaire
- * technique est un `id` bigint auto-incrémenté plutôt que la paire composite
- * (plateau_id, mesure_at) du doc — voir la migration `create_mesures_table`.
+ * La table n'a pas les colonnes `created_at`/`updated_at` standard de Laravel
+ * (elle porte `mesure_at`/`recu_at`), et sa clé est composite
+ * (plateau_id, mesure_at, seq) — contrainte des hypertables TimescaleDB.
+ * On désactive donc la clé primaire auto-incrémentée d'Eloquent : la table
+ * est alimentée par l'ingestion et lue par requêtes, jamais par `find($id)`.
  */
 #[Guarded([])]
 class Mesure extends Model
@@ -22,6 +23,13 @@ class Mesure extends Model
      * horodatages métier (mesure_at, recu_at).
      */
     public $timestamps = false;
+
+    /**
+     * Clé primaire composite (voir migration) : pas d'`id` auto-incrémenté.
+     */
+    protected $primaryKey = null;
+
+    public $incrementing = false;
 
     protected function casts(): array
     {
