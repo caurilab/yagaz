@@ -1,0 +1,33 @@
+.placeholder-page {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.placeholder-page h1 {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  color: var(--texte);
+}
+
+.placeholder-page p {
+  font-size: 14px;
+  color: var(--texte-doux);
+}
+
+.placeholder-page__card {
+  margin-top: 16px;
+  background: var(--carte);
+  border-radius: var(--rayon-carte);
+  border: 1px dashed var(--bordure);
+  box-shadow: var(--ombre-douce);
+  padding: 48px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--texte-doux);
+  font-size: 14px;
+  min-height: 220px;
+}
