@@ -3,12 +3,15 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
+    // Note : le trait `WithoutModelEvents` de Laravel est volontairement omis.
+    // Il désactive tous les évènements Eloquent pendant tout le seed (y
+    // compris les seeders imbriqués), ce qui empêcherait le trait `HasUuid`
+    // de générer les UUID des entités (organisations, sites, bouteilles,
+    // commandes…) créées ici.
 
     /**
      * Seed the application's database.
@@ -20,6 +23,11 @@ class DatabaseSeeder extends Seeder
         User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
+        ]);
+
+        $this->call([
+            FormatsBouteilleSeeder::class,
+            DemoSeeder::class,
         ]);
     }
 }

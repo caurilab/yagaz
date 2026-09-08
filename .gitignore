@@ -35,6 +35,8 @@ yagaz-api/storage/logs/*
 yagaz-api/bootstrap/cache/*
 yagaz-api/.phpunit.result.cache
 yagaz-api/public/hot
+yagaz-api/database/*.sqlite
+yagaz-api/database/*.sqlite-journal
 
 # === Docker volumes locaux ===
 ops/data/
