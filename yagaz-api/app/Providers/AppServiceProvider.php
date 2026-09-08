@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use App\Contracts\Notification\CanalNotification;
+use App\Contracts\Payment\PaymentProvider;
 use App\Services\Notification\CanalLog;
+use App\Services\Payment\SimulateurPaiement;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -20,6 +22,15 @@ class AppServiceProvider extends ServiceProvider
         // vrai provider (FCM/APNs, SMS, WhatsApp) prendra la place de
         // `CanalLog` ici, sans changer `Notificateur` ni le code appelant.
         $this->app->bind(CanalNotification::class, CanalLog::class);
+
+        // Provider de paiement Mobile Money par défaut (ADR 0010, v2 brique
+        // 1) : `simulateur` (aucun appel réseau réel) tant que l'agrégateur
+        // réel n'est pas tranché. Brancher un agrégateur = ajouter une
+        // implémentation de `PaymentProvider` et changer `PAIEMENT_PROVIDER`,
+        // sans toucher au cycle de commande ni aux contrôleurs.
+        $this->app->bind(PaymentProvider::class, match (config('paiement.provider')) {
+            default => SimulateurPaiement::class,
+        });
     }
 
     /**

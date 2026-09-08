@@ -100,6 +100,25 @@ class Commande extends Model
     }
 
     /**
+     * @return HasMany<Paiement, $this>
+     */
+    public function paiements(): HasMany
+    {
+        return $this->hasMany(Paiement::class);
+    }
+
+    /**
+     * Paiement le plus récent (ADR 0010, v2 brique 1) — une commande peut
+     * porter plusieurs tentatives, la plus récente fait foi pour l'affichage.
+     *
+     * @return HasOne<Paiement, $this>
+     */
+    public function paiement(): HasOne
+    {
+        return $this->hasOne(Paiement::class)->latestOfMany();
+    }
+
+    /**
      * Livraison la plus récente (une commande n'en a normalement qu'une),
      * pour l'affichage du suivi (contrat API doc 10, §3, `GET /commandes/{uuid}`).
      *

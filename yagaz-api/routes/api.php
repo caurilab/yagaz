@@ -13,6 +13,7 @@ use App\Http\Controllers\LivraisonController;
 use App\Http\Controllers\LivreurController;
 use App\Http\Controllers\MandataireController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\PaiementController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SiteController;
 use App\Http\Controllers\TourneeController;
@@ -36,6 +37,12 @@ Route::get('/health', function () {
 
 Route::post('/auth/register', [AuthController::class, 'register'])->middleware('throttle:auth');
 Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:auth');
+
+// === Paiement — webhook Mobile Money (ADR 0010, v2 brique 1) ============
+// Route PUBLIQUE, hors `auth:sanctum` : un opérateur/agrégateur n'a pas de
+// session Sanctum. Sécurisée uniquement par la vérification de signature
+// (`PaymentProvider::verifierNotification`) — jamais par l'authentification.
+Route::post('/paiements/webhook/{provider}', [PaiementController::class, 'webhook']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
@@ -86,6 +93,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/commandes', [CommandeController::class, 'store']);
     Route::get('/commandes/{commande:uuid}', [CommandeController::class, 'show']);
     Route::post('/commandes/{commande:uuid}/reponse', [CommandeController::class, 'reponse']);
+    // Paiement Mobile Money (ADR 0010, v2 brique 1) : réservé au foyer
+    // propriétaire (policy `payer`) d'une commande `confirmee`.
+    Route::post('/commandes/{commande:uuid}/paiement', [PaiementController::class, 'initier']);
+    Route::get('/commandes/{commande:uuid}/paiement', [PaiementController::class, 'show']);
 
     // === Dépôt — commandes et livraison (contrat API doc 10, §4) ========
     Route::patch('/commandes/{commande:uuid}/preparer', [CommandeController::class, 'preparer']);

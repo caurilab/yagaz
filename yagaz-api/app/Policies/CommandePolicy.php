@@ -87,4 +87,16 @@ class CommandePolicy
             && $commande->demandeurOrg !== null
             && $user->estMembreDe($commande->demandeurOrg, RoleMembership::GerantDepot);
     }
+
+    /**
+     * Payer une commande par Mobile Money (ADR 0010, v2 brique 1,
+     * `POST /commandes/{uuid}/paiement` et `GET` du même chemin) : réservé au
+     * foyer **propriétaire** du site de livraison (pas un simple accès
+     * partagé) — un paiement engage de l'argent, périmètre plus strict que
+     * `repondre`.
+     */
+    public function payer(User $user, Commande $commande): bool
+    {
+        return $commande->site !== null && $user->estProprietaireDuSite($commande->site);
+    }
 }
