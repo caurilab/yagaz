@@ -1,10 +1,13 @@
 // Firmware du plateau Yagaz — ESP32
 // Phase 2 : lecture HX711 (4 cellules de charge en pont), lissage léger,
 // échantillonnage adaptatif, publication MQTT conforme à l'ADR 0003.
+// Phase 3 : capteur de température de cuisine (DS18B20), publication MQTT
+// conforme à l'ADR 0011.
 //
 // Matériel : voir docs/05-materiel-et-sourcing.md (4 cellules + HX711 + ESP32).
 // Format MQTT : voir docs/decisions/0003-format-messages-mqtt.md (topics + JSON).
 // Rôle du plateau dans la chaîne de mesure : voir docs/08-chaine-de-mesure.md.
+// Capteur de température cuisine : voir docs/decisions/0011-capteur-temperature-cuisine.md.
 //
 // NB : ce fichier n'a pas été compilé ici (pas de toolchain PlatformIO dans cet
 // environnement). Vérification faite "à la main" des API de libs ; compilation
@@ -14,6 +17,8 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <HX711.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
 #include <ArduinoJson.h>
 #include <Preferences.h>
 #include <time.h>
@@ -26,6 +31,10 @@
 
 const uint8_t HX711_DOUT_PIN = 16;
 const uint8_t HX711_SCK_PIN  = 4;
+
+// Capteur de température de cuisine (ADR 0011) — bus 1-Wire, une seule broche
+// data (avec résistance de tirage ~4.7kΩ vers 3.3V, cf. datasheet DS18B20).
+const uint8_t PIN_TEMP_ONEWIRE = 17;
 
 // Suivi batterie (optionnel, désactivé par défaut — doc 05 §4 : alimentation
 // secteur ou batterie à trancher au prototypage). Mettre une broche ADC valide
@@ -103,6 +112,23 @@ const time_t SEUIL_EPOCH_PLAUSIBLE = 1700000000; // ~nov. 2023 : détecte une ho
 const uint8_t INTERVALLE_PERSISTENCE_SEQ = 20; // persiste "seq" en NVS toutes les N publications (usure flash)
 
 // ---------------------------------------------------------------------------
+// Configuration — température de cuisine (ADR 0011)
+// ---------------------------------------------------------------------------
+//
+// Cadence : 30 s. Compromis réactivité/charge réseau : la détection de
+// cuisson (ADR 0011) utilise une fenêtre anti-rebond `duree_min_cuisson_s` de
+// 120 s côté backend, donc 30 s donne ~4 points par fenêtre (suffisant pour
+// une détection soutenue) sans multiplier le trafic MQTT. À resserrer (ex.
+// 10-15 s) si un suivi plus fin de la montée en cuisson est souhaité, au prix
+// d'un peu plus de trafic réseau/veille.
+const unsigned long INTERVALLE_PUBLICATION_TEMPERATURE_MS = 30000;
+
+// Durée de conversion DS18B20 à la résolution par défaut (12 bits, datasheet
+// Maxim/Dallas). Utilisée pour piloter la lecture en non-bloquant (cf.
+// boucleTemperatureCuisine) sans jamais appeler delay().
+const unsigned long DUREE_CONVERSION_DS18B20_MS = 750;
+
+// ---------------------------------------------------------------------------
 // État global
 // ---------------------------------------------------------------------------
 
@@ -111,11 +137,28 @@ WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient);
 Preferences preferences;
 
+OneWire oneWireTemperature(PIN_TEMP_ONEWIRE);
+DallasTemperature capteurTemperatureCuisine(&oneWireTemperature);
+
 String topicMesure;
 String topicEtat;
 String topicCmd;
+String topicTemperature;
 
 unsigned long seqCompteur = 0;
+
+// Compteur "seq" séparé de celui des mesures de poids : la température est
+// publiée sur son propre topic/payload (ADR 0011) à une cadence différente,
+// donc un compteur dédié est plus simple à raisonner côté backend (dédup
+// indépendante) que de partager celui des mesures. Persisté en NVS sous une
+// clé distincte ("seqTemp"), avec la même politique d'écriture périodique.
+unsigned long seqTemperatureCompteur = 0;
+
+bool capteurTemperatureCuisineDetecte = false;
+bool conversionTemperatureEnCours = false;
+unsigned long debutConversionTemperatureMs = 0;
+unsigned long dernierTempsTemperatureMs = 0;
+float derniereTemperatureCuisineC = NAN;
 
 float fenetreLissage[TAILLE_FENETRE_LISSAGE];
 int nbEchantillonsFenetre = 0;
@@ -150,6 +193,10 @@ float lireTemperatureC();
 void publierMesure(int32_t poids_g);
 void boucleMesure();
 void gererCommandeSerie();
+void setupTemperatureCuisine();
+float lireTemperatureCuisine();
+void publierTemperatureCuisine(float temp_c);
+void boucleTemperatureCuisine();
 
 // ---------------------------------------------------------------------------
 // Wi-Fi
@@ -318,12 +365,55 @@ int lireTensionBatterieMv() {
   return (int) lroundf(tensionAdcMv * DIVISEUR_TENSION_BATTERIE);
 }
 
-// Pas de capteur de température dédié dans la configuration matérielle
-// actuelle (doc 05 : cellules + HX711 + ESP32 seuls). Renvoie NAN => champ
-// "temp_c" omis du JSON. Prévu pour une future sonde NTC/DS18B20 si la dérive
-// thermique des cellules l'exige (doc 05 §6).
+// NB : cette fonction est distincte de lireTemperatureCuisine() ci-dessous
+// (ADR 0011). Elle vise une éventuelle sonde de dérive thermique des cellules
+// de charge elles-mêmes (électronique du plateau), pas la température
+// ambiante de la cuisine. Pas de capteur dédié dans la configuration
+// matérielle actuelle (doc 05 : cellules + HX711 + ESP32 seuls). Renvoie NAN
+// => champ "temp_c" omis du JSON de "mesure". Prévu pour une future sonde
+// NTC/DS18B20 si la dérive thermique des cellules l'exige (doc 05 §6).
 float lireTemperatureC() {
   return NAN;
+}
+
+// ---------------------------------------------------------------------------
+// Capteur de température de cuisine (DS18B20, 1-Wire) — ADR 0011
+// ---------------------------------------------------------------------------
+//
+// Capteur retenu : DS18B20 (1-Wire, digital, ±0.5°C entre -10 et +85°C,
+// plage -55..+125°C). Choisi comme défaut robuste pour l'ambiance cuisine
+// (proximité de chaleur/vapeur) : sortie numérique peu sensible au bruit
+// électrique (contrairement à une thermistance NTC lue en analogique, plus
+// simple/moins chère mais plus sensible au bruit ADC et nécessitant un
+// calibrage du pont diviseur). Prendre une version étanche (sonde à câble,
+// gaine inox) si le montage est exposé aux projections de cuisine.
+// Libs : milesburton/DallasTemperature + paulstoffregen/OneWire (versions
+// épinglées dans platformio.ini).
+//
+// Lecture non bloquante : setWaitForConversion(false) + machine à 2 états
+// dans boucleTemperatureCuisine(), pour ne jamais retarder boucleMesure()
+// (contrairement à un requestTemperatures() bloquant, qui figerait la boucle
+// ~750ms à chaque cycle).
+
+void setupTemperatureCuisine() {
+  capteurTemperatureCuisine.begin();
+  capteurTemperatureCuisine.setWaitForConversion(false); // conversion asynchrone, pilotée par millis()
+  capteurTemperatureCuisineDetecte = capteurTemperatureCuisine.getDeviceCount() > 0;
+  if (capteurTemperatureCuisineDetecte) {
+    Serial.println("Capteur DS18B20 (température cuisine) détecté.");
+  } else {
+    Serial.println("DS18B20 non détecté (PIN_TEMP_ONEWIRE) ; température cuisine non publiée.");
+  }
+}
+
+// Renvoie la dernière température de cuisine connue (°C), ou NAN si aucun
+// capteur n'est détecté ou si aucune conversion n'a encore abouti — dans ce
+// cas on ne publie pas (cf. boucleTemperatureCuisine). Ne bloque jamais :
+// c'est un simple accesseur, le déclenchement/la lecture de la conversion
+// DS18B20 sont pilotés par boucleTemperatureCuisine() via millis().
+float lireTemperatureCuisine() {
+  if (!capteurTemperatureCuisineDetecte) return NAN;
+  return derniereTemperatureCuisineC;
 }
 
 // ---------------------------------------------------------------------------
@@ -376,6 +466,75 @@ void publierMesure(int32_t poids_g) {
   } else {
     Serial.println("Échec de la publication MQTT.");
   }
+}
+
+// ---------------------------------------------------------------------------
+// Publication MQTT — température de cuisine (ADR 0011)
+// ---------------------------------------------------------------------------
+
+void publierTemperatureCuisine(float temp_c) {
+  if (!mqttClient.connected()) return; // assurerConnexionMqtt() gère déjà la reconnexion
+
+  time_t epoch;
+  if (!obtenirEpoch(epoch)) return; // horloge NTP pas encore synchronisée
+
+  JsonDocument doc;
+  doc["v"] = 1;
+  doc["ts"] = (uint32_t) epoch;
+  doc["temp_c"] = temp_c;
+  doc["seq"] = seqTemperatureCompteur;
+
+  char buffer[128];
+  size_t taille = serializeJson(doc, buffer, sizeof(buffer));
+
+  // Même limite QoS que publierMesure() : PubSubClient ne fait que du QoS 0
+  // côté client. Le dédoublonnage par "seq" (ADR 0011) absorbe les pertes.
+  bool ok = mqttClient.publish(topicTemperature.c_str(), (const uint8_t*)buffer, taille, false);
+
+  if (ok) {
+    seqTemperatureCompteur++;
+    if (seqTemperatureCompteur % INTERVALLE_PERSISTENCE_SEQ == 0) {
+      preferences.putULong("seqTemp", seqTemperatureCompteur); // clé NVS distincte de "seq" (mesures)
+    }
+    Serial.printf("Température cuisine publiée seq=%lu temp=%.1f°C\n", seqTemperatureCompteur, temp_c);
+  } else {
+    Serial.println("Échec de la publication MQTT (température).");
+  }
+}
+
+// Machine à 2 états non bloquante :
+//   1. au bout de INTERVALLE_PUBLICATION_TEMPERATURE_MS, on lance une
+//      conversion DS18B20 (asynchrone, setWaitForConversion(false)) ;
+//   2. au tour de boucle où DUREE_CONVERSION_DS18B20_MS s'est écoulée depuis,
+//      on va chercher le résultat et on publie.
+// Appelée à chaque tour de loop() ; ne retarde jamais boucleMesure().
+void boucleTemperatureCuisine() {
+  if (!capteurTemperatureCuisineDetecte) return;
+  unsigned long maintenant = millis();
+
+  if (conversionTemperatureEnCours) {
+    if (maintenant - debutConversionTemperatureMs < DUREE_CONVERSION_DS18B20_MS) return;
+    conversionTemperatureEnCours = false;
+    float lue = capteurTemperatureCuisine.getTempCByIndex(0);
+    if (lue == DEVICE_DISCONNECTED_C) {
+      Serial.println("Lecture DS18B20 invalide (capteur déconnecté ?), non publiée.");
+      return;
+    }
+    derniereTemperatureCuisineC = lue;
+    // lireTemperatureCuisine() gère l'absence de capteur (NAN) : on ne publie
+    // que si elle renvoie une valeur exploitable.
+    float temperaturePourPublication = lireTemperatureCuisine();
+    if (!isnan(temperaturePourPublication)) {
+      publierTemperatureCuisine(temperaturePourPublication);
+    }
+    return;
+  }
+
+  if (maintenant - dernierTempsTemperatureMs < INTERVALLE_PUBLICATION_TEMPERATURE_MS) return;
+  dernierTempsTemperatureMs = maintenant;
+  capteurTemperatureCuisine.requestTemperatures(); // async (setWaitForConversion(false) en setup)
+  debutConversionTemperatureMs = maintenant;
+  conversionTemperatureEnCours = true;
 }
 
 // ---------------------------------------------------------------------------
@@ -460,12 +619,14 @@ void setup() {
   delay(200);
   Serial.println("Yagaz plateau — démarrage du firmware.");
 
-  topicMesure = String("yagaz/v1/plateau/") + PLATEAU_UID + "/mesure";
-  topicEtat   = String("yagaz/v1/plateau/") + PLATEAU_UID + "/etat";
-  topicCmd    = String("yagaz/v1/plateau/") + PLATEAU_UID + "/cmd";
+  topicMesure      = String("yagaz/v1/plateau/") + PLATEAU_UID + "/mesure";
+  topicEtat        = String("yagaz/v1/plateau/") + PLATEAU_UID + "/etat";
+  topicCmd         = String("yagaz/v1/plateau/") + PLATEAU_UID + "/cmd";
+  topicTemperature = String("yagaz/v1/plateau/") + PLATEAU_UID + "/temperature";
 
   preferences.begin("yagaz", false);
   seqCompteur = preferences.getULong("seq", 0);
+  seqTemperatureCompteur = preferences.getULong("seqTemp", 0);
   long offsetPersiste = preferences.getLong("offset", 0);
   float facteurPersiste = preferences.getFloat("scale", FACTEUR_ECHELLE_DEFAUT);
 
@@ -480,6 +641,8 @@ void setup() {
   } else {
     Serial.println("HX711 non détecté au démarrage (vérifier câblage DOUT/SCK).");
   }
+
+  setupTemperatureCuisine();
 
   setupWifi();
   setupNtp();
@@ -499,4 +662,5 @@ void loop() {
   }
   gererCommandeSerie();
   boucleMesure();
+  boucleTemperatureCuisine();
 }
