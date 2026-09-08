@@ -2,16 +2,18 @@
 
 Photo de l'avancement, mise à jour en continu par l'archiviste.
 
-Dernière mise à jour : 2026-09-08 (Phase 0 terminée)
+Dernière mise à jour : 2026-09-08 (Phase 1 terminée)
 
 ## En un coup d'œil
 
-Le projet est passé du cadrage au **développement**. **Phase 0 (Fondations)
-terminée** : monorepo Git, quatre sous-projets scaffoldés (API Laravel, web
-React 19, app Expo, firmware ESP32), infra locale Docker (TimescaleDB + MQTT +
-Redis), CI, auth de base et gestion des secrets. Le modèle de données v1 est
-conçu (`docs/07-modele-de-donnees.md`). Prochaine étape : Phase 1 (migrations et
-socle métier). Le prototype matériel reste en cours de sourcing.
+Le projet est en **développement**. **Phases 0 et 1 terminées.** Phase 0 :
+monorepo Git, quatre sous-projets scaffoldés, infra Docker, CI, auth de base,
+secrets hors dépôt. Phase 1 : schéma de données complet (21 migrations, 17
+modèles, hypertable TimescaleDB), multi-sites, cloisonnement des acteurs
+(policies + tests), audit de sécurité mené et corrigé. **CI verte** (migrations
+sur vrai TimescaleDB, tests, build web, typecheck app). Le dépôt est sur GitHub
+(`caurilab/yagaz`). Prochaine étape : Phase 2 (ingestion MQTT + chaîne de mesure
++ firmware). Le prototype matériel reste en cours de sourcing.
 
 ## Fait
 
@@ -26,12 +28,15 @@ socle métier). Le prototype matériel reste en cours de sourcing.
   scaffolding des 4 sous-projets, infra Docker (TimescaleDB + MQTT + Redis),
   CI, auth Sanctum, secrets hors dépôt. ADR 0002/0003/0004.
 - **Modèle de données v1** conçu (`docs/07-modele-de-donnees.md`).
+- **Phase 1 — Modèle de données et socle métier** (voir `docs/rapports/phase-1.md`) :
+  21 migrations, 17 modèles, hypertable TimescaleDB, multi-sites, cloisonnement
+  (12 policies + tests), audit sécurité corrigé. ADR 0005. CI verte.
 
 ## En cours
 
-- **Phase 1 — Modèle de données et socle métier** : migrations à partir de
-  `docs/07-modele-de-donnees.md`, hypertable TimescaleDB, contraintes de
-  cloisonnement.
+- **Phase 2 — Ingestion et chaîne de mesure** : worker MQTT, traitement robuste
+  (aberrations, doublons, trous), conversion poids → niveau → autonomie, gestion
+  de la tare, firmware ESP32 de test.
 - Commande des composants du prototype (3 plateaux de test).
 
 ## À venir
