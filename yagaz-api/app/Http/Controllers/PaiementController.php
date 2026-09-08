@@ -60,6 +60,34 @@ class PaiementController extends Controller
      */
     public function webhook(Request $request, string $provider): JsonResponse
     {
+        // Borne de taille simple du corps de la notification (défense en
+        // profondeur contre un webhook anormalement volumineux) : 64 Ko est
+        // largement suffisant pour une notification Mobile Money (quelques
+        // champs texte/numériques).
+        abort_if(
+            strlen($request->getContent()) > 64_000,
+            413,
+            'Corps de la notification trop volumineux.'
+        );
+
+        // NOTE (branchement d'un agrégateur RÉEL) : la signature devra alors
+        // être vérifiée sur le corps BRUT de la requête ($request->getContent()),
+        // jamais sur $request->all() re-sérialisé — un réencodage JSON peut
+        // changer l'ordre des clés, les espaces ou la représentation
+        // numérique et invalider une signature calculée par l'opérateur sur
+        // le corps original envoyé. Le simulateur actuel (`SimulateurPaiement`)
+        // signe lui-même un tableau canonique (clés triées), donc
+        // `$request->all()` reste cohérent avec lui pour l'instant ; ce ne
+        // sera plus vrai avec un agrégateur réel (Orange Money, MTN MoMo,
+        // Moov Money, Wave via un PSP fronting), dont l'implémentation de
+        // `PaymentProvider::verifierNotification` devra recevoir le corps
+        // brut en plus (ou à la place) du payload décodé.
+        //
+        // Note config : prévoir à terme un limiteur dédié (ex.
+        // `throttle:paiement-webhook` défini dans `AppServiceProvider::boot()`,
+        // sur le modèle de `reglages-alertes`) plutôt que de s'appuyer sur le
+        // throttle global `api` — non ajouté ici pour ne pas modifier le
+        // throttle global.
         $signature = $request->header('X-Paiement-Signature');
 
         $this->paiementMobileMoney->traiterWebhook($provider, $request->all(), $signature);

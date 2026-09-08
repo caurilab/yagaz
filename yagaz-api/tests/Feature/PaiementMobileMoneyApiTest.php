@@ -135,6 +135,64 @@ class PaiementMobileMoneyApiTest extends TestCase
         $this->assertDatabaseHas('paiements', ['commande_id' => $commande->id, 'statut' => 'initie']);
     }
 
+    public function test_l_initiation_est_refusee_pour_une_commande_qui_n_est_pas_confirmee(): void
+    {
+        [$foyer, $site] = $this->foyerAvecSite();
+        $commande = Commande::factory()->create([
+            'demandeur_user_id' => $foyer->id,
+            'site_id' => $site->id,
+            'statut' => StatutCommande::Livree,
+        ]);
+
+        Sanctum::actingAs($foyer);
+        $this->postJson("/api/commandes/{$commande->uuid}/paiement")->assertStatus(422);
+
+        $this->assertDatabaseCount('paiements', 0);
+    }
+
+    public function test_la_reinitiation_est_refusee_pour_une_commande_deja_reglee(): void
+    {
+        [$foyer, $site] = $this->foyerAvecSite();
+        $commande = $this->commandeConfirmee($site, $foyer);
+
+        Sanctum::actingAs($foyer);
+        $init = $this->postJson("/api/commandes/{$commande->uuid}/paiement");
+        $reference = $init->json('data.paiement.reference');
+        $montant = $init->json('data.paiement.montant');
+
+        $payload = ['reference' => $reference, 'statut' => 'regle', 'montant' => $montant, 'devise' => 'XOF'];
+        $this->postJson('/api/paiements/webhook/simulateur', $payload, [
+            'X-Paiement-Signature' => $this->signer($payload),
+        ])->assertOk();
+
+        // Ré-initiation sur une commande déjà réglée : refusée, le paiement
+        // `regle` existant reste intact (bug corrigé : double-facturation).
+        $this->postJson("/api/commandes/{$commande->uuid}/paiement")->assertStatus(422);
+
+        $this->assertDatabaseCount('paiements', 1);
+        $this->assertDatabaseHas('paiements', ['reference' => $reference, 'statut' => 'regle', 'montant' => $montant]);
+    }
+
+    public function test_la_reinitiation_avec_une_intention_en_cours_reutilise_le_meme_paiement(): void
+    {
+        [$foyer, $site] = $this->foyerAvecSite();
+        $commande = $this->commandeConfirmee($site, $foyer);
+
+        Sanctum::actingAs($foyer);
+        $premier = $this->postJson("/api/commandes/{$commande->uuid}/paiement");
+        $premier->assertCreated();
+        $referenceInitiale = $premier->json('data.paiement.reference');
+
+        // Deuxième appel pendant que l'intention est toujours `initie` : pas
+        // de second paiement créé, la même intention est renvoyée.
+        $second = $this->postJson("/api/commandes/{$commande->uuid}/paiement");
+        $second->assertCreated();
+        $second->assertJsonPath('data.paiement.reference', $referenceInitiale);
+        $second->assertJsonPath('data.paiement.statut', 'initie');
+
+        $this->assertDatabaseCount('paiements', 1);
+    }
+
     // === Webhook ===========================================================
 
     public function test_webhook_avec_signature_valide_regle_la_commande_et_le_paiement(): void
@@ -177,6 +235,79 @@ class PaiementMobileMoneyApiTest extends TestCase
         $webhook->assertStatus(400);
         $this->assertDatabaseHas('paiements', ['reference' => $reference, 'statut' => 'initie']);
         $this->assertDatabaseHas('commandes', ['uuid' => $commande->uuid, 'statut_paiement' => 'initie']);
+    }
+
+    public function test_webhook_sans_en_tete_de_signature_est_rejete(): void
+    {
+        [$foyer, $site] = $this->foyerAvecSite();
+        $commande = $this->commandeConfirmee($site, $foyer);
+
+        Sanctum::actingAs($foyer);
+        $init = $this->postJson("/api/commandes/{$commande->uuid}/paiement");
+        $reference = $init->json('data.paiement.reference');
+        $montant = $init->json('data.paiement.montant');
+
+        $payload = ['reference' => $reference, 'statut' => 'regle', 'montant' => $montant, 'devise' => 'XOF'];
+
+        // Aucun en-tête `X-Paiement-Signature` : signature nulle, rejetée.
+        $webhook = $this->postJson('/api/paiements/webhook/simulateur', $payload);
+
+        $webhook->assertStatus(400);
+        $this->assertDatabaseHas('paiements', ['reference' => $reference, 'statut' => 'initie']);
+    }
+
+    public function test_webhook_avec_une_devise_incoherente_est_rejete(): void
+    {
+        [$foyer, $site] = $this->foyerAvecSite();
+        $commande = $this->commandeConfirmee($site, $foyer);
+
+        Sanctum::actingAs($foyer);
+        $init = $this->postJson("/api/commandes/{$commande->uuid}/paiement");
+        $reference = $init->json('data.paiement.reference');
+        $montant = $init->json('data.paiement.montant');
+
+        // Devise différente de celle enregistrée à l'initiation (XOF).
+        $payload = ['reference' => $reference, 'statut' => 'regle', 'montant' => $montant, 'devise' => 'EUR'];
+
+        $webhook = $this->postJson('/api/paiements/webhook/simulateur', $payload, [
+            'X-Paiement-Signature' => $this->signer($payload),
+        ]);
+
+        $webhook->assertStatus(400);
+        $this->assertDatabaseHas('paiements', ['reference' => $reference, 'statut' => 'initie', 'devise' => 'XOF']);
+        $this->assertDatabaseHas('commandes', ['uuid' => $commande->uuid, 'statut_paiement' => 'initie']);
+    }
+
+    public function test_webhook_avec_le_statut_echoue_fait_echouer_la_commande_et_le_paiement(): void
+    {
+        [$foyer, $site] = $this->foyerAvecSite();
+        $commande = $this->commandeConfirmee($site, $foyer);
+
+        Sanctum::actingAs($foyer);
+        $init = $this->postJson("/api/commandes/{$commande->uuid}/paiement");
+        $reference = $init->json('data.paiement.reference');
+        $montant = $init->json('data.paiement.montant');
+
+        $payload = ['reference' => $reference, 'statut' => 'echoue', 'montant' => $montant, 'devise' => 'XOF'];
+
+        $webhook = $this->postJson('/api/paiements/webhook/simulateur', $payload, [
+            'X-Paiement-Signature' => $this->signer($payload),
+        ]);
+
+        $webhook->assertOk();
+        $this->assertDatabaseHas('paiements', ['reference' => $reference, 'statut' => 'echoue']);
+        $this->assertDatabaseHas('commandes', ['uuid' => $commande->uuid, 'statut_paiement' => 'echoue']);
+    }
+
+    public function test_webhook_sans_reference_est_rejete_proprement(): void
+    {
+        $payload = ['statut' => 'regle', 'montant' => 1000, 'devise' => 'XOF'];
+
+        $this->postJson('/api/paiements/webhook/simulateur', $payload, [
+            'X-Paiement-Signature' => $this->signer($payload),
+        ])->assertStatus(400);
+
+        $this->assertDatabaseCount('paiements', 0);
     }
 
     public function test_rejeu_du_meme_webhook_est_idempotent(): void

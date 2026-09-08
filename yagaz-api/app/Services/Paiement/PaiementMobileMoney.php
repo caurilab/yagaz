@@ -38,6 +38,15 @@ final class PaiementMobileMoney
      */
     private const int RECONCILIATION_AGE_MINUTES = 5;
 
+    /**
+     * Durée de vie d'une intention de paiement `initie` (push USSD/lien,
+     * durée usuelle côté opérateur Mobile Money) : passé ce délai sans
+     * webhook, une nouvelle initiation la remplace au lieu de la réutiliser
+     * (audit sécurité, [MOYEN] double-facturation — évite de bloquer
+     * indéfiniment un foyer derrière une intention morte).
+     */
+    private const int INITIATION_EXPIRATION_MINUTES = 15;
+
     public function __construct(private readonly PaymentProvider $provider) {}
 
     /**
@@ -45,6 +54,13 @@ final class PaiementMobileMoney
      * commande `confirmee` (ADR 0010, §Flux, point 1) : crée le `Paiement`
      * (`initie`), appelle le provider, fait passer la commande en
      * `mode_paiement = mobile_money` / `statut_paiement = initie`.
+     *
+     * Garde-fous contre la double-facturation (audit sécurité, [MOYEN]) :
+     * paiement et livraison étant découplés, une commande reste `confirmee`
+     * après avoir été réglée — on refuse donc toute ré-initiation dès que
+     * `statut_paiement = regle`, et on réutilise une intention `initie` déjà
+     * en cours (non expirée) plutôt que d'en empiler une seconde chez le
+     * provider.
      *
      * @return array{paiement: Paiement, intention: array<string, mixed>}
      */
@@ -58,6 +74,38 @@ final class PaiementMobileMoney
                 422,
                 'Seule une commande confirmée peut être payée.'
             );
+
+            abort_if(
+                $commandeVerrouillee->statut_paiement === StatutPaiement::Regle,
+                422,
+                'Cette commande est déjà réglée.'
+            );
+
+            $paiementInitieExistant = Paiement::where('commande_id', $commandeVerrouillee->id)
+                ->where('statut', StatutPaiement::Initie)
+                ->orderByDesc('id')
+                ->first();
+
+            if ($paiementInitieExistant !== null && ! $this->initiationExpiree($paiementInitieExistant)) {
+                // Intention encore valide : on la réutilise telle quelle,
+                // sans rappeler le provider (pas de second push USSD/lien
+                // concurrent pour la même commande).
+                return [
+                    'paiement' => $paiementInitieExistant,
+                    'intention' => [
+                        'reference' => $paiementInitieExistant->reference,
+                        'statut' => $paiementInitieExistant->statut->value,
+                        'instructions' => 'Une intention de paiement est déjà en cours pour cette commande.',
+                    ],
+                ];
+            }
+
+            if ($paiementInitieExistant !== null) {
+                // Intention expirée : elle n'engage plus rien côté provider,
+                // on la clôt avant d'en créer une nouvelle.
+                $paiementInitieExistant->forceFill(['statut' => StatutPaiement::Expire]);
+                $paiementInitieExistant->save();
+            }
 
             $paiement = new Paiement;
             $paiement->forceFill([
@@ -210,6 +258,17 @@ final class PaiementMobileMoney
     private function calculerMontant(int $quantite): int
     {
         return $quantite * self::PRIX_XOF_PAR_BOUTEILLE;
+    }
+
+    /**
+     * Une intention `initie` plus vieille que `INITIATION_EXPIRATION_MINUTES`
+     * est considérée morte côté provider : elle peut être remplacée par une
+     * nouvelle initiation plutôt que réutilisée.
+     */
+    private function initiationExpiree(Paiement $paiement): bool
+    {
+        return $paiement->created_at === null
+            || $paiement->created_at->lt(now()->subMinutes(self::INITIATION_EXPIRATION_MINUTES));
     }
 
     /**
