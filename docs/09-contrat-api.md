@@ -23,6 +23,10 @@ mandataire, distributeur, livreur seront ajoutés aux Phases 4-5.
 - **Langue** : les messages respectent `user.langue` (fr par défaut).
 - **Ressources** : réponses via API Resources (structure stable, pas de fuite de
   colonnes internes ; `secret_hash`, etc. jamais exposés).
+- **Enveloppe** : les endpoints de liste/détail renvoient l'objet sous une clé
+  `data` (convention Laravel Resources) : `{ "data": [...] }` ou `{ "data": {...} }`.
+  Les endpoints d'authentification renvoient une forme **plate** (`{ token, user }`,
+  `{ user }`). Le client doit déballer `data` pour les ressources.
 
 ## États visuels de niveau (partagés app/API)
 
