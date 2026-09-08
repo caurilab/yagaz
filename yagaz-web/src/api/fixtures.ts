@@ -188,21 +188,29 @@ export function depotNom(depotUuid: string): string {
 }
 
 // ---- Réappros (commande origine=depot, cible=mandataire) ----
+// Forme alignée sur ReapproResource (yagaz-api) : depot={uuid,nom,zone},
+// format=objet Format complet (pas de format_id/format_code à plat).
 
-export const DEMO_REAPPROS: Reappro[] = DEMO_DEPOTS_CONSOLIDES.flatMap((depot) =>
-  depot.stocks
-    .filter((s) => s.tension)
-    .map((s, index) => ({
-      uuid: `reappro-${depot.uuid}-${s.format_id}`,
-      origine: 'depot' as const,
-      depot: { uuid: depot.uuid, nom: depot.nom, type: 'depot' as const, zone: depot.zone },
-      format_id: s.format_id,
-      format_code: s.format_code,
-      quantite: s.seuil_plein_bas - s.pleines + 10,
-      statut: index % 3 === 0 ? 'confirmee' : ('proposee' as const),
-      created_at: '2026-09-08T06:00:00Z',
-    })),
-)
+function reapprosNonTries(): Reappro[] {
+  return DEMO_DEPOTS_CONSOLIDES.flatMap((depot) =>
+    depot.stocks
+      .filter((s) => s.tension)
+      .map((s, index) => ({
+        uuid: `reappro-${depot.uuid}-${s.format_id}`,
+        depot: { uuid: depot.uuid, nom: depot.nom, zone: depot.zone },
+        format: DEMO_FORMATS.find((f) => f.id === s.format_id) ?? DEMO_FORMATS[0],
+        quantite: s.seuil_plein_bas - s.pleines + 10,
+        statut: index % 3 === 0 ? 'confirmee' : ('proposee' as const),
+        created_at: '2026-09-08T06:00:00Z',
+      })),
+  )
+}
+
+// L'API réelle renvoie les `confirmee` en tête (voir docs/11 §1).
+export const DEMO_REAPPROS: Reappro[] = [...reapprosNonTries()].sort((a, b) => {
+  const rang = (r: Reappro) => (r.statut === 'confirmee' ? 0 : 1)
+  return rang(a) - rang(b)
+})
 
 // ---- Tournées ----
 

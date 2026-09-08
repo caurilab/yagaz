@@ -26,6 +26,7 @@ export function MandataireReappros() {
   })
 
   const reappros = data ?? []
+  const confirmes = reappros.filter((r) => r.statut === 'confirmee')
 
   return (
     <div className="reappros">
@@ -34,12 +35,13 @@ export function MandataireReappros() {
           <h1>Réappros</h1>
           <p>
             Demandes de réapprovisionnement préparées automatiquement à partir de l'état des stocks
-            des dépôts.
+            des dépôts. Les réappros confirmés par le dépôt sont fermes et prêts à intégrer une
+            tournée.
           </p>
         </div>
-        {reappros.length > 0 ? (
+        {confirmes.length > 0 ? (
           <Link to="/mandataire/tournees/nouvelle" className="reappros__cta">
-            Préparer une tournée
+            Préparer une tournée ({confirmes.length} confirmé{confirmes.length > 1 ? 's' : ''})
           </Link>
         ) : null}
       </header>
@@ -63,10 +65,15 @@ export function MandataireReappros() {
             </thead>
             <tbody>
               {reappros.map((reappro) => (
-                <tr key={reappro.uuid}>
+                <tr
+                  key={reappro.uuid}
+                  className={
+                    reappro.statut === 'confirmee' ? 'reappros__ligne reappros__ligne--confirmee' : 'reappros__ligne'
+                  }
+                >
                   <td className="reappros__nom">{reappro.depot.nom}</td>
                   <td>{reappro.depot.zone ?? '-'}</td>
-                  <td>{reappro.format_code}</td>
+                  <td>{reappro.format.code}</td>
                   <td className="reappros__quantite">{reappro.quantite}</td>
                   <td>
                     <span className={`reappros__statut reappros__statut--${reappro.statut}`}>

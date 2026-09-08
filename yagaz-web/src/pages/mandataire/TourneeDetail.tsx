@@ -70,17 +70,21 @@ export function MandataireTourneeDetail() {
   useEffect(() => {
     if (initialise) return
     if (estNouvelle && reapprosQuery.data) {
-      const suggestions: LigneEdition[] = reapprosQuery.data.map((r) =>
-        ligneVersEdition({
-          depot_uuid: r.depot.uuid,
-          format_id: r.format_id,
-          pleines: r.quantite,
-          vides_a_recuperer:
-            DEMO_DEPOTS_CONSOLIDES.find((d) => d.uuid === r.depot.uuid)?.stocks.find(
-              (s) => s.format_id === r.format_id,
-            )?.vides ?? 0,
-        }),
-      )
+      // Seules les demandes confirmées par le dépôt sont fermes : ce sont
+      // elles que la plateforme propose d'intégrer à une tournée.
+      const suggestions: LigneEdition[] = reapprosQuery.data
+        .filter((r) => r.statut === 'confirmee')
+        .map((r) =>
+          ligneVersEdition({
+            depot_uuid: r.depot.uuid,
+            format_id: r.format.id,
+            pleines: r.quantite,
+            vides_a_recuperer:
+              DEMO_DEPOTS_CONSOLIDES.find((d) => d.uuid === r.depot.uuid)?.stocks.find(
+                (s) => s.format_id === r.format.id,
+              )?.vides ?? 0,
+          }),
+        )
       setLignes(suggestions)
       setStatut('validee')
       setInitialise(true)

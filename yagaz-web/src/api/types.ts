@@ -70,12 +70,16 @@ export type StatutCommande =
   | 'livree'
   | 'annulee'
 
+export interface ReapproDepot {
+  uuid: string
+  nom: string
+  zone: string | null
+}
+
 export interface Reappro {
   uuid: string
-  origine: 'depot'
-  depot: OrganisationRef
-  format_id: number
-  format_code: string
+  depot: ReapproDepot
+  format: Format
   quantite: number
   statut: StatutCommande
   created_at: string

@@ -85,6 +85,14 @@
   border-bottom: none;
 }
 
+.reappros__ligne--confirmee {
+  background: #e8f1fd;
+}
+
+.reappros__ligne--confirmee:hover {
+  background: #ddeafc;
+}
+
 .reappros__nom {
   font-weight: 700;
   color: var(--texte);
