@@ -3,8 +3,14 @@
 use App\Http\Controllers\AlerteController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BouteilleController;
+use App\Http\Controllers\CommandeController;
+use App\Http\Controllers\DepotCommandeController;
 use App\Http\Controllers\DepotController;
+use App\Http\Controllers\DepotStockController;
 use App\Http\Controllers\FormatBouteilleController;
+use App\Http\Controllers\LivraisonController;
+use App\Http\Controllers\LivreurController;
+use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SiteController;
 use Illuminate\Support\Facades\Route;
 
@@ -58,4 +64,27 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // === Recharge (contrat API, §« Recharge ») — lecture seule Phase 3 ==
     Route::get('/depots', [DepotController::class, 'index']);
+
+    // === Rôles (contrat API doc 10, §1) =================================
+    Route::get('/mes-roles', [RoleController::class, 'mesRoles']);
+
+    // === Foyer — commandes (contrat API doc 10, §3) =====================
+    Route::get('/commandes', [CommandeController::class, 'index']);
+    Route::post('/commandes', [CommandeController::class, 'store']);
+    Route::get('/commandes/{commande:uuid}', [CommandeController::class, 'show']);
+    Route::post('/commandes/{commande:uuid}/reponse', [CommandeController::class, 'reponse']);
+
+    // === Dépôt — commandes et livraison (contrat API doc 10, §4) ========
+    Route::patch('/commandes/{commande:uuid}/preparer', [CommandeController::class, 'preparer']);
+    Route::post('/commandes/{commande:uuid}/livraison', [CommandeController::class, 'livraison']);
+
+    // === Dépôt — stock, file entrante, propositions (contrat API doc 10, §4)
+    Route::get('/depots/{organisation:uuid}/stocks', [DepotStockController::class, 'index']);
+    Route::patch('/depots/{organisation:uuid}/stocks/{formatBouteille}', [DepotStockController::class, 'update']);
+    Route::get('/depots/{organisation:uuid}/commandes', [DepotCommandeController::class, 'index']);
+    Route::post('/depots/{organisation:uuid}/propositions', [DepotCommandeController::class, 'propositions']);
+
+    // === Livreur — missions (contrat API doc 10, §5) ====================
+    Route::get('/livreur/missions', [LivreurController::class, 'missions']);
+    Route::patch('/livraisons/{livraison}/statut', [LivraisonController::class, 'statut']);
 });

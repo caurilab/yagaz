@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * Une demande de recharge, émise par un foyer ou un dépôt vers son
@@ -88,5 +89,16 @@ class Commande extends Model
     public function livraisons(): HasMany
     {
         return $this->hasMany(Livraison::class);
+    }
+
+    /**
+     * Livraison la plus récente (une commande n'en a normalement qu'une),
+     * pour l'affichage du suivi (contrat API doc 10, §3, `GET /commandes/{uuid}`).
+     *
+     * @return HasOne<Livraison, $this>
+     */
+    public function livraison(): HasOne
+    {
+        return $this->hasOne(Livraison::class)->latestOfMany();
     }
 }

@@ -30,4 +30,14 @@ class LivraisonPolicy
 
         return $commande->demandeur_user_id !== null && $commande->demandeur_user_id === $user->id;
     }
+
+    /**
+     * Faire avancer le statut d'une livraison (contrat API doc 10, §5,
+     * `PATCH /livraisons/{id}/statut`) : réservé au livreur affecté — « un
+     * livreur ne voit QUE ses missions ».
+     */
+    public function changerStatut(User $user, Livraison $livraison): bool
+    {
+        return $livraison->livreur_user_id !== null && $livraison->livreur_user_id === $user->id;
+    }
 }

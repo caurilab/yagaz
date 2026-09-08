@@ -2,6 +2,8 @@
 
 namespace App\Policies;
 
+use App\Enums\RoleMembership;
+use App\Enums\TypeOrganisation;
 use App\Models\Organisation;
 use App\Models\User;
 
@@ -26,5 +28,17 @@ class OrganisationPolicy
     public function update(User $user, Organisation $organisation): bool
     {
         return $user->peutGererOrganisation($organisation);
+    }
+
+    /**
+     * Gérer un dépôt (stock, file de commandes, propositions — doc 10, §4) :
+     * réservé au membre `gerant_depot` direct, sur une organisation de type
+     * dépôt. Périmètre borné à l'org (pas de hiérarchie descendante ici : un
+     * mandataire ne gère pas le stock de ses dépôts, il le consulte).
+     */
+    public function gererDepot(User $user, Organisation $organisation): bool
+    {
+        return $organisation->type === TypeOrganisation::Depot
+            && $user->estMembreDe($organisation, RoleMembership::GerantDepot);
     }
 }
