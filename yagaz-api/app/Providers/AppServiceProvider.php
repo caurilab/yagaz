@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Contracts\Notification\CanalNotification;
 use App\Contracts\Payment\PaymentProvider;
 use App\Services\Notification\CanalLog;
+use App\Services\Payment\AgregateurPaiement;
 use App\Services\Payment\SimulateurPaiement;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -25,10 +26,13 @@ class AppServiceProvider extends ServiceProvider
 
         // Provider de paiement Mobile Money par défaut (ADR 0010, v2 brique
         // 1) : `simulateur` (aucun appel réseau réel) tant que l'agrégateur
-        // réel n'est pas tranché. Brancher un agrégateur = ajouter une
-        // implémentation de `PaymentProvider` et changer `PAIEMENT_PROVIDER`,
-        // sans toucher au cycle de commande ni aux contrôleurs.
+        // réel n'est pas tranché. `agregateur` (squelette `AgregateurPaiement`)
+        // est prêt à activer via `PAIEMENT_PROVIDER=agregateur` une fois les
+        // identifiants du compte agrégateur disponibles (`config/paiement.php`,
+        // section `agregateur`) — sans toucher au cycle de commande ni aux
+        // contrôleurs.
         $this->app->bind(PaymentProvider::class, match (config('paiement.provider')) {
+            'agregateur' => AgregateurPaiement::class,
             default => SimulateurPaiement::class,
         });
     }
