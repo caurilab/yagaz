@@ -1,0 +1,93 @@
+name: CI
+
+# Intégration continue Yagaz : à chaque push/PR, on vérifie l'API (tests),
+# le web (build) et l'app (typecheck). Les jobs ne tournent que si le dossier
+# concerné a changé, pour rester rapides.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  api:
+    name: API Laravel — tests
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: timescale/timescaledb:2.17.2-pg17
+        env:
+          POSTGRES_DB: yagaz
+          POSTGRES_USER: yagaz
+          POSTGRES_PASSWORD: yagaz_ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd="pg_isready -U yagaz" --health-interval=10s
+          --health-timeout=5s --health-retries=5
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+    defaults:
+      run:
+        working-directory: yagaz-api
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: pdo_pgsql, redis
+          coverage: none
+      - name: Installer les dépendances
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Préparer l'environnement
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_DATABASE: yagaz
+          DB_USERNAME: yagaz
+          DB_PASSWORD: yagaz_ci
+      - name: Migrations
+        run: php artisan migrate --force
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_DATABASE: yagaz
+          DB_USERNAME: yagaz
+          DB_PASSWORD: yagaz_ci
+      - name: Tests
+        run: php artisan test
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_DATABASE: yagaz
+          DB_USERNAME: yagaz
+          DB_PASSWORD: yagaz_ci
+          REDIS_HOST: 127.0.0.1
+
+  web:
+    name: Web React — build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: yagaz-web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+
+  app:
+    name: App Expo — typecheck
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: yagaz-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bunx tsc --noEmit

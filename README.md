@@ -61,3 +61,26 @@ convention complète et la façon dont on évite les collisions entre agents.
    architecture, matériel, UX/UI).
 2. Lire `.ai/guidelines/` avant d'écrire la moindre ligne de code.
 3. Consulter `.claude/agents/README.md` pour savoir quel agent fait quoi.
+
+## Démarrage local (développement)
+
+Prérequis : Docker Desktop, PHP 8.3+, Node/Bun, Composer.
+
+```bash
+# 1. Infra (base TimescaleDB + broker MQTT + Redis) — voir ops/README.md
+cp .env.example .env            # puis éditer les mots de passe
+make infra-up                   # docker compose up -d
+
+# 2. API Laravel
+cd yagaz-api && composer install && php artisan migrate && php artisan serve
+
+# 3. Dashboard web (React 19)
+cd yagaz-web && bun install && bun run dev
+
+# 4. App mobile (Expo)
+cd yagaz-app && bun install && bun run start
+```
+
+`make aide` liste tous les raccourcis. Détails infra : `ops/README.md`.
+Décisions d'architecture : `docs/decisions/`.
+
