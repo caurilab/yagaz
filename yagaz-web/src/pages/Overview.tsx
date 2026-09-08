@@ -1,7 +1,7 @@
 import { KpiCard } from '../components/KpiCard'
 import './Overview.css'
 
-// Données en dur (placeholders) — à remplacer par un appel API réel
+// Données en dur (placeholders) - à remplacer par un appel API réel
 // via react-query une fois les endpoints du backend disponibles.
 const KPIS = [
   {
@@ -34,17 +34,17 @@ const KPIS = [
 
 // Placeholder de dépôts en tension pour illustrer le style de liste.
 const DEPOTS_EN_TENSION = [
-  { nom: 'Dépôt Nord — Casablanca', niveau: 'Critique', valeur: '92%' },
-  { nom: 'Dépôt Sud — Marrakech', niveau: 'Élevé', valeur: '81%' },
-  { nom: 'Dépôt Est — Fès', niveau: 'Élevé', valeur: '77%' },
-  { nom: 'Dépôt Centre — Rabat', niveau: 'Modéré', valeur: '64%' },
+  { nom: 'Dépôt Abobo - Abidjan', niveau: 'Critique', valeur: '92%' },
+  { nom: 'Dépôt Koumassi - Abidjan', niveau: 'Élevé', valeur: '81%' },
+  { nom: 'Dépôt Centre - Bouaké', niveau: 'Élevé', valeur: '77%' },
+  { nom: 'Dépôt Sud - San-Pédro', niveau: 'Modéré', valeur: '64%' },
 ]
 
 export function Overview() {
   return (
     <div className="overview">
       <header className="overview__header">
-        <h1>Tableau de bord — Mandataire</h1>
+        <h1>Tableau de bord - Mandataire</h1>
         <p>Vue consolidée des dépôts et des tournées en cours.</p>
       </header>
 

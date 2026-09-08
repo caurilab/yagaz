@@ -48,7 +48,7 @@ export default function EcranAccueilFoyer() {
         {/* Carte principale : bouteille active */}
         <View style={styles.carteActive}>
           <View style={styles.enTeteCarteActive}>
-            <Text style={styles.libelleCarteActive}>Bouteille active — Salon</Text>
+            <Text style={styles.libelleCarteActive}>Bouteille active - Salon</Text>
             <BadgeEtat etat={bouteilleActive.etat} />
           </View>
 

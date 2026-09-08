@@ -6,7 +6,7 @@ export function Analyse() {
       <h1>Analyse</h1>
       <p>Statistiques et tendances sur les dépôts et les tournées.</p>
       <div className="placeholder-page__card">
-        Contenu à venir — graphiques d'analyse.
+        Contenu à venir - graphiques d'analyse.
       </div>
     </div>
   )
