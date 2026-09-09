@@ -6,6 +6,7 @@ import { BadgeEtat } from '../../../components/BadgeEtat';
 import { BandeauSync } from '../../../components/BandeauSync';
 import { Bouton } from '../../../components/Bouton';
 import { BouteilleGaz } from '../../../components/BouteilleGaz';
+import { BouteilleGaz3D } from '../../../components/BouteilleGaz3D';
 import { Champ } from '../../../components/Champ';
 import { EncartConnecterMateriel } from '../../../components/EncartConnecterMateriel';
 import { EncartTemperature } from '../../../components/EncartTemperature';
@@ -220,13 +221,29 @@ export default function EcranDetailBouteille() {
                 opacity: opaciteBouteille,
                 transform: [{ scale: echelleBouteille }, { translateY: translationBouteille }],
               }}>
-              <BouteilleGaz
-                couleur={aBalance ? couleurBouteille : null}
-                code={bouteille.format.code}
-                marqueNom={bouteille.format.marque}
-                niveauPct={aBalance ? niveau.niveau_pct : undefined}
-                taille={150}
-              />
+              {aBalance ? (
+                <BouteilleGaz3D
+                  couleur={couleurBouteille ?? couleurs.rouge}
+                  taille={150}
+                  fallback={
+                    <BouteilleGaz
+                      couleur={couleurBouteille}
+                      code={bouteille.format.code}
+                      marqueNom={bouteille.format.marque}
+                      niveauPct={niveau.niveau_pct}
+                      taille={150}
+                    />
+                  }
+                />
+              ) : (
+                <BouteilleGaz
+                  couleur={null}
+                  code={bouteille.format.code}
+                  marqueNom={bouteille.format.marque}
+                  niveauPct={undefined}
+                  taille={150}
+                />
+              )}
             </Animated.View>
             <Animated.View style={[styles.blocAutonomie, { opacity: opaciteInfos }]}>
               <Text style={[styles.chiffreAutonomie, !aBalance && styles.chiffreDesactive]}>

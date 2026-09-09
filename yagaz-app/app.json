@@ -39,7 +39,8 @@
         {
           "cameraPermission": "Yagaz a besoin de la caméra pour scanner le QR code de votre matériel."
         }
-      ]
+      ],
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true,
