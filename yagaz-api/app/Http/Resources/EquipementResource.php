@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * Représentation d'un équipement (contrat API, §« Équipements » —
+ * Représentation d'un équipement (contrat API, §« Équipements » -
  * ADR 0012).
  *
  * @mixin Equipement
@@ -23,6 +23,7 @@ class EquipementResource extends JsonResource
             'uuid' => $this->uuid,
             'type' => $this->type->value,
             'reference' => $this->reference,
+            'nom' => $this->nom,
             'statut' => $this->statut->value,
             'site' => $this->site !== null ? [
                 'uuid' => $this->site->uuid,

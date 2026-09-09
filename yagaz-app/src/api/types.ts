@@ -736,6 +736,8 @@ export interface Equipement {
   uuid: string;
   type: TypeEquipement;
   reference: string;
+  /** Nom libre optionnel (ex. « Balance cuisine »), à défaut le libellé du type. */
+  nom: string | null;
   statut: StatutEquipement;
   site: { uuid: string; nom: string } | null;
   dernier_vu_at: string | null;
@@ -746,6 +748,7 @@ export interface Equipement {
 export interface CorpsCreationEquipement {
   type: TypeEquipement;
   reference: string;
+  nom?: string;
   site_uuid?: string;
 }
 
@@ -753,6 +756,7 @@ export interface CorpsMajEquipement {
   /** `null` pour retirer l'affectation au site. */
   site_uuid?: string | null;
   statut?: StatutEquipement;
+  nom?: string;
 }
 
 // --- Suivi de commande (contrat API, `GET /commandes/{uuid}/suivi`) ---

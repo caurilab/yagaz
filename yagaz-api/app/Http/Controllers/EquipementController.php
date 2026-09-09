@@ -15,7 +15,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 
 /**
- * Registre unifié des équipements du compte (contrat API, §« Équipements » —
+ * Registre unifié des équipements du compte (contrat API, §« Équipements » -
  * ADR 0012). Cloisonné par `EquipementPolicy` : accès au site d'affectation,
  * ou créateur tant que non affecté. 404 hors périmètre.
  */
@@ -57,6 +57,7 @@ class EquipementController extends Controller
         $equipement = new Equipement([
             'type' => $validated['type'],
             'reference' => $validated['reference'],
+            'nom' => $validated['nom'] ?? null,
         ]);
         $equipement->forceFill([
             'site_id' => $site?->id,
@@ -90,6 +91,10 @@ class EquipementController extends Controller
 
         if (array_key_exists('statut', $validated)) {
             $equipement->statut = StatutEquipement::from($validated['statut']);
+        }
+
+        if (array_key_exists('nom', $validated)) {
+            $equipement->nom = $validated['nom'];
         }
 
         $equipement->save();

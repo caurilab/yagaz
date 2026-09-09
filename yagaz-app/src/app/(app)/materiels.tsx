@@ -74,12 +74,14 @@ export default function EcranMateriels() {
   const [etapeAjout, setEtapeAjout] = useState<EtapeAjout>('fermee');
   const [typeSaisi, setTypeSaisi] = useState<TypeEquipement>('balance');
   const [referenceSaisie, setReferenceSaisie] = useState('');
+  const [nomSaisi, setNomSaisi] = useState('');
   const [enCours, setEnCours] = useState(false);
   const [uuidSuppressionEnCours, setUuidSuppressionEnCours] = useState<string | null>(null);
 
   function fermerAjout() {
     setEtapeAjout('fermee');
     setReferenceSaisie('');
+    setNomSaisi('');
     setTypeSaisi('balance');
   }
 
@@ -89,9 +91,10 @@ export default function EcranMateriels() {
       void alerter({ titre: 'Code requis', message: 'Saisissez ou scannez le code du matériel.' });
       return;
     }
+    const nom = nomSaisi.trim();
     setEnCours(true);
     try {
-      await enregistrerEquipement({ type, reference, site_uuid: siteActif?.uuid });
+      await enregistrerEquipement({ type, reference, nom: nom || undefined, site_uuid: siteActif?.uuid });
       fermerAjout();
     } catch {
       void alerter({
@@ -159,9 +162,10 @@ export default function EcranMateriels() {
                       <View style={styles.ligneEquipement}>
                         <View style={styles.ligneEquipementInfo}>
                           <Text style={styles.referenceEquipement} numberOfLines={1}>
-                            {equipement.reference}
+                            {equipement.nom ?? equipement.reference}
                           </Text>
                           <Text style={styles.detailEquipement} numberOfLines={1}>
+                            {equipement.nom ? `${LIBELLES_TYPE_EQUIPEMENT[equipement.type]} · ` : ''}
                             {equipement.site ? equipement.site.nom : 'Non affecté à un site'}
                             {equipement.dernier_vu_at ? ` · vu ${formaterDateRelative(equipement.dernier_vu_at)}` : ''}
                           </Text>
@@ -227,6 +231,12 @@ export default function EcranMateriels() {
                 onChangeText={setReferenceSaisie}
                 placeholder="Ex. BAL-DKR-2201"
                 aide="Inscrit sur l'étiquette du boîtier."
+              />
+              <Champ
+                etiquette="Nom (optionnel)"
+                valeur={nomSaisi}
+                onChangeText={setNomSaisi}
+                placeholder="Ex. Balance cuisine"
               />
               <Text style={styles.etiquetteType}>Type de matériel</Text>
               <View style={styles.rangeeTypes}>

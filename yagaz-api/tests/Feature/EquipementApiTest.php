@@ -14,7 +14,7 @@ use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 /**
- * Équipements du registre unifié (contrat API, §« Équipements » — ADR 0012) :
+ * Équipements du registre unifié (contrat API, §« Équipements » - ADR 0012) :
  * CRUD, cloisonnement, unicité de la référence, réconciliation plateau.
  */
 class EquipementApiTest extends TestCase
@@ -59,6 +59,42 @@ class EquipementApiTest extends TestCase
             'site_id' => $site->id,
             'cree_par' => $foyer->id,
         ]);
+    }
+
+    public function test_enregistrer_un_equipement_avec_un_nom(): void
+    {
+        [$foyer, $site] = $this->foyerAvecSite();
+        Sanctum::actingAs($foyer);
+
+        $reponse = $this->postJson('/api/equipements', [
+            'type' => 'balance',
+            'reference' => 'EQP-000004',
+            'nom' => 'Balance cuisine',
+            'site_uuid' => $site->uuid,
+        ]);
+
+        $reponse->assertCreated();
+        $reponse->assertJsonPath('data.nom', 'Balance cuisine');
+
+        $this->assertDatabaseHas('equipements', [
+            'reference' => 'EQP-000004',
+            'nom' => 'Balance cuisine',
+        ]);
+    }
+
+    public function test_enregistrer_sans_nom_le_laisse_nul(): void
+    {
+        [$foyer, $site] = $this->foyerAvecSite();
+        Sanctum::actingAs($foyer);
+
+        $reponse = $this->postJson('/api/equipements', [
+            'type' => 'balance',
+            'reference' => 'EQP-000005',
+            'site_uuid' => $site->uuid,
+        ]);
+
+        $reponse->assertCreated();
+        $reponse->assertJsonPath('data.nom', null);
     }
 
     public function test_enregistrer_sans_site_cree_un_equipement_non_affecte(): void
@@ -199,6 +235,26 @@ class EquipementApiTest extends TestCase
 
         $reponse->assertOk();
         $reponse->assertJsonPath('data.statut', 'hors_service');
+    }
+
+    public function test_modifier_le_nom_d_un_equipement(): void
+    {
+        [$foyer, $site] = $this->foyerAvecSite();
+        $equipement = Equipement::factory()->create([
+            'site_id' => $site->id,
+            'cree_par' => $foyer->id,
+            'nom' => 'Ancien nom',
+        ]);
+
+        Sanctum::actingAs($foyer);
+
+        $reponse = $this->patchJson("/api/equipements/{$equipement->uuid}", [
+            'nom' => 'Balance cuisine',
+        ]);
+
+        $reponse->assertOk();
+        $reponse->assertJsonPath('data.nom', 'Balance cuisine');
+        $this->assertSame('Balance cuisine', $equipement->fresh()->nom);
     }
 
     public function test_retirer_l_affectation_avec_site_uuid_null(): void

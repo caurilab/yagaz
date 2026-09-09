@@ -9,9 +9,9 @@ use Illuminate\Validation\Rule;
 
 /**
  * Mise à jour d'un équipement (contrat API, `PATCH /api/equipements/{uuid}`
- * — ADR 0012) : affectation à un site (`site_uuid`, `null` pour retirer
- * l'affectation) et/ou changement de statut. L'accès au site désigné est
- * vérifié dans le contrôleur.
+ * - ADR 0012) : affectation à un site (`site_uuid`, `null` pour retirer
+ * l'affectation), changement de statut et/ou de nom. L'accès au site
+ * désigné est vérifié dans le contrôleur.
  */
 class EquipementUpdateRequest extends FormRequest
 {
@@ -28,6 +28,7 @@ class EquipementUpdateRequest extends FormRequest
         return [
             'site_uuid' => ['sometimes', 'nullable', 'string', 'uuid', 'exists:sites,uuid'],
             'statut' => ['sometimes', Rule::enum(StatutEquipement::class)],
+            'nom' => ['sometimes', 'nullable', 'string', 'max:120'],
         ];
     }
 }

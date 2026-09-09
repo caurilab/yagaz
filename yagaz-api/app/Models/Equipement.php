@@ -16,11 +16,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * capteur de température ou écran de cuisine.
  *
  * `$fillable` explicite (audit sécurité, [INFO] `$fillable` explicite) :
- * seuls `type` et `reference` sont saisissables par le client via l'API.
- * `site_id`, `statut` et `cree_par` sont dérivés côté serveur (ADR 0005),
- * posés via `forceFill`/`forceCreate` dans `EquipementController`.
+ * seuls `type`, `reference` et `nom` sont saisissables par le client via
+ * l'API. `site_id`, `statut` et `cree_par` sont dérivés côté serveur
+ * (ADR 0005), posés via `forceFill`/`forceCreate` dans
+ * `EquipementController`.
  */
-#[Fillable(['type', 'reference'])]
+#[Fillable(['type', 'reference', 'nom'])]
 class Equipement extends Model
 {
     /** @use HasFactory<EquipementFactory> */
@@ -46,7 +47,7 @@ class Equipement extends Model
     }
 
     /**
-     * Créateur de l'équipement — sert de fondement d'accès tant qu'il n'est
+     * Créateur de l'équipement - sert de fondement d'accès tant qu'il n'est
      * affecté à aucun site (`EquipementPolicy`).
      *
      * @return BelongsTo<User, $this>

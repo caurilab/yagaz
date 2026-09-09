@@ -454,6 +454,7 @@ export function DonneesProvider({ children }: { children: ReactNode }) {
           uuid: genererUuidLocal('equipement'),
           type: corps.type,
           reference: corps.reference,
+          nom: corps.nom ?? null,
           statut: 'actif',
           site: site ? { uuid: site.uuid, nom: site.nom } : null,
           dernier_vu_at: new Date().toISOString(),
