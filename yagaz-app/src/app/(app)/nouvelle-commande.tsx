@@ -14,14 +14,20 @@ import type { Depot, Format } from '../../api/types';
 
 /** Commander une recharge : format, quantité, dépôt à proximité (UX §2 "Recharge", contrat §3). */
 export default function EcranNouvelleCommande() {
-  const { formats } = useDonnees();
-  const { siteActif } = useDonnees();
+  const { formats, siteActif, bouteilleActive } = useDonnees();
   const { creer } = useCommandes();
 
   const codes = useMemo(() => Array.from(new Set(formats.map((f) => f.code))), [formats]);
-  const [codeChoisi, setCodeChoisi] = useState<string | null>(codes[0] ?? null);
+  // Par défaut, on commande le format de la bouteille active (même marque que
+  // ce que le foyer utilise) : c'est le cas le plus courant, et ça évite de
+  // proposer une marque qu'aucun dépôt ne stocke.
+  const [codeChoisi, setCodeChoisi] = useState<string | null>(
+    bouteilleActive?.format.code ?? codes[0] ?? null
+  );
   const formatsDuCode = useMemo(() => formats.filter((f) => f.code === codeChoisi), [formats, codeChoisi]);
-  const [formatChoisi, setFormatChoisi] = useState<Format | null>(formatsDuCode[0] ?? null);
+  const [formatChoisi, setFormatChoisi] = useState<Format | null>(
+    bouteilleActive?.format ?? formatsDuCode[0] ?? null
+  );
   const [quantite, setQuantite] = useState(1);
 
   const [depots, setDepots] = useState<Depot[]>([]);
