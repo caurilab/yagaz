@@ -51,6 +51,7 @@ export const CLES_CACHE = {
   mandataireOrgActif: 'mandataire_org_actif',
   mandataireDepots: 'mandataire_depots',
   mandataireTournees: 'mandataire_tournees',
+  mandataireReappros: 'mandataire_reappros',
   historique: 'historique',
   analyse: 'analyse',
   temperature: 'temperature',

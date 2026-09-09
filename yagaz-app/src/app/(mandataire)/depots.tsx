@@ -5,8 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BandeauSync } from '../../components/BandeauSync';
 import { useMandataire } from '../../data/MandataireContext';
 import { couleurs, espacements, rayons } from '../../../theme/couleurs';
-import { tensionStock } from '../../utils/stock';
-import type { DepotConsolide, StockFormat } from '../../api/types';
+import type { DepotConsolide, DepotStockConsolide } from '../../api/types';
 
 /**
  * Vue rapide, en lecture, des dépôts du mandataire (doc 11 §1) : stock et
@@ -59,40 +58,38 @@ export default function EcranDepotsMandataire() {
 }
 
 function CarteDepot({ depot }: { depot: DepotConsolide }) {
-  const enTension = depot.stocks.some((s) => {
-    const { stockBas, videsAccumules } = tensionStock(s);
-    return stockBas || videsAccumules;
-  });
-
   return (
-    <View style={[styles.carte, enTension && styles.carteTension]}>
+    <View style={[styles.carte, depot.en_tension && styles.carteTension]}>
       <View style={styles.ligneEntete}>
         <Text style={styles.nomDepot} numberOfLines={1}>
           {depot.nom}
         </Text>
-        {enTension ? <Etiquette texte="Tension" couleur={couleurs.ambre} /> : null}
+        {depot.en_tension ? <Etiquette texte="Tension" couleur={couleurs.ambre} /> : null}
       </View>
+      {depot.zone ? <Text style={styles.zone}>{depot.zone}</Text> : null}
       <Text style={styles.derniereActivite}>
         {depot.derniere_activite_at ? `Dernière activité : ${formaterDate(depot.derniere_activite_at)}` : 'Aucune activité récente'}
       </Text>
+      {depot.vides_a_recuperer > 0 ? (
+        <Text style={styles.videsARecuperer}>{depot.vides_a_recuperer} vides à récupérer</Text>
+      ) : null}
 
       <View style={styles.ligneFormats}>
         {depot.stocks.map((stock) => (
-          <LigneFormat key={stock.format.id} stock={stock} />
+          <LigneFormat key={stock.format_id} stock={stock} />
         ))}
       </View>
     </View>
   );
 }
 
-function LigneFormat({ stock }: { stock: StockFormat }) {
-  const { stockBas, videsAccumules } = tensionStock(stock);
+function LigneFormat({ stock }: { stock: DepotStockConsolide }) {
   return (
     <View style={styles.formatLigne}>
-      <Text style={styles.formatCode}>{stock.format.code}</Text>
+      <Text style={styles.formatCode}>{stock.format_code}</Text>
       <View style={styles.formatChiffres}>
-        <Text style={[styles.formatChiffre, stockBas && styles.formatChiffreAlerte]}>{stock.pleines} pleines</Text>
-        <Text style={[styles.formatChiffre, videsAccumules && styles.formatChiffreAlerte]}>{stock.vides} vides</Text>
+        <Text style={[styles.formatChiffre, stock.tension && styles.formatChiffreAlerte]}>{stock.pleines} pleines</Text>
+        <Text style={[styles.formatChiffre, stock.tension && styles.formatChiffreAlerte]}>{stock.vides} vides</Text>
       </View>
     </View>
   );
@@ -192,9 +189,20 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: couleurs.blanc,
   },
+  zone: {
+    fontSize: 13,
+    color: couleurs.texteDoux,
+    marginTop: espacements.xs,
+  },
   derniereActivite: {
     fontSize: 12,
     color: couleurs.texteDoux,
+    marginTop: espacements.xs,
+  },
+  videsARecuperer: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: couleurs.ambre,
     marginTop: espacements.xs,
   },
   ligneFormats: {

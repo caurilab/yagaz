@@ -16,8 +16,20 @@ import {
 } from 'react';
 
 import * as api from '../api/endpoints';
-import { MODE_DEMO, executerAvecSource, mandataireDepotsDemo, mandataireTourneesDemo } from '../api/demo';
-import type { CorpsAjustementLigneTournee, DepotConsolide, StatutLigneTournee, Tournee } from '../api/types';
+import {
+  MODE_DEMO,
+  executerAvecSource,
+  mandataireDepotsDemo,
+  mandataireReapprosDemo,
+  mandataireTourneesDemo,
+} from '../api/demo';
+import type {
+  CorpsAjustementLigneTournee,
+  DepotConsolide,
+  ReapproMandataire,
+  StatutLigneTournee,
+  Tournee,
+} from '../api/types';
 import { useEspace } from '../espace/EspaceContext';
 import { CLES_CACHE, ecrireCache, lireCache } from './cache';
 import type { StatutSync } from './DonneesContext';
@@ -25,6 +37,7 @@ import type { StatutSync } from './DonneesContext';
 interface DonneesMandataireCache {
   depots: DepotConsolide[];
   tournees: Tournee[];
+  reappros: ReapproMandataire[];
 }
 
 interface ContexteMandataireValeur {
@@ -32,6 +45,7 @@ interface ContexteMandataireValeur {
   orgNom: string | null;
   depots: DepotConsolide[];
   tournees: Tournee[];
+  reappros: ReapproMandataire[];
   /** Tournée du jour à exécuter : validée/en cours en priorité, sinon la plus récente du jour. */
   tourneeDuJour: Tournee | null;
   chargementInitial: boolean;
@@ -61,19 +75,22 @@ export function MandataireProvider({ children }: { children: ReactNode }) {
 
   const [depots, setDepots] = useState<DepotConsolide[]>([]);
   const [tournees, setTournees] = useState<Tournee[]>([]);
+  const [reappros, setReappros] = useState<ReapproMandataire[]>([]);
   const [statutSync, setStatutSync] = useState<StatutSync>('chargement');
   const [chargementInitial, setChargementInitial] = useState(true);
   const dernierOrgCharge = useRef<string | null>(null);
 
   useEffect(() => {
     (async () => {
-      const [depotsCache, tourneesCache] = await Promise.all([
+      const [depotsCache, tourneesCache, reapprosCache] = await Promise.all([
         lireCache<DepotConsolide[]>(CLES_CACHE.mandataireDepots),
         lireCache<Tournee[]>(CLES_CACHE.mandataireTournees),
+        lireCache<ReapproMandataire[]>(CLES_CACHE.mandataireReappros),
       ]);
-      if (depotsCache || tourneesCache) {
+      if (depotsCache || tourneesCache || reapprosCache) {
         setDepots(depotsCache ?? []);
         setTournees(tourneesCache ?? []);
+        setReappros(reapprosCache ?? []);
         setChargementInitial(false);
       }
     })();
@@ -91,12 +108,20 @@ export function MandataireProvider({ children }: { children: ReactNode }) {
         () => api.mandataireTournees(orgUuid).then((r) => r.data),
         mandataireTourneesDemo
       );
+      const { data: reapprosRecus, source: sourceReappros } = await executerAvecSource(
+        () => api.mandataireReappros(orgUuid).then((r) => r.data),
+        mandataireReapprosDemo
+      );
 
       setDepots(depotsRecus);
       setTournees(tourneesRecues);
-      setStatutSync(sourceDepots === 'demo' || sourceTournees === 'demo' ? 'hors_ligne' : 'synchronise');
+      setReappros(reapprosRecus);
+      setStatutSync(
+        sourceDepots === 'demo' || sourceTournees === 'demo' || sourceReappros === 'demo' ? 'hors_ligne' : 'synchronise'
+      );
       await ecrireCache(CLES_CACHE.mandataireDepots, depotsRecus);
       await ecrireCache(CLES_CACHE.mandataireTournees, tourneesRecues);
+      await ecrireCache(CLES_CACHE.mandataireReappros, reapprosRecus);
     } catch {
       setStatutSync('hors_ligne');
     } finally {
@@ -144,13 +169,25 @@ export function MandataireProvider({ children }: { children: ReactNode }) {
       orgNom,
       depots,
       tournees,
+      reappros,
       tourneeDuJour,
       chargementInitial,
       statutSync,
       rafraichir,
       avancerArret,
     }),
-    [orgUuid, orgNom, depots, tournees, tourneeDuJour, chargementInitial, statutSync, rafraichir, avancerArret]
+    [
+      orgUuid,
+      orgNom,
+      depots,
+      tournees,
+      reappros,
+      tourneeDuJour,
+      chargementInitial,
+      statutSync,
+      rafraichir,
+      avancerArret,
+    ]
   );
 
   return <ContexteMandataire.Provider value={valeur}>{children}</ContexteMandataire.Provider>;

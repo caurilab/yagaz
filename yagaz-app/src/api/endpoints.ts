@@ -52,6 +52,7 @@ import type {
   PeriodeTemperature,
   PointMesure,
   Reappro,
+  ReapproMandataire,
   RecuPaiement,
   ReponseAuth,
   Site,
@@ -353,6 +354,12 @@ export function creerTournee(orgUuid: string, corps: CorpsCreationTournee) {
 
 export function ajusterTournee(uuid: string, corps: CorpsAjustementTournee) {
   return requeteApi<{ data: Tournee }>(`/tournees/${uuid}`, { methode: 'PATCH', corps });
+}
+
+/** Réappros des dépôts du mandataire (parité web, doc 11 §1). */
+export function mandataireReappros(orgUuid: string, statut?: StatutCommande) {
+  const suffixe = statut ? `?statut=${statut}` : '';
+  return requeteApi<{ data: ReapproMandataire[] }>(`/mandataires/${orgUuid}/reappros${suffixe}`);
 }
 
 // --- Historique unifié (foyer, doc 13 §1) ---

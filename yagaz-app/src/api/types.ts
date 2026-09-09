@@ -431,6 +431,20 @@ export interface CorpsConfirmationReappro {
 }
 
 /**
+ * Vue mandataire d'un réappro (`GET /mandataires/{uuid}/reappros`) : le
+ * pendant de `Reappro` côté dépôt, avec le dépôt embarqué puisqu'un
+ * mandataire suit plusieurs dépôts (doc 11 §1).
+ */
+export interface ReapproMandataire {
+  uuid: string;
+  depot: { uuid: string; nom: string; zone: string | null };
+  format: Format;
+  quantite: number;
+  statut: StatutCommande;
+  created_at: string;
+}
+
+/**
  * Entrée de la file actionnable du livreur habituel (ADR 0008, précision
  * « maillon C » ; contrat 10 §5, `GET /api/livreur/foyers-en-tension`) :
  * l'identité nécessaire pour proposer une livraison, et rien de plus - la
@@ -460,12 +474,26 @@ export interface CorpsPropositionLivreur {
 
 // --- Mandataire (doc 11 §1) ---
 
+/** Ligne de stock à plat de la vue consolidée mandataire (`GET /mandataires/{uuid}/depots`). */
+export interface DepotStockConsolide {
+  format_id: number;
+  format_code: string;
+  format_marque: string;
+  pleines: number;
+  vides: number;
+  seuil_plein_bas: number;
+  tension: boolean;
+}
+
 /** Vue consolidée d'un dépôt du mandataire : stock par format + tensions. */
 export interface DepotConsolide {
   uuid: string;
   nom: string;
-  stocks: StockFormat[];
+  zone: string | null;
+  en_tension: boolean;
+  vides_a_recuperer: number;
   derniere_activite_at: string | null;
+  stocks: DepotStockConsolide[];
 }
 
 export type StatutTournee = 'proposee' | 'validee' | 'en_cours' | 'terminee';

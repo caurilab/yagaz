@@ -34,6 +34,7 @@ import type {
   PointSerieConsommation,
   PointTemperatureHoraire,
   Reappro,
+  ReapproMandataire,
   RecuPaiement,
   Site,
   StatutCommande,
@@ -535,21 +536,56 @@ export const mandataireDepotsDemo: DepotConsolide[] = [
   {
     uuid: 'org-depot-sacre-coeur',
     nom: 'Dépôt Sacré-Cœur',
-    stocks: [
-      { format: formatsDemo[0], pleines: 18, vides: 4, seuil_plein_bas: 10 },
-      { format: formatsDemo[1], pleines: 6, vides: 21, seuil_plein_bas: 12 },
-      { format: formatsDemo[2], pleines: 9, vides: 2, seuil_plein_bas: 5 },
-    ],
+    zone: 'Sacré-Cœur, Dakar',
+    en_tension: true,
+    vides_a_recuperer: 21,
     derniere_activite_at: ilYA(30),
+    stocks: [
+      { format_id: formatsDemo[0].id, format_code: formatsDemo[0].code, format_marque: formatsDemo[0].marque, pleines: 18, vides: 4, seuil_plein_bas: 10, tension: false },
+      { format_id: formatsDemo[1].id, format_code: formatsDemo[1].code, format_marque: formatsDemo[1].marque, pleines: 6, vides: 21, seuil_plein_bas: 12, tension: true },
+      { format_id: formatsDemo[2].id, format_code: formatsDemo[2].code, format_marque: formatsDemo[2].marque, pleines: 9, vides: 2, seuil_plein_bas: 5, tension: false },
+    ],
   },
   {
     uuid: 'org-depot-ouakam',
     nom: 'Dépôt Ouakam Plage',
-    stocks: [
-      { format: formatsDemo[0], pleines: 4, vides: 14, seuil_plein_bas: 10 },
-      { format: formatsDemo[1], pleines: 22, vides: 3, seuil_plein_bas: 12 },
-    ],
+    zone: 'Ouakam, Dakar',
+    en_tension: true,
+    vides_a_recuperer: 14,
     derniere_activite_at: ilYA(240),
+    stocks: [
+      { format_id: formatsDemo[0].id, format_code: formatsDemo[0].code, format_marque: formatsDemo[0].marque, pleines: 4, vides: 14, seuil_plein_bas: 10, tension: true },
+      { format_id: formatsDemo[1].id, format_code: formatsDemo[1].code, format_marque: formatsDemo[1].marque, pleines: 22, vides: 3, seuil_plein_bas: 12, tension: false },
+    ],
+  },
+];
+
+// --- Mandataire - réappros des dépôts (parité web, doc 11 §1) : repli démo ---
+
+export const mandataireReapprosDemo: ReapproMandataire[] = [
+  {
+    uuid: 'reappro-mandataire-b12-sacre-coeur',
+    depot: { uuid: 'org-depot-sacre-coeur', nom: 'Dépôt Sacré-Cœur', zone: 'Sacré-Cœur, Dakar' },
+    format: formatsDemo[1],
+    quantite: 15,
+    statut: 'proposee',
+    created_at: ilYA(180),
+  },
+  {
+    uuid: 'reappro-mandataire-b6-ouakam',
+    depot: { uuid: 'org-depot-ouakam', nom: 'Dépôt Ouakam Plage', zone: 'Ouakam, Dakar' },
+    format: formatsDemo[0],
+    quantite: 20,
+    statut: 'confirmee',
+    created_at: ilYA(300),
+  },
+  {
+    uuid: 'reappro-mandataire-b32-sacre-coeur',
+    depot: { uuid: 'org-depot-sacre-coeur', nom: 'Dépôt Sacré-Cœur', zone: 'Sacré-Cœur, Dakar' },
+    format: formatsDemo[2],
+    quantite: 6,
+    statut: 'confirmee',
+    created_at: ilYA(720),
   },
 ];
 

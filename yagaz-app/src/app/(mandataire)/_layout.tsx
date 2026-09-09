@@ -37,6 +37,13 @@ export default function LayoutMandataire() {
           }}
         />
         <Tabs.Screen
+          name="reappros"
+          options={{
+            title: 'Réappros',
+            tabBarIcon: ({ color }) => <Icone nom="repeat" couleur={color as string} />,
+          }}
+        />
+        <Tabs.Screen
           name="reglages"
           options={{
             title: 'Réglages',
