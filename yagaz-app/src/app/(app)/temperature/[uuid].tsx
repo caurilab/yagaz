@@ -13,7 +13,12 @@ import { BandeauSync } from '../../../components/BandeauSync';
 import { CourbeTemperatureHoraire } from '../../../components/graphiques/CourbeTemperatureHoraire';
 import { Icone } from '../../../components/icones';
 import * as api from '../../../api/endpoints';
-import { executerAvecSource, temperatureAnalyseDemoParPeriode, temperatureDemoParSite } from '../../../api/demo';
+import {
+  executerAvecSource,
+  insightsCuisineDemo,
+  temperatureAnalyseDemoParPeriode,
+  temperatureDemoParSite,
+} from '../../../api/demo';
 import { useDonnees } from '../../../data/DonneesContext';
 import type { StatutSync } from '../../../data/DonneesContext';
 import { couleurs, espacements, rayons } from '../../../../theme/couleurs';
@@ -61,6 +66,7 @@ export default function EcranTemperatureAnalyse() {
   const [periode, setPeriode] = useState<PeriodeTemperature>('jour');
   const [analyse, setAnalyse] = useState<TemperatureAnalyse | null>(null);
   const [courant, setCourant] = useState<TemperatureSite | null>(null);
+  const [conseils, setConseils] = useState<string | null>(null);
   const [statutSync, setStatutSync] = useState<StatutSync>('chargement');
   const [chargementInitial, setChargementInitial] = useState(true);
   const [rafraichissement, setRafraichissement] = useState(false);
@@ -77,6 +83,17 @@ export default function EcranTemperatureAnalyse() {
     setCourant(resultatCourant.data);
     const horsLigne = resultatAnalyse.source === 'demo' || resultatCourant.source === 'demo';
     setStatutSync(horsLigne ? 'hors_ligne' : 'synchronise');
+
+    // Note de sécurité cuisine (ADR 0013) - best-effort, jamais bloquant.
+    try {
+      const { data: ins } = await executerAvecSource(
+        () => api.temperatureInsights(uuid, periode).then((r) => r.data),
+        insightsCuisineDemo(periode)
+      );
+      setConseils(ins.insights);
+    } catch {
+      setConseils(null);
+    }
   }, [uuid, periode]);
 
   useEffect(() => {
@@ -164,6 +181,16 @@ export default function EcranTemperatureAnalyse() {
               </Text>
               {elevee ? <Text style={styles.texteAlerte}>Température élevée - vérifiez la cuisine</Text> : null}
             </View>
+
+            {conseils ? (
+              <View style={[styles.carte, styles.carteConseils]}>
+                <View style={styles.ligneConseils}>
+                  <Icone nom="flamme" taille={18} couleur={couleurs.rouge} />
+                  <Text style={styles.titreConseils}>Sécurité cuisine</Text>
+                </View>
+                <Text style={styles.texteConseils}>{conseils}</Text>
+              </View>
+            ) : null}
 
             <View style={styles.carte}>
               <Text style={styles.sectionTitre}>Courbe horaire - température moyenne</Text>
@@ -353,6 +380,27 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: couleurs.danger,
+  },
+  carteConseils: {
+    backgroundColor: couleurs.rougeClair,
+  },
+  ligneConseils: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espacements.xs,
+    marginBottom: espacements.sm,
+  },
+  titreConseils: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: couleurs.rouge,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  texteConseils: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: couleurs.texte,
   },
   sectionTitre: {
     fontSize: 15,

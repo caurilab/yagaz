@@ -7,8 +7,10 @@ use App\Models\SessionCuisson;
 use App\Models\Site;
 use App\Models\Temperature;
 use App\Services\Temperature\AgregationTemperature;
+use App\Services\Temperature\AssistantCuisine;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Throwable;
 
 /**
  * État courant et analyses de la température de cuisine du foyer (ADR 0011).
@@ -59,5 +61,26 @@ class TemperatureController extends Controller
         $periode = $request->validated('periode') ?? 'mois';
 
         return response()->json(['data' => $this->agregation->analyser($site, $periode)]);
+    }
+
+    /**
+     * Note de sécurité cuisine en langage naturel (ADR 0013, brique 3) :
+     * mêmes paramètres et même cloisonnement que `analyse()`. Non bloquant
+     * (ADR 0013, §Coût et robustesse) : toute erreur IA retombe sur un
+     * message neutre plutôt qu'un 500.
+     */
+    public function insights(TemperatureAnalyseRequest $request, Site $site, AssistantCuisine $assistant): JsonResponse
+    {
+        abort_unless($request->user()->can('view', $site), 404);
+
+        $periode = $request->validated('periode') ?? 'mois';
+
+        try {
+            $texte = $assistant->noteSecurite($site, $periode);
+        } catch (Throwable) {
+            $texte = 'Conseils de sécurité indisponibles pour le moment.';
+        }
+
+        return response()->json(['data' => ['insights' => $texte, 'periode' => $periode]]);
     }
 }

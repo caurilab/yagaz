@@ -75,6 +75,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Analyses température/cuisson (ADR 0011, extension) : courbe horaire,
     // pic, histogramme des cuissons par heure, fréquence — cloisonné site.
     Route::get('/sites/{site:uuid}/temperature/analyse', [TemperatureController::class, 'analyse']);
+    // Note de sécurité cuisine en langage naturel (ADR 0013, brique 3) :
+    // throttle dédié, même logique que `/analyse/insights` (brique 1).
+    Route::get('/sites/{site:uuid}/temperature/insights', [TemperatureController::class, 'insights'])->middleware('throttle:20,1');
 
     // === Historique unifié et analyses foyer (doc 13, §1 et §2) ==========
     // Timeline (commandes/paiements/alertes/cuisson) et agrégats de

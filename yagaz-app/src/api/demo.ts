@@ -983,6 +983,15 @@ export const temperatureAnalyseDemoParPeriode: Record<PeriodeTemperature, Temper
   },
 };
 
+/** Repli démo de la note de sécurité cuisine (ADR 0013, brique 3) - offline/sans clé. */
+export function insightsCuisineDemo(periode: PeriodeTemperature): { insights: string; periode: PeriodeTemperature } {
+  return {
+    periode,
+    insights:
+      'Aperçu hors connexion : ta cuisine ne montre rien d\'anormal sur la période. Pense à ne jamais laisser le gaz allumé sans surveillance, surtout lors des cuissons longues.',
+  };
+}
+
 export type SourceDonnees = 'api' | 'demo';
 
 /**

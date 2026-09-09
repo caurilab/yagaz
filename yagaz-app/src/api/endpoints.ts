@@ -415,3 +415,13 @@ export async function temperatureAnalyse(uuid: string, periode?: PeriodeTemperat
   const reponse = await requeteApi<{ data: TemperatureAnalyse }>(`/sites/${uuid}/temperature/analyse${suffixe}`);
   return reponse.data;
 }
+
+/**
+ * Note de sécurité cuisine en langage naturel générée à partir des agrégats
+ * de température (assistant IA côté serveur, ADR 0013, brique 3). Réponse
+ * enveloppée `data`.
+ */
+export function temperatureInsights(uuid: string, periode?: PeriodeTemperature) {
+  const suffixe = periode ? `?periode=${periode}` : '';
+  return requeteApi<{ data: { insights: string; periode: string } }>(`/sites/${uuid}/temperature/insights${suffixe}`);
+}
