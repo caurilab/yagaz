@@ -160,6 +160,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/depots/{organisation:uuid}/stocks', [DepotStockController::class, 'index']);
     Route::patch('/depots/{organisation:uuid}/stocks/{formatBouteille}', [DepotStockController::class, 'update']);
     Route::get('/depots/{organisation:uuid}/livreurs', [DepotController::class, 'livreurs']);
+    Route::post('/depots/{organisation:uuid}/livreurs', [DepotController::class, 'storeLivreur']);
     Route::get('/depots/{organisation:uuid}/commandes', [DepotCommandeController::class, 'index']);
     Route::post('/depots/{organisation:uuid}/propositions', [DepotCommandeController::class, 'propositions']);
     // File des foyers en tension de la zone de desserte (ADR 0009, maillon B).

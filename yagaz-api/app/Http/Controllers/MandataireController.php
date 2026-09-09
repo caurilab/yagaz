@@ -17,6 +17,7 @@ use App\Models\MouvementStock;
 use App\Models\Organisation;
 use App\Models\Tournee;
 use App\Models\User;
+use App\Services\Compte\ProvisionnementMembre;
 use App\Services\Tournee\CycleTournee;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
@@ -32,7 +33,10 @@ use Illuminate\Support\Collection;
  */
 class MandataireController extends Controller
 {
-    public function __construct(private readonly CycleTournee $cycle) {}
+    public function __construct(
+        private readonly CycleTournee $cycle,
+        private readonly ProvisionnementMembre $provisionnementMembre = new ProvisionnementMembre,
+    ) {}
 
     /**
      * Vue consolidée de tous les dépôts du mandataire (doc 11, §1) : stock
@@ -72,7 +76,28 @@ class MandataireController extends Controller
         $depot->setRelation('stocks', Collection::make());
         $depot->setAttribute('derniere_activite', null);
 
+        // Provisioning descendant du gérant (optionnel) : crée/rattache son
+        // compte par téléphone. Le mot de passe temporaire éventuel est renvoyé
+        // une seule fois, dans la méta de la réponse, pour le communiquer.
+        $metaGerant = null;
+        if ($request->filled('gerant_telephone')) {
+            $resultat = $this->provisionnementMembre->attacher(
+                (string) $request->validated('gerant_nom'),
+                (string) $request->validated('gerant_telephone'),
+                RoleMembership::GerantDepot,
+                $depot,
+                $request->validated('gerant_mot_de_passe'),
+            );
+            $metaGerant = [
+                'nom' => $resultat['user']->name,
+                'telephone' => $resultat['user']->telephone,
+                'compte_cree' => $resultat['cree'],
+                'mot_de_passe_temporaire' => $resultat['mot_de_passe_temporaire'],
+            ];
+        }
+
         return (new DepotConsolideResource($depot))
+            ->additional(['gerant' => $metaGerant])
             ->response()
             ->setStatusCode(201);
     }

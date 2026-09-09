@@ -5,11 +5,14 @@ namespace App\Http\Controllers;
 use App\Enums\RoleMembership;
 use App\Enums\TypeOrganisation;
 use App\Http\Requests\DepotIndexRequest;
+use App\Http\Requests\DepotLivreurStoreRequest;
 use App\Http\Resources\DepotResource;
 use App\Http\Resources\UserPubliqueResource;
 use App\Models\FormatBouteille;
 use App\Models\Organisation;
+use App\Services\Compte\ProvisionnementMembre;
 use App\Services\Geo\Distance;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
@@ -19,7 +22,10 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
  */
 class DepotController extends Controller
 {
-    public function __construct(private readonly Distance $distance) {}
+    public function __construct(
+        private readonly Distance $distance,
+        private readonly ProvisionnementMembre $provisionnementMembre = new ProvisionnementMembre,
+    ) {}
 
     public function index(DepotIndexRequest $request): AnonymousResourceCollection
     {
@@ -76,5 +82,32 @@ class DepotController extends Controller
             ->get();
 
         return UserPubliqueResource::collection($livreurs);
+    }
+
+    /**
+     * Le gérant ajoute un livreur à son dépôt (provisioning descendant,
+     * `POST /api/depots/{orgUuid}/livreurs`). Crée/rattache le compte par
+     * téléphone ; un éventuel mot de passe temporaire est renvoyé une seule
+     * fois dans la méta, à communiquer au livreur.
+     */
+    public function storeLivreur(DepotLivreurStoreRequest $request, Organisation $organisation): JsonResponse
+    {
+        abort_unless($request->user()->can('gererDepot', $organisation), 404);
+
+        $resultat = $this->provisionnementMembre->attacher(
+            (string) $request->validated('nom'),
+            (string) $request->validated('telephone'),
+            RoleMembership::Livreur,
+            $organisation,
+            $request->validated('mot_de_passe'),
+        );
+
+        return (new UserPubliqueResource($resultat['user']))
+            ->additional([
+                'compte_cree' => $resultat['cree'],
+                'mot_de_passe_temporaire' => $resultat['mot_de_passe_temporaire'],
+            ])
+            ->response()
+            ->setStatusCode(201);
     }
 }
