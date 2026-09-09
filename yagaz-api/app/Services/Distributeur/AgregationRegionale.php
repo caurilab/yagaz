@@ -30,29 +30,29 @@ final class AgregationRegionale
 {
     /**
      * Demande agrégée par zone et par format, dans le temps (contrat API,
-     * `GET /api/distributeurs/{orgUuid}/demande`).
+     * `GET /api/distributeurs/{orgUuid}/demande`). Forme alignée sur le type
+     * web `DemandePoint` (`yagaz-web/src/api/types.ts`).
      *
-     * @return array<int, array{zone: ?string, format: array{id: int, code: ?string}, periode: string, quantite: int, commandes: int}>
+     * @return array<int, array{periode: string, zone: string, format_code: string, volume: int}>
      */
     public function demande(Organisation $distributeur, CarbonImmutable $depuis, CarbonImmutable $jusqua, string $pas): array
     {
         $groupes = [];
 
         foreach ($this->commandesDeLaBranche($distributeur, $depuis, $jusqua) as $commande) {
-            $zone = $this->zoneDeLaCommande($commande);
+            $zone = $this->zoneDeLaCommande($commande) ?? '';
+            $formatCode = (string) $commande->format?->code;
             $periode = $this->periode($commande->created_at, $pas);
-            $cle = $zone.'|'.$commande->format_id.'|'.$periode;
+            $cle = $zone.'|'.$formatCode.'|'.$periode;
 
             $groupes[$cle] ??= [
-                'zone' => $zone,
-                'format' => ['id' => $commande->format_id, 'code' => $commande->format?->code],
                 'periode' => $periode,
-                'quantite' => 0,
-                'commandes' => 0,
+                'zone' => $zone,
+                'format_code' => $formatCode,
+                'volume' => 0,
             ];
 
-            $groupes[$cle]['quantite'] += $commande->quantite;
-            $groupes[$cle]['commandes']++;
+            $groupes[$cle]['volume'] += $commande->quantite;
         }
 
         return array_values($groupes);
@@ -62,28 +62,27 @@ final class AgregationRegionale
      * Évolution des volumes distribués dans le temps, par zone (contrat API,
      * `GET /api/distributeurs/{orgUuid}/volumes`) — comparaison entre zones,
      * saisonnalité (doc 11, §2). Même agrégat que `demande()`, sans le
-     * détail par format.
+     * détail par format. Forme alignée sur le type web `VolumePoint`
+     * (`yagaz-web/src/api/types.ts`).
      *
-     * @return array<int, array{zone: ?string, periode: string, quantite: int, commandes: int}>
+     * @return array<int, array{periode: string, zone: string, volume: int}>
      */
     public function volumes(Organisation $distributeur, CarbonImmutable $depuis, CarbonImmutable $jusqua, string $pas): array
     {
         $groupes = [];
 
         foreach ($this->commandesDeLaBranche($distributeur, $depuis, $jusqua) as $commande) {
-            $zone = $this->zoneDeLaCommande($commande);
+            $zone = $this->zoneDeLaCommande($commande) ?? '';
             $periode = $this->periode($commande->created_at, $pas);
             $cle = $zone.'|'.$periode;
 
             $groupes[$cle] ??= [
-                'zone' => $zone,
                 'periode' => $periode,
-                'quantite' => 0,
-                'commandes' => 0,
+                'zone' => $zone,
+                'volume' => 0,
             ];
 
-            $groupes[$cle]['quantite'] += $commande->quantite;
-            $groupes[$cle]['commandes']++;
+            $groupes[$cle]['volume'] += $commande->quantite;
         }
 
         return array_values($groupes);
@@ -92,33 +91,64 @@ final class AgregationRegionale
     /**
      * Tensions par zone — carte de chaleur (contrat API,
      * `GET /api/distributeurs/{orgUuid}/zones`) : nombre de dépôts en
-     * rupture (stock plein au ou sous son seuil bas) et vides accumulés.
+     * rupture (stock plein au ou sous son seuil bas) sur le total des dépôts
+     * de la zone, vides accumulés, et niveau de tension dérivé du ratio.
+     * Forme alignée sur le type web `ZoneTension`
+     * (`yagaz-web/src/api/types.ts`).
      *
-     * @return array<int, array{zone: ?string, depots_en_tension: int, vides_accumules: int}>
+     * @return array<int, array{zone: string, depots_en_rupture: int, depots_total: int, vides_accumules: int, niveau: string}>
      */
     public function zones(Organisation $distributeur): array
     {
         $groupes = [];
 
         foreach ($this->depotsDeLaBranche($distributeur)->load('stocks') as $depot) {
-            $zone = $depot->zone;
+            $zone = $depot->zone ?? '';
 
             $groupes[$zone] ??= [
                 'zone' => $zone,
-                'depots_en_tension' => 0,
+                'depots_en_rupture' => 0,
+                'depots_total' => 0,
                 'vides_accumules' => 0,
             ];
 
-            $enTension = $depot->stocks->contains(fn (Stock $stock) => $stock->pleines <= $stock->seuil_plein_bas);
+            $groupes[$zone]['depots_total']++;
 
-            if ($enTension) {
-                $groupes[$zone]['depots_en_tension']++;
+            $enRupture = $depot->stocks->contains(fn (Stock $stock) => $stock->pleines <= $stock->seuil_plein_bas);
+
+            if ($enRupture) {
+                $groupes[$zone]['depots_en_rupture']++;
             }
 
             $groupes[$zone]['vides_accumules'] += (int) $depot->stocks->sum('vides');
         }
 
+        foreach ($groupes as &$groupe) {
+            $groupe['niveau'] = $this->niveauTension($groupe['depots_en_rupture'], $groupe['depots_total']);
+        }
+
         return array_values($groupes);
+    }
+
+    /**
+     * Niveau de tension d'une zone, dérivé du ratio dépôts en rupture / total
+     * (contrat API doc 11, §2) : `critique` >= 0,66 ; `eleve` >= 0,33 ;
+     * `modere` > 0 ; `faible` sinon (ou zone sans dépôt).
+     */
+    private function niveauTension(int $depotsEnRupture, int $depotsTotal): string
+    {
+        if ($depotsTotal === 0) {
+            return 'faible';
+        }
+
+        $ratio = $depotsEnRupture / $depotsTotal;
+
+        return match (true) {
+            $ratio >= 0.66 => 'critique',
+            $ratio >= 0.33 => 'eleve',
+            $ratio > 0 => 'modere',
+            default => 'faible',
+        };
     }
 
     /**

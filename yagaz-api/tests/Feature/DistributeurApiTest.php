@@ -75,9 +75,8 @@ class DistributeurApiTest extends TestCase
         $reponse->assertOk();
         $reponse->assertJsonCount(1, 'data');
         $reponse->assertJsonPath('data.0.zone', 'Dakar');
-        $reponse->assertJsonPath('data.0.format.id', $format->id);
-        $reponse->assertJsonPath('data.0.quantite', 5);
-        $reponse->assertJsonPath('data.0.commandes', 2);
+        $reponse->assertJsonPath('data.0.format_code', $format->code);
+        $reponse->assertJsonPath('data.0.volume', 5);
 
         $texteJson = $reponse->getContent();
         $this->assertStringNotContainsString('site_id', $texteJson);
@@ -104,7 +103,7 @@ class DistributeurApiTest extends TestCase
         $reponse->assertOk();
         $reponse->assertJsonCount(1, 'data');
         $reponse->assertJsonPath('data.0.zone', 'Thiès');
-        $reponse->assertJsonPath('data.0.quantite', 7);
+        $reponse->assertJsonPath('data.0.volume', 7);
     }
 
     public function test_les_zones_en_tension_sont_remontees(): void
@@ -126,8 +125,10 @@ class DistributeurApiTest extends TestCase
         $reponse->assertOk();
         $reponse->assertJsonCount(1, 'data');
         $reponse->assertJsonPath('data.0.zone', 'Dakar');
-        $reponse->assertJsonPath('data.0.depots_en_tension', 1);
+        $reponse->assertJsonPath('data.0.depots_en_rupture', 1);
+        $reponse->assertJsonPath('data.0.depots_total', 1);
         $reponse->assertJsonPath('data.0.vides_accumules', 10);
+        $reponse->assertJsonPath('data.0.niveau', 'critique');
     }
 
     public function test_les_volumes_sont_agreges_par_zone_et_periode(): void
@@ -148,7 +149,7 @@ class DistributeurApiTest extends TestCase
         $reponse->assertOk();
         $reponse->assertJsonCount(1, 'data');
         $reponse->assertJsonPath('data.0.zone', 'Dakar');
-        $reponse->assertJsonPath('data.0.quantite', 4);
+        $reponse->assertJsonPath('data.0.volume', 4);
     }
 
     public function test_un_distributeur_ne_voit_que_sa_propre_branche(): void
@@ -166,7 +167,7 @@ class DistributeurApiTest extends TestCase
         $reponse->assertOk();
         $reponse->assertJsonCount(1, 'data');
         $reponse->assertJsonPath('data.0.zone', 'Dakar');
-        $reponse->assertJsonPath('data.0.quantite', 2);
+        $reponse->assertJsonPath('data.0.volume', 2);
     }
 
     public function test_un_autre_distributeur_ne_peut_pas_acceder_a_une_branche_hors_perimetre(): void

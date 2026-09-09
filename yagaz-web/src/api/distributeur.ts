@@ -6,6 +6,27 @@ import { DEMO_ZONES_TENSION, getDemandeFixture, getVolumesFixture } from './fixt
 import { unwrap } from './http'
 import type { DemandePoint, Granularite, VolumePoint, ZoneTension } from './types'
 
+/** `YYYY-MM-DD` en heure locale (évite le décalage UTC de `toISOString`). */
+function versDateISO(date: Date): string {
+  const annee = date.getFullYear()
+  const mois = String(date.getMonth() + 1).padStart(2, '0')
+  const jour = String(date.getDate()).padStart(2, '0')
+  return `${annee}-${mois}-${jour}`
+}
+
+/**
+ * Fenêtre temporelle par défaut des agrégats distributeur : les 12 derniers
+ * mois jusqu'à aujourd'hui (borne backend `DistributeurPeriodeRequest` : 24
+ * mois maximum).
+ */
+export function fenetreParDefaut(): { depuis: string; jusqua: string } {
+  const jusqua = new Date()
+  const depuis = new Date(jusqua)
+  depuis.setMonth(depuis.getMonth() - 12)
+
+  return { depuis: versDateISO(depuis), jusqua: versDateISO(jusqua) }
+}
+
 export interface DemandeParams {
   depuis?: string
   jusqua?: string

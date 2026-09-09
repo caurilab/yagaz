@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useAuth } from '../../auth/AuthContext'
-import { getDemande } from '../../api/distributeur'
+import { fenetreParDefaut, getDemande } from '../../api/distributeur'
 import { KpiCard } from '../../components/KpiCard'
 import { formatNombre } from '../../lib/format'
 import type { Granularite } from '../../api/types'
@@ -23,10 +23,11 @@ export function DistributeurDemande() {
   const orgUuid = organisationCourante?.uuid ?? ''
   const [pas, setPas] = useState<Granularite>('mois')
   const [dimension, setDimension] = useState<Dimension>('zone')
+  const { depuis, jusqua } = useMemo(() => fenetreParDefaut(), [])
 
   const { data, isLoading } = useQuery({
-    queryKey: ['distributeur', orgUuid, 'demande', pas],
-    queryFn: () => getDemande(orgUuid, { pas }),
+    queryKey: ['distributeur', orgUuid, 'demande', pas, depuis, jusqua],
+    queryFn: () => getDemande(orgUuid, { depuis, jusqua, pas }),
     enabled: orgUuid !== '',
   })
 

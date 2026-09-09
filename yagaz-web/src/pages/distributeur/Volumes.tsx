@@ -13,7 +13,7 @@ import {
   YAxis,
 } from 'recharts'
 import { useAuth } from '../../auth/AuthContext'
-import { getVolumes } from '../../api/distributeur'
+import { fenetreParDefaut, getVolumes } from '../../api/distributeur'
 import { formatNombre } from '../../lib/format'
 import type { Granularite } from '../../api/types'
 import './Volumes.css'
@@ -30,10 +30,11 @@ export function DistributeurVolumes() {
   const { organisationCourante } = useAuth()
   const orgUuid = organisationCourante?.uuid ?? ''
   const [pas, setPas] = useState<Granularite>('mois')
+  const { depuis, jusqua } = useMemo(() => fenetreParDefaut(), [])
 
   const { data, isLoading } = useQuery({
-    queryKey: ['distributeur', orgUuid, 'volumes', pas],
-    queryFn: () => getVolumes(orgUuid, { pas }),
+    queryKey: ['distributeur', orgUuid, 'volumes', pas, depuis, jusqua],
+    queryFn: () => getVolumes(orgUuid, { depuis, jusqua, pas }),
     enabled: orgUuid !== '',
   })
 

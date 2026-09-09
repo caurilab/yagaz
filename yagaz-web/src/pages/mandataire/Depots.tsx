@@ -1,8 +1,7 @@
-import { Fragment, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../auth/AuthContext'
 import { creerDepot, getDepotsConsolides } from '../../api/mandataire'
-import { DEMO_FORMATS } from '../../api/fixtures'
 import { formatDateHeure, formatNombre } from '../../lib/format'
 import './Depots.css'
 
@@ -32,7 +31,21 @@ export function MandataireDepots() {
   })
 
   const depots = data ?? []
-  const formats = DEMO_FORMATS
+
+  // Colonnes dérivées des stocks réels, une par CODE de format (B6/B12/B32/B35),
+  // triées par contenance. On agrège les marques d'un même code (un dépôt peut
+  // avoir plusieurs B6 selon la marque) pour une vue consolidée lisible - plus
+  // de liste figée, jamais de colonne dupliquée ni de format absent.
+  const formats = useMemo(() => {
+    const codes = new Set<string>()
+    for (const depot of depots) {
+      for (const stock of depot.stocks) {
+        codes.add(stock.format_code)
+      }
+    }
+    const numero = (code: string) => Number(code.replace(/\D/g, '')) || 0
+    return Array.from(codes).sort((a, b) => numero(a) - numero(b))
+  }, [depots])
 
   return (
     <div className="mandataire-depots">
@@ -102,16 +115,16 @@ export function MandataireDepots() {
                   Dépôt
                 </th>
                 <th rowSpan={2}>Zone</th>
-                {formats.map((format) => (
-                  <th key={format.id} colSpan={2} className="mandataire-depots__th-format">
-                    {format.code}
+                {formats.map((code) => (
+                  <th key={code} colSpan={2} className="mandataire-depots__th-format">
+                    {code}
                   </th>
                 ))}
                 <th rowSpan={2}>Dernière activité</th>
               </tr>
               <tr>
-                {formats.map((format) => (
-                  <Fragment key={format.id}>
+                {formats.map((code) => (
+                  <Fragment key={code}>
                     <th className="mandataire-depots__sub-th">Pleines</th>
                     <th className="mandataire-depots__sub-th">Vides</th>
                   </Fragment>
@@ -126,28 +139,31 @@ export function MandataireDepots() {
                     {depot.en_tension ? <span className="mandataire-depots__badge">Tension</span> : null}
                   </td>
                   <td>{depot.zone ?? '-'}</td>
-                  {formats.map((format) => {
-                    const stock = depot.stocks.find((s) => s.format_id === format.id)
-                    if (!stock) {
+                  {formats.map((code) => {
+                    const stocks = depot.stocks.filter((s) => s.format_code === code)
+                    if (stocks.length === 0) {
                       return (
-                        <Fragment key={format.id}>
+                        <Fragment key={code}>
                           <td className="mandataire-depots__num">-</td>
                           <td className="mandataire-depots__num">-</td>
                         </Fragment>
                       )
                     }
+                    const pleines = stocks.reduce((total, s) => total + s.pleines, 0)
+                    const vides = stocks.reduce((total, s) => total + s.vides, 0)
+                    const tension = stocks.some((s) => s.tension)
                     return (
-                      <Fragment key={format.id}>
+                      <Fragment key={code}>
                         <td
                           className={
-                            stock.tension
+                            tension
                               ? 'mandataire-depots__num mandataire-depots__num--tension'
                               : 'mandataire-depots__num'
                           }
                         >
-                          {formatNombre(stock.pleines)}
+                          {formatNombre(pleines)}
                         </td>
-                        <td className="mandataire-depots__num">{formatNombre(stock.vides)}</td>
+                        <td className="mandataire-depots__num">{formatNombre(vides)}</td>
                       </Fragment>
                     )
                   })}
