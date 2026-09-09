@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { router } from 'expo-router';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Bouton } from '../../components/Bouton';
+import { EnteteEcran } from '../../components/EnteteEcran';
 import { Icone } from '../../components/icones';
 import { SelecteurFormat } from '../../components/SelecteurFormat';
 import { useCommandes } from '../../data/CommandesContext';
@@ -109,7 +109,8 @@ export default function EcranNouvelleCommande() {
   }
 
   return (
-    <SafeAreaView style={styles.conteneur} edges={['bottom']}>
+    <View style={styles.conteneur}>
+      <EnteteEcran titre="Nouvelle commande" retour />
       <ScrollView contentContainerStyle={styles.contenu} keyboardShouldPersistTaps="handled">
         <View style={styles.rangeeType}>
           {OPTIONS_TYPE.map((option) => (
@@ -196,12 +197,9 @@ export default function EcranNouvelleCommande() {
             ))}
           </View>
         )}
+        <Bouton titre="Commander" onPress={valider} enCours={enCours} style={styles.boutonValider} />
       </ScrollView>
-
-      <View style={styles.piedDePage}>
-        <Bouton titre="Commander" onPress={valider} enCours={enCours} />
-      </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -358,10 +356,7 @@ const styles = StyleSheet.create({
     color: couleurs.texteDoux,
     fontWeight: '600',
   },
-  piedDePage: {
-    padding: espacements.lg,
-    borderTopWidth: 1,
-    borderTopColor: couleurs.bordure,
-    backgroundColor: couleurs.fond,
+  boutonValider: {
+    marginTop: espacements.xl,
   },
 });

@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Bouton } from '../../components/Bouton';
+import { EnteteEcran } from '../../components/EnteteEcran';
 import { useDonnees } from '../../data/DonneesContext';
 import { couleurs, espacements, rayons } from '../../../theme/couleurs';
 import type { Alerte } from '../../api/types';
@@ -28,10 +28,8 @@ export default function EcranAlertes() {
   }
 
   return (
-    <SafeAreaView style={styles.conteneur} edges={['top']}>
-      <View style={styles.entete}>
-        <Text style={styles.titre}>Alertes</Text>
-      </View>
+    <View style={styles.conteneur}>
+      <EnteteEcran titre="Alertes" retour />
 
       <FlatList
         data={alertesTriees}
@@ -86,7 +84,7 @@ export default function EcranAlertes() {
           );
         }}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -105,15 +103,6 @@ const styles = StyleSheet.create({
   conteneur: {
     flex: 1,
     backgroundColor: couleurs.fond,
-  },
-  entete: {
-    paddingHorizontal: espacements.lg,
-    paddingTop: espacements.md,
-  },
-  titre: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: couleurs.texte,
   },
   liste: {
     padding: espacements.lg,

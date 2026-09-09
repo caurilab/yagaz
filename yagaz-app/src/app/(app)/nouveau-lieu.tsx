@@ -2,10 +2,10 @@ import { useState } from 'react';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Bouton } from '../../components/Bouton';
 import { Champ } from '../../components/Champ';
+import { EnteteEcran } from '../../components/EnteteEcran';
 import { Icone } from '../../components/icones';
 import { useDialogue } from '../../data/DialogueContext';
 import { useDonnees } from '../../data/DonneesContext';
@@ -71,7 +71,8 @@ export default function EcranNouveauLieu() {
   }
 
   return (
-    <SafeAreaView style={styles.conteneur} edges={['bottom']}>
+    <View style={styles.conteneur}>
+      <EnteteEcran titre="Nouveau lieu" retour />
       <ScrollView contentContainerStyle={styles.contenu} keyboardShouldPersistTaps="handled">
         <Champ etiquette="Nom du lieu" valeur={nom} onChangeText={setNom} placeholder="Ex. Domicile, Boutique..." />
         <Champ
@@ -105,12 +106,10 @@ export default function EcranNouveauLieu() {
             position, et complété plus tard.
           </Text>
         )}
-      </ScrollView>
 
-      <View style={styles.piedDePage}>
-        <Bouton titre="Créer le lieu" onPress={creer} enCours={creationEnCours} />
-      </View>
-    </SafeAreaView>
+        <Bouton titre="Créer le lieu" onPress={creer} enCours={creationEnCours} style={styles.boutonValider} />
+      </ScrollView>
+    </View>
   );
 }
 
@@ -159,10 +158,7 @@ const styles = StyleSheet.create({
     marginTop: espacements.sm,
     lineHeight: 18,
   },
-  piedDePage: {
-    padding: espacements.lg,
-    borderTopWidth: 1,
-    borderTopColor: couleurs.bordure,
-    backgroundColor: couleurs.fond,
+  boutonValider: {
+    marginTop: espacements.xl,
   },
 });

@@ -88,3 +88,15 @@ export const LIBELLES_CATEGORIE_ASTUCE: Record<CategorieAstuce, string> = {
   economie: 'Économie',
   gestion: 'Gestion',
 };
+
+/**
+ * Index (dans `ASTUCES`) d'une astuce de sécurité, tournant par jour : sert à
+ * la modale de sécurité affichée au démarrage. Repli sur 0 si aucune astuce de
+ * sécurité n'existe.
+ */
+export function indexAstuceSecuriteDuJour(): number {
+  const indicesSecurite = ASTUCES.map((a, i) => (a.categorie === 'securite' ? i : -1)).filter((i) => i >= 0);
+  if (indicesSecurite.length === 0) return 0;
+  const jour = Math.floor(Date.now() / (24 * 60 * 60 * 1000));
+  return indicesSecurite[jour % indicesSecurite.length];
+}

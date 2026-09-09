@@ -5,12 +5,12 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Icone, type NomIcone } from '../../components/icones';
 
 import { BandeauSync } from '../../components/BandeauSync';
 import { Bouton } from '../../components/Bouton';
+import { EnteteEcran } from '../../components/EnteteEcran';
 import * as api from '../../api/endpoints';
 import { executerAvecSource, historiquePageDemo } from '../../api/demo';
 import { useDonnees } from '../../data/DonneesContext';
@@ -104,10 +104,8 @@ export default function EcranHistorique() {
   const peutChargerPlus = pagination ? pagination.page < pagination.total_pages : false;
 
   return (
-    <SafeAreaView style={styles.conteneur} edges={['top']}>
-      <View style={styles.entete}>
-        <Text style={styles.titre}>Historique</Text>
-      </View>
+    <View style={styles.conteneur}>
+      <EnteteEcran titre="Historique" />
 
       <View style={styles.filtres}>
         {FILTRES.map((f) => (
@@ -157,7 +155,7 @@ export default function EcranHistorique() {
           ) : null
         }
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -197,15 +195,6 @@ const styles = StyleSheet.create({
   conteneur: {
     flex: 1,
     backgroundColor: couleurs.fond,
-  },
-  entete: {
-    paddingHorizontal: espacements.lg,
-    paddingTop: espacements.md,
-  },
-  titre: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: couleurs.texte,
   },
   filtres: {
     flexDirection: 'row',

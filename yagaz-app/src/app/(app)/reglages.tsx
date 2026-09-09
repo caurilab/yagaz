@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Bouton } from '../../components/Bouton';
 import { Champ } from '../../components/Champ';
+import { EnteteEcran } from '../../components/EnteteEcran';
 import { Icone } from '../../components/icones';
 import { useAuth } from '../../auth/AuthContext';
 import { majReglagesAlertes } from '../../api/endpoints';
@@ -67,10 +67,9 @@ export default function EcranReglages() {
   }
 
   return (
-    <SafeAreaView style={styles.conteneur} edges={['top', 'bottom']}>
+    <View style={styles.conteneur}>
+      <EnteteEcran titre="Réglages" />
       <ScrollView contentContainerStyle={styles.contenu}>
-        <Text style={styles.titre}>Réglages</Text>
-
         {user ? (
           <View style={styles.carteCompte}>
             <Text style={styles.nomUtilisateur}>{user.nom}</Text>
@@ -126,7 +125,7 @@ export default function EcranReglages() {
 
         <Bouton titre="Se déconnecter" variante="discret" onPress={confirmerDeconnexion} style={styles.boutonDeconnexion} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -138,12 +137,6 @@ const styles = StyleSheet.create({
   contenu: {
     padding: espacements.lg,
     paddingBottom: espacements.xxl,
-  },
-  titre: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: couleurs.texte,
-    marginBottom: espacements.lg,
   },
   carteCompte: {
     backgroundColor: couleurs.carte,

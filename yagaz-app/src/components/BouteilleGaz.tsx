@@ -126,23 +126,34 @@ const VUE_HAUTE = { largeur: 100, hauteur: 210 };
 const BADGE_MARQUE_HAUTE = { cx: 71, cy: 88, r: 10.5 };
 const BADGE_CODE_TOP_RATIO_HAUTE = 0.56;
 
-/** Silhouette "trapue/ronde" (B6/B3) : corps court et bombé, petit col, sans collerette. */
+/**
+ * Silhouette "trapue/ronde" (B6) : corps court et bombé (tonneau), col court.
+ * Trait le plus reconnaissable des B6 réelles (cf. `_gaz/`) : une large
+ * collerette évasée (jupe de protection) au-dessus de l'épaule, dessinée à part
+ * (COLLERETTE_TRAPUE), et un pied/embase en bas (dessiné dans le rendu).
+ */
 const SILHOUETTE_TRAPUE = `
-  M 44 10
-  L 56 10
-  L 56 20
-  Q 82 28 86 50
-  L 86 108
-  Q 86 130 62 130
-  L 38 130
-  Q 14 130 14 108
-  L 14 50
-  Q 18 28 44 20
+  M 42 26
+  L 58 26
+  Q 82 32 85 58
+  L 85 100
+  Q 85 126 50 126
+  Q 15 126 15 100
+  L 15 58
+  Q 18 32 42 26
   Z
 `;
-const VALVE_TRAPUE = { x: 44, y: 0, w: 12, h: 14, rx: 4.5, cxKnob: 50, cyKnob: 1.5, rKnob: 4.5 };
-const VUE_TRAPUE = { largeur: 100, hauteur: 140 };
-const BADGE_MARQUE_TRAPUE = { cx: 73, cy: 56, r: 9.5 };
+/** Collerette évasée (jupe de protection) de la B6 : large en haut, resserrée sur l'épaule. */
+const COLLERETTE_TRAPUE = `
+  M 30 12
+  L 70 12
+  L 60 30
+  L 40 30
+  Z
+`;
+const VALVE_TRAPUE = { x: 45, y: 2, w: 10, h: 16, rx: 4, cxKnob: 50, cyKnob: 6, rKnob: 4 };
+const VUE_TRAPUE = { largeur: 100, hauteur: 138 };
+const BADGE_MARQUE_TRAPUE = { cx: 73, cy: 60, r: 9.5 };
 const BADGE_CODE_TOP_RATIO_TRAPUE = 0.6;
 
 interface Props {
@@ -261,8 +272,29 @@ export function BouteilleGaz({ couleur, code, marqueNom, niveauPct, taille = 140
           {/* Contour net */}
           <Path d={silhouette} fill="none" stroke={couleurOmbre} strokeWidth={1.5} strokeOpacity={0.5} />
 
-          {/* Collerette/poignée de protection ajourée (silhouette haute uniquement) */}
-          {!trapue ? (
+          {/* Embase/pied de la B6 (bande plus foncée au bas du corps, cf. photos) */}
+          {trapue ? (
+            <Rect
+              x={0}
+              y={vue.hauteur - 12}
+              width={vue.largeur}
+              height={12}
+              fill={couleurOmbre}
+              opacity={0.22}
+              clipPath={`url(#${idClip})`}
+            />
+          ) : null}
+
+          {/* Collerette de protection : jupe évasée (B6) ou arceau ajouré (formats hauts) */}
+          {trapue ? (
+            <Path
+              d={COLLERETTE_TRAPUE}
+              fill={couleurCollerette}
+              stroke={assombrir(couleurPleine, 0.4)}
+              strokeWidth={0.8}
+              strokeLinejoin="round"
+            />
+          ) : (
             <Path
               d={COLLERETTE_HAUTE}
               fill={couleurCollerette}
@@ -270,7 +302,7 @@ export function BouteilleGaz({ couleur, code, marqueNom, niveauPct, taille = 140
               stroke={assombrir(couleurPleine, 0.4)}
               strokeWidth={0.8}
             />
-          ) : null}
+          )}
 
           {/* Valve : corps gris, capuchon rouge */}
           <Rect

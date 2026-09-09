@@ -1,4 +1,4 @@
-import { useRef, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
@@ -24,7 +24,9 @@ import { ChargementYagaz } from '../../components/ChargementYagaz';
 import { EncartConnecterMateriel } from '../../components/EncartConnecterMateriel';
 import { EncartTemperature } from '../../components/EncartTemperature';
 import { Icone, LogoYagaz } from '../../components/icones';
+import { ModaleAstuces } from '../../components/ModaleAstuces';
 import { SelecteurSite } from '../../components/SelecteurSite';
+import { indexAstuceSecuriteDuJour } from '../../data/astuces';
 import { useAuth } from '../../auth/AuthContext';
 import { useDonnees } from '../../data/DonneesContext';
 import { useTemperatureSite } from '../../data/useTemperatureSite';
@@ -32,6 +34,13 @@ import { couleurs, espacements, rayons } from '../../../theme/couleurs';
 import { formaterAutonomie, couleursEtat, libellesEtat } from '../../utils/niveau';
 import { couleurPourFormat } from '../../utils/marque';
 import type { Bouteille, EtatNiveau, Marque } from '../../api/types';
+
+/**
+ * Ne montrer la modale de sécurité qu'une fois par lancement de l'app
+ * (démarrage à froid) : ce drapeau au niveau module survit aux re-rendus et
+ * aux retours sur l'accueil, mais est réinitialisé à chaque relance.
+ */
+let modaleSecuriteDejaAffichee = false;
 
 export default function EcranAccueilFoyer() {
   const { user } = useAuth();
@@ -52,6 +61,16 @@ export default function EcranAccueilFoyer() {
   const { temperature } = useTemperatureSite(siteActif?.uuid);
   const alertesActives = alertes.filter((a) => a.statut !== 'resolue').length;
   const aBalance = siteActif?.a_balance ?? true;
+
+  // Modale de sécurité au démarrage : une astuce de sécurité, une seule fois
+  // par lancement, une fois les données prêtes (pas pendant le chargement).
+  const [modaleSecuriteVisible, setModaleSecuriteVisible] = useState(false);
+  const [indexSecurite] = useState(indexAstuceSecuriteDuJour);
+  useEffect(() => {
+    if (modaleSecuriteDejaAffichee || chargementInitial) return;
+    modaleSecuriteDejaAffichee = true;
+    setModaleSecuriteVisible(true);
+  }, [chargementInitial]);
 
   const heroAutonomie = bouteilleActive
     ? aBalance
@@ -90,9 +109,12 @@ export default function EcranAccueilFoyer() {
             </View>
           </View>
 
-          <Text style={styles.texteBonjour} numberOfLines={1}>
-            Bonjour{user ? `, ${prenomDe(user.nom)}` : ''}
-          </Text>
+          <View style={styles.ligneGreeting}>
+            <Text style={styles.texteBonjour} numberOfLines={1}>
+              Bonjour{user ? `, ${prenomDe(user.nom)}` : ''}
+            </Text>
+            <SelecteurSite sites={sites} siteActif={siteActif} onChoisir={definirSiteActif} />
+          </View>
 
           {bouteilleActive && heroAutonomie != null ? (
             <>
@@ -111,10 +133,6 @@ export default function EcranAccueilFoyer() {
               </View>
             </>
           ) : null}
-
-          <View style={styles.selecteurZone}>
-            <SelecteurSite sites={sites} siteActif={siteActif} onChoisir={definirSiteActif} />
-          </View>
         </SafeAreaView>
       </LinearGradient>
 
@@ -168,6 +186,13 @@ export default function EcranAccueilFoyer() {
           </>
         )}
       </ScrollView>
+
+      <ModaleAstuces
+        visible={modaleSecuriteVisible}
+        onClose={() => setModaleSecuriteVisible(false)}
+        indexInitial={indexSecurite}
+        onVoirToutes={() => router.push('/astuces')}
+      />
     </View>
   );
 }
@@ -343,7 +368,7 @@ const styles = StyleSheet.create({
   },
   entete: {
     paddingHorizontal: espacements.lg,
-    paddingBottom: espacements.xl,
+    paddingBottom: espacements.lg,
     borderBottomLeftRadius: rayons.xl,
     borderBottomRightRadius: rayons.xl,
   },
@@ -377,32 +402,39 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: couleurs.degradeDebut,
   },
+  ligneGreeting: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: espacements.sm,
+    marginTop: espacements.md,
+  },
   texteBonjour: {
     fontSize: 14,
     fontWeight: '600',
     color: couleurs.blanc,
     opacity: 0.9,
-    marginTop: espacements.lg,
+    flexShrink: 1,
   },
   ligneHero: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: espacements.sm,
-    marginTop: espacements.xs,
+    marginTop: espacements.md,
   },
   heroChiffre: {
-    fontSize: 52,
+    fontSize: 60,
     fontWeight: '800',
     color: couleurs.blanc,
-    lineHeight: 54,
-    letterSpacing: -1,
+    lineHeight: 62,
+    letterSpacing: -1.5,
   },
   heroUnite: {
     fontSize: 15,
     fontWeight: '600',
     color: couleurs.blanc,
     opacity: 0.92,
-    paddingBottom: espacements.xs,
+    paddingBottom: espacements.sm,
   },
   heroDesactive: {
     opacity: 0.55,
@@ -430,9 +462,6 @@ const styles = StyleSheet.create({
     color: couleurs.blanc,
     opacity: 0.9,
     flexShrink: 1,
-  },
-  selecteurZone: {
-    marginTop: espacements.md,
   },
   zoneContenu: {
     flex: 1,

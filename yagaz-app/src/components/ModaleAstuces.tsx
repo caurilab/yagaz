@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Icone } from './icones';
+import { IllustrationAstuce } from './illustrations/IllustrationAstuce';
 import { ASTUCES, LIBELLES_CATEGORIE_ASTUCE } from '../data/astuces';
 import { couleurs, espacements, rayons } from '../../theme/couleurs';
 
@@ -10,6 +11,8 @@ interface Props {
   onClose: () => void;
   /** Index de départ dans `ASTUCES`. Défaut : 0. */
   indexInitial?: number;
+  /** Action du bouton "Voir toutes les astuces" (ouvre la page dédiée). */
+  onVoirToutes?: () => void;
 }
 
 const ECHELLE_FERMEE = 0.92;
@@ -19,7 +22,7 @@ const ECHELLE_FERMEE = 0.92;
  * cyclique ("Astuce suivante"). Overlay animé en opacité, carte en
  * fondu + léger scale - cohérent avec `SelecteurSite`.
  */
-export function ModaleAstuces({ visible, onClose, indexInitial = 0 }: Props) {
+export function ModaleAstuces({ visible, onClose, indexInitial = 0, onVoirToutes }: Props) {
   const [index, setIndex] = useState(indexInitial);
   const opacite = useRef(new Animated.Value(0)).current;
   const echelle = useRef(new Animated.Value(ECHELLE_FERMEE)).current;
@@ -52,9 +55,20 @@ export function ModaleAstuces({ visible, onClose, indexInitial = 0 }: Props) {
     return () => animationEntree.stop();
   }, [visible, indexInitial, opacite, echelle]);
 
-  function astuceSuivante() {
-    setIndex((precedent) => (precedent + 1) % ASTUCES.length);
-  }
+  const voirToutes = useCallback(() => {
+    Animated.parallel([
+      Animated.timing(opacite, { toValue: 0, duration: 160, useNativeDriver: true }),
+      Animated.timing(echelle, {
+        toValue: ECHELLE_FERMEE,
+        duration: 160,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      onClose();
+      onVoirToutes?.();
+    });
+  }, [opacite, echelle, onClose, onVoirToutes]);
 
   const astuce = ASTUCES[index] ?? ASTUCES[0];
 
@@ -75,8 +89,8 @@ export function ModaleAstuces({ visible, onClose, indexInitial = 0 }: Props) {
             <Icone nom="fermer" taille={18} couleur={couleurs.texteDoux} />
           </Pressable>
 
-          <View style={styles.pastilleIcone}>
-            <Icone nom={astuce.icone} taille={28} couleur={couleurs.rouge} />
+          <View style={styles.zoneIllustration}>
+            <IllustrationAstuce categorie={astuce.categorie} taille={128} />
           </View>
 
           <View style={styles.etiquette}>
@@ -86,9 +100,12 @@ export function ModaleAstuces({ visible, onClose, indexInitial = 0 }: Props) {
           <Text style={styles.titre}>{astuce.titre}</Text>
           <Text style={styles.message}>{astuce.message}</Text>
 
-          <Pressable style={styles.boutonSuivante} onPress={astuceSuivante} accessibilityRole="button">
-            <Text style={styles.texteBoutonSuivante}>Astuce suivante</Text>
+          <Pressable style={styles.boutonVoirToutes} onPress={voirToutes} accessibilityRole="button">
+            <Text style={styles.texteBoutonVoirToutes}>Voir toutes les astuces</Text>
             <Icone nom="chevron" taille={16} couleur={couleurs.blanc} />
+          </Pressable>
+          <Pressable style={styles.boutonFermerTexte} onPress={fermer} accessibilityRole="button">
+            <Text style={styles.texteBoutonFermer}>Fermer</Text>
           </Pressable>
         </Animated.View>
       </View>
@@ -135,17 +152,14 @@ const styles = StyleSheet.create({
     backgroundColor: couleurs.fond,
     zIndex: 1,
   },
-  pastilleIcone: {
-    width: 56,
-    height: 56,
-    borderRadius: rayons.rond,
-    backgroundColor: couleurs.rougeClair,
+  zoneIllustration: {
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: espacements.sm,
     marginBottom: espacements.md,
   },
   etiquette: {
-    alignSelf: 'flex-start',
+    alignSelf: 'center',
     backgroundColor: couleurs.rougeClair,
     borderRadius: rayons.rond,
     paddingHorizontal: espacements.sm,
@@ -164,14 +178,16 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: couleurs.texte,
     marginBottom: espacements.sm,
+    textAlign: 'center',
   },
   message: {
     fontSize: 14.5,
     lineHeight: 21,
     color: couleurs.texteDoux,
     marginBottom: espacements.lg,
+    textAlign: 'center',
   },
-  boutonSuivante: {
+  boutonVoirToutes: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -180,9 +196,20 @@ const styles = StyleSheet.create({
     borderRadius: rayons.lg,
     paddingVertical: espacements.md,
   },
-  texteBoutonSuivante: {
+  texteBoutonVoirToutes: {
     fontSize: 15,
     fontWeight: '700',
     color: couleurs.blanc,
+  },
+  boutonFermerTexte: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: espacements.md,
+    marginTop: espacements.xs,
+  },
+  texteBoutonFermer: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: couleurs.texteDoux,
   },
 });

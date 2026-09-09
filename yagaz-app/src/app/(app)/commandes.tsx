@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react';
 import { router } from 'expo-router';
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BadgeStatutCommande, BadgeStatutPaiement } from '../../components/BadgeStatut';
 import { BandeauSync } from '../../components/BandeauSync';
 import { Bouton } from '../../components/Bouton';
+import { EnteteEcran } from '../../components/EnteteEcran';
 import { useCommandes } from '../../data/CommandesContext';
 import { useDialogue } from '../../data/DialogueContext';
 import { useDonnees } from '../../data/DonneesContext';
@@ -54,11 +54,11 @@ export default function EcranCommandesFoyer() {
   }
 
   return (
-    <SafeAreaView style={styles.conteneur} edges={['top']}>
-      <View style={styles.entete}>
-        <Text style={styles.titre}>Mes commandes</Text>
-        <Bouton titre="Nouvelle commande" variante="contour" onPress={() => router.push('/nouvelle-commande')} />
-      </View>
+    <View style={styles.conteneur}>
+      <EnteteEcran
+        titre="Mes commandes"
+        bouton={{ titre: 'Nouvelle commande', icone: 'plus', onPress: () => router.push('/nouvelle-commande') }}
+      />
 
       <FlatList
         data={commandesTriees}
@@ -155,7 +155,7 @@ export default function EcranCommandesFoyer() {
           );
         }}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -163,16 +163,6 @@ const styles = StyleSheet.create({
   conteneur: {
     flex: 1,
     backgroundColor: couleurs.fond,
-  },
-  entete: {
-    paddingHorizontal: espacements.lg,
-    paddingTop: espacements.md,
-    gap: espacements.md,
-  },
-  titre: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: couleurs.texte,
   },
   liste: {
     padding: espacements.lg,

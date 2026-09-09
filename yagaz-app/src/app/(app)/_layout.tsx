@@ -52,6 +52,7 @@ export default function LayoutApp() {
         options={{
           href: null,
           title: 'Bouteilles',
+          headerShown: false,
           tabBarIcon: ({ color }) => <Icone nom="bouteille" couleur={color as string} />,
         }}
       />
@@ -59,6 +60,7 @@ export default function LayoutApp() {
         name="commandes"
         options={{
           title: 'Commandes',
+          headerShown: false,
           tabBarIcon: ({ color }) => <Icone nom="commande" couleur={color as string} />,
           // Indicateur de commande en cours, visible depuis toutes les pages.
           tabBarBadge: nbCommandesEnCours > 0 ? nbCommandesEnCours : undefined,
@@ -70,6 +72,7 @@ export default function LayoutApp() {
         options={{
           href: null,
           title: 'Alertes',
+          headerShown: false,
           tabBarIcon: ({ color }) => <Icone nom="cloche" couleur={color as string} />,
         }}
       />
@@ -77,6 +80,7 @@ export default function LayoutApp() {
         name="historique"
         options={{
           title: 'Historique',
+          headerShown: false,
           tabBarIcon: ({ color }) => <Icone nom="historique" couleur={color as string} />,
         }}
       />
@@ -85,6 +89,7 @@ export default function LayoutApp() {
         options={{
           href: null,
           title: 'Analyse',
+          headerShown: false,
           tabBarIcon: ({ color }) => <Icone nom="analyse" couleur={color as string} />,
         }}
       />
@@ -92,7 +97,16 @@ export default function LayoutApp() {
         name="reglages"
         options={{
           title: 'Réglages',
+          headerShown: false,
           tabBarIcon: ({ color }) => <Icone nom="reglages" couleur={color as string} />,
+        }}
+      />
+      <Tabs.Screen
+        name="astuces"
+        options={{
+          href: null,
+          title: 'Astuces',
+          headerShown: false,
         }}
       />
       <Tabs.Screen
@@ -100,7 +114,7 @@ export default function LayoutApp() {
         options={{
           href: null,
           title: 'Enregistrer une bouteille',
-          headerLeft: () => <BoutonRetour />,
+          headerShown: false,
         }}
       />
       <Tabs.Screen
@@ -108,7 +122,7 @@ export default function LayoutApp() {
         options={{
           href: null,
           title: 'Nouveau lieu',
-          headerLeft: () => <BoutonRetour />,
+          headerShown: false,
         }}
       />
       <Tabs.Screen
@@ -116,7 +130,7 @@ export default function LayoutApp() {
         options={{
           href: null,
           title: 'Bouteille',
-          headerLeft: () => <BoutonRetour />,
+          headerShown: false,
         }}
       />
       <Tabs.Screen
@@ -124,7 +138,7 @@ export default function LayoutApp() {
         options={{
           href: null,
           title: 'Nouvelle commande',
-          headerLeft: () => <BoutonRetour />,
+          headerShown: false,
         }}
       />
       <Tabs.Screen

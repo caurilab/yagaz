@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { BadgeEtat } from '../../../components/BadgeEtat';
 import { BandeauSync } from '../../../components/BandeauSync';
 import { BarreProgression } from '../../../components/BarreProgression';
 import { Bouton } from '../../../components/Bouton';
 import { BouteilleGaz } from '../../../components/BouteilleGaz';
-import { BouteilleGaz3D } from '../../../components/BouteilleGaz3D';
 import { Champ } from '../../../components/Champ';
+import { EnteteEcran } from '../../../components/EnteteEcran';
 import { EncartConnecterMateriel } from '../../../components/EncartConnecterMateriel';
 import { EncartTemperature } from '../../../components/EncartTemperature';
 import { Icone } from '../../../components/icones';
@@ -90,16 +89,19 @@ export default function EcranDetailBouteille() {
 
   if (!bouteille) {
     return (
-      <SafeAreaView style={styles.conteneur}>
+      <View style={styles.conteneur}>
+        <EnteteEcran titre="Détail bouteille" retour />
         <View style={styles.centre}>
           <Text style={styles.texteVide}>Bouteille introuvable.</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   const { niveau } = bouteille;
   const couleurBouteille = couleurPourFormat(formatEdit ?? bouteille.format, marques);
+  // Nom de la bouteille (marque + format) en titre, lieu en sous-titre.
+  const nomBouteille = `${bouteille.format.marque} ${bouteille.format.code}`;
 
   function demarrerEdition() {
     setRoleEdit(bouteille!.role_bouteille);
@@ -181,26 +183,21 @@ export default function EcranDetailBouteille() {
   }
 
   return (
-    <SafeAreaView style={styles.conteneur} edges={['bottom']}>
+    <View style={styles.conteneur}>
+      <EnteteEcran
+        titre={nomBouteille}
+        sousTitre={site?.nom}
+        retour
+        actions={
+          !modeEdition ? (
+            <Pressable onPress={demarrerEdition} hitSlop={10} style={styles.boutonModifierEntete} accessibilityRole="button">
+              <Icone nom="crayon" taille={18} couleur={couleurs.blanc} />
+              <Text style={styles.texteModifierEntete}>Modifier</Text>
+            </Pressable>
+          ) : undefined
+        }
+      />
       <ScrollView contentContainerStyle={styles.contenu}>
-        <View style={styles.enTete}>
-          <View style={styles.enTeteFormat}>
-            <View style={[styles.pastille, { backgroundColor: couleurBouteille }]} />
-            <Text style={styles.format}>
-              {bouteille.format.code} - {bouteille.format.marque}
-            </Text>
-          </View>
-          <View style={styles.enTeteActions}>
-            {aBalance ? <BadgeEtat etat={niveau.etat} /> : null}
-            {!modeEdition ? (
-              <Pressable onPress={demarrerEdition} hitSlop={10} style={styles.boutonModifier}>
-                <Icone nom="crayon" taille={20} couleur={couleurs.rouge} />
-                <Text style={styles.texteModifier}>Modifier</Text>
-              </Pressable>
-            ) : null}
-          </View>
-        </View>
-
         {aBalance && !niveau.frais ? <BandeauSync texte="Dernière valeur connue - hors ligne" variante="alerte" /> : null}
 
         <View style={styles.carte}>
@@ -211,18 +208,12 @@ export default function EcranDetailBouteille() {
                 transform: [{ scale: echelleBouteille }, { translateY: translationBouteille }],
               }}>
               {aBalance ? (
-                <BouteilleGaz3D
-                  couleur={couleurBouteille ?? couleurs.rouge}
+                <BouteilleGaz
+                  couleur={couleurBouteille}
+                  code={bouteille.format.code}
+                  marqueNom={bouteille.format.marque}
+                  niveauPct={niveau.niveau_pct}
                   taille={150}
-                  fallback={
-                    <BouteilleGaz
-                      couleur={couleurBouteille}
-                      code={bouteille.format.code}
-                      marqueNom={bouteille.format.marque}
-                      niveauPct={niveau.niveau_pct}
-                      taille={150}
-                    />
-                  }
                 />
               ) : (
                 <BouteilleGaz
@@ -253,7 +244,10 @@ export default function EcranDetailBouteille() {
                   couleurFond={couleurs.rougeClair}
                 />
               </View>
-              <Text style={styles.texteSecondaire}>Niveau : {niveau.niveau_pct} % ({niveau.gaz_g} g)</Text>
+              <View style={styles.ligneNiveauDetail}>
+                <Text style={styles.texteSecondaire}>Niveau : {niveau.niveau_pct} % ({niveau.gaz_g} g)</Text>
+                <BadgeEtat etat={niveau.etat} />
+              </View>
               {niveau.estimation ? (
                 <Text style={styles.texteEstimation}>Estimation en cours d'affinage</Text>
               ) : null}
@@ -393,7 +387,7 @@ export default function EcranDetailBouteille() {
           </>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -411,50 +405,19 @@ const styles = StyleSheet.create({
     padding: espacements.lg,
     paddingBottom: espacements.xxl,
   },
-  enTete: {
+  boutonModifierEntete: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: couleurs.carte,
-    borderRadius: rayons.md,
+    gap: 6,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     paddingHorizontal: espacements.md,
     paddingVertical: espacements.sm,
-    marginBottom: espacements.md,
-    gap: espacements.sm,
+    borderRadius: rayons.rond,
   },
-  enTeteFormat: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: espacements.sm,
-    flexShrink: 1,
-  },
-  enTeteActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: espacements.md,
-  },
-  pastille: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  boutonModifier: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingVertical: 4,
-    paddingHorizontal: 4,
-  },
-  texteModifier: {
+  texteModifierEntete: {
     fontSize: 14,
     fontWeight: '700',
-    color: couleurs.rouge,
-  },
-  format: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: couleurs.texte,
-    flexShrink: 1,
+    color: couleurs.blanc,
   },
   carte: {
     backgroundColor: couleurs.carte,
@@ -497,10 +460,15 @@ const styles = StyleSheet.create({
   barreNiveauConteneur: {
     alignSelf: 'stretch',
   },
+  ligneNiveauDetail: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espacements.sm,
+    marginTop: espacements.sm,
+  },
   texteSecondaire: {
     fontSize: 13,
     color: couleurs.texteDoux,
-    marginTop: espacements.sm,
   },
   texteEstimation: {
     fontSize: 12,

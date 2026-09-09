@@ -4,6 +4,7 @@
  * projection prochaine recharge, série de consommation (barres).
  */
 import { useCallback, useEffect, useState } from 'react';
+import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -101,6 +102,16 @@ export default function EcranAnalyse() {
         style={styles.entete}>
         <SafeAreaView edges={['top']}>
           <View style={styles.ligneHaut}>
+            <Pressable
+              onPress={() => router.back()}
+              hitSlop={12}
+              style={styles.boutonRetour}
+              accessibilityRole="button"
+              accessibilityLabel="Retour">
+              <View style={styles.chevronRetour}>
+                <Icone nom="chevron" taille={22} couleur={couleurs.blanc} />
+              </View>
+            </Pressable>
             <View style={styles.ligneMarque}>
               <View style={styles.badgeMarque}>
                 <Icone nom="analyse" taille={18} couleur={couleurs.blanc} />
@@ -312,9 +323,20 @@ const styles = StyleSheet.create({
   ligneHaut: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: espacements.sm,
     marginTop: espacements.sm,
     marginBottom: espacements.lg,
+  },
+  boutonRetour: {
+    width: 40,
+    height: 40,
+    borderRadius: rayons.rond,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  chevronRetour: {
+    transform: [{ rotate: '180deg' }],
   },
   ligneMarque: {
     flexDirection: 'row',

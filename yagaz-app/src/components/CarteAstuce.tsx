@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Icone } from './icones';
@@ -40,7 +41,12 @@ export function CarteAstuce() {
         <Icone nom="chevron" taille={18} couleur={couleurs.rouge} />
       </Pressable>
 
-      <ModaleAstuces visible={visible} onClose={() => setVisible(false)} indexInitial={indexDuJour} />
+      <ModaleAstuces
+        visible={visible}
+        onClose={() => setVisible(false)}
+        indexInitial={indexDuJour}
+        onVoirToutes={() => router.push('/astuces')}
+      />
     </>
   );
 }

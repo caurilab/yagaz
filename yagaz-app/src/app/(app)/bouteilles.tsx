@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { router } from 'expo-router';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { BadgeEtat } from '../../components/BadgeEtat';
 import { BarreProgression } from '../../components/BarreProgression';
 import { Bouton } from '../../components/Bouton';
 import { BouteilleGaz } from '../../components/BouteilleGaz';
+import { EnteteEcran } from '../../components/EnteteEcran';
 import { Icone } from '../../components/icones';
 import { useDialogue } from '../../data/DialogueContext';
 import { useDonnees } from '../../data/DonneesContext';
@@ -36,28 +35,11 @@ export default function EcranBouteilles() {
 
   return (
     <View style={styles.conteneur}>
-      <LinearGradient
-        colors={[couleurs.degradeDebut, couleurs.degradeFin]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.entete}>
-        <SafeAreaView edges={['top']}>
-          <View style={styles.enteteLigne}>
-            <View style={styles.enteteTexte}>
-              <Text style={styles.titre}>Mes bouteilles</Text>
-              {siteActif ? (
-                <Text style={styles.sousTitre} numberOfLines={1}>
-                  {siteActif.nom}
-                </Text>
-              ) : null}
-            </View>
-            <Pressable style={styles.boutonAjout} onPress={() => router.push('/enregistrer')} accessibilityRole="button">
-              <Icone nom="plus" taille={18} couleur={couleurs.rouge} />
-              <Text style={styles.texteAjout}>Ajouter</Text>
-            </Pressable>
-          </View>
-        </SafeAreaView>
-      </LinearGradient>
+      <EnteteEcran
+        titre="Mes bouteilles"
+        sousTitre={siteActif?.nom}
+        bouton={{ titre: 'Ajouter une bouteille', icone: 'plus', onPress: () => router.push('/enregistrer') }}
+      />
 
       <FlatList
         data={bouteilles}
@@ -143,47 +125,6 @@ const styles = StyleSheet.create({
   conteneur: {
     flex: 1,
     backgroundColor: couleurs.fond,
-  },
-  entete: {
-    paddingHorizontal: espacements.lg,
-    paddingBottom: espacements.md,
-    borderBottomLeftRadius: rayons.lg,
-    borderBottomRightRadius: rayons.lg,
-  },
-  enteteLigne: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: espacements.sm,
-    marginTop: espacements.xs,
-  },
-  enteteTexte: {
-    flexShrink: 1,
-  },
-  titre: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: couleurs.blanc,
-  },
-  sousTitre: {
-    fontSize: 13,
-    color: couleurs.blanc,
-    opacity: 0.9,
-    marginTop: 2,
-  },
-  boutonAjout: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: couleurs.blanc,
-    paddingHorizontal: espacements.md,
-    paddingVertical: espacements.sm,
-    borderRadius: rayons.rond,
-  },
-  texteAjout: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: couleurs.rouge,
   },
   liste: {
     padding: espacements.lg,
