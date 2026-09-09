@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\OrigineCommande;
 use App\Enums\TypeOrganisation;
 use App\Http\Requests\DepotCommandeIndexRequest;
+use App\Http\Requests\MandataireDepotStoreRequest;
 use App\Http\Requests\MandataireTourneeStoreRequest;
 use App\Http\Resources\DepotConsolideResource;
 use App\Http\Resources\ReapproResource;
@@ -48,6 +49,30 @@ class MandataireController extends Controller
             });
 
         return DepotConsolideResource::collection($depots);
+    }
+
+    /**
+     * Crée un dépôt rattaché au mandataire (contrat API doc 11, §1). Le
+     * dépôt naît sans stock (le gérant l'approvisionnera) ; on renvoie la
+     * même vue consolidée que la liste, avec des stocks vides.
+     */
+    public function storeDepot(MandataireDepotStoreRequest $request, Organisation $organisation): JsonResponse
+    {
+        abort_unless($request->user()->can('gererMandataire', $organisation), 404);
+
+        $depot = Organisation::create([
+            'type' => TypeOrganisation::Depot,
+            'parent_id' => $organisation->id,
+            'nom' => $request->validated('nom'),
+            'zone' => $request->validated('zone'),
+        ]);
+
+        $depot->setRelation('stocks', Collection::make());
+        $depot->setAttribute('derniere_activite', null);
+
+        return (new DepotConsolideResource($depot))
+            ->response()
+            ->setStatusCode(201);
     }
 
     /**

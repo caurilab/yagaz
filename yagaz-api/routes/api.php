@@ -161,6 +161,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // === Mandataire — dépôts, réappros, tournées (contrat API doc 11, §1)
     Route::get('/mandataires/{organisation:uuid}/depots', [MandataireController::class, 'depots']);
+    Route::post('/mandataires/{organisation:uuid}/depots', [MandataireController::class, 'storeDepot']);
     Route::get('/mandataires/{organisation:uuid}/reappros', [MandataireController::class, 'reappros']);
     Route::get('/mandataires/{organisation:uuid}/tournees', [MandataireController::class, 'tournees']);
     Route::post('/mandataires/{organisation:uuid}/tournees', [MandataireController::class, 'storeTournee']);

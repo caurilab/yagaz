@@ -34,15 +34,18 @@ class DepotConsolideResource extends JsonResource
             'uuid' => $this->uuid,
             'nom' => $this->nom,
             'zone' => $this->zone,
+            'en_tension' => $stocks->contains(fn (Stock $stock) => $this->stockEnTension($stock)),
+            'vides_a_recuperer' => (int) $stocks->sum('vides'),
+            'derniere_activite_at' => $this->derniere_activite?->toIso8601String(),
             'stocks' => $stocks->map(fn (Stock $stock) => [
-                'format' => new FormatBouteilleResource($stock->format),
+                'format_id' => $stock->format->id,
+                'format_code' => $stock->format->code,
+                'format_marque' => $stock->format->marque,
                 'pleines' => $stock->pleines,
                 'vides' => $stock->vides,
                 'seuil_plein_bas' => $stock->seuil_plein_bas,
                 'tension' => $this->stockEnTension($stock),
             ])->values(),
-            'tension' => $stocks->contains(fn (Stock $stock) => $this->stockEnTension($stock)),
-            'derniere_activite' => $this->derniere_activite,
         ];
     }
 

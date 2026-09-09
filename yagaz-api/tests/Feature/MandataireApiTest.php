@@ -93,8 +93,8 @@ class MandataireApiTest extends TestCase
         $reponse->assertJsonCount(2, 'data');
 
         $depotsJson = collect($reponse->json('data'))->keyBy('uuid');
-        $this->assertTrue($depotsJson[$depot1->uuid]['tension']);
-        $this->assertFalse($depotsJson[$depot2->uuid]['tension']);
+        $this->assertTrue($depotsJson[$depot1->uuid]['en_tension']);
+        $this->assertFalse($depotsJson[$depot2->uuid]['en_tension']);
         $this->assertSame('Dakar', $depotsJson[$depot1->uuid]['zone']);
     }
 

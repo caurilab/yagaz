@@ -17,6 +17,26 @@ export async function getDepotsConsolides(orgUuid: string): Promise<DepotConsoli
   return unwrap(api.get(`/api/mandataires/${orgUuid}/depots`))
 }
 
+export interface CreerDepotPayload {
+  nom: string
+  zone?: string | null
+}
+
+export async function creerDepot(orgUuid: string, payload: CreerDepotPayload): Promise<DepotConsolide> {
+  if (DEMO_MODE) {
+    return withDemoDelay<DepotConsolide>({
+      uuid: `demo-depot-${Date.now()}`,
+      nom: payload.nom,
+      zone: payload.zone ?? null,
+      en_tension: false,
+      vides_a_recuperer: 0,
+      derniere_activite_at: null,
+      stocks: [],
+    })
+  }
+  return unwrap(api.post(`/api/mandataires/${orgUuid}/depots`, payload))
+}
+
 export async function getReappros(orgUuid: string): Promise<Reappro[]> {
   if (DEMO_MODE) return withDemoDelay(DEMO_REAPPROS)
   return unwrap(api.get(`/api/mandataires/${orgUuid}/reappros`))
