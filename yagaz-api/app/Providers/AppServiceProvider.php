@@ -2,8 +2,11 @@
 
 namespace App\Providers;
 
+use App\Contracts\Ia\IaProvider;
 use App\Contracts\Notification\CanalNotification;
 use App\Contracts\Payment\PaymentProvider;
+use App\Services\Ia\ClaudeProvider;
+use App\Services\Ia\SimulateurIa;
 use App\Services\Notification\CanalLog;
 use App\Services\Payment\AgregateurPaiement;
 use App\Services\Payment\SimulateurPaiement;
@@ -34,6 +37,17 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(PaymentProvider::class, match (config('paiement.provider')) {
             'agregateur' => AgregateurPaiement::class,
             default => SimulateurPaiement::class,
+        });
+
+        // Provider IA par défaut (ADR 0013, brique 1) : `simulateur` (aucun
+        // appel réseau réel) tant qu'aucune clé Claude n'est disponible.
+        // `ClaudeProvider` (API Anthropic Messages) est prêt à activer via
+        // `IA_PROVIDER=claude` une fois `IA_CLAUDE_API_KEY` renseignée
+        // (`config/ia.php`) — sans toucher aux contrôleurs ni aux services
+        // métier.
+        $this->app->bind(IaProvider::class, match (config('ia.provider')) {
+            'claude' => ClaudeProvider::class,
+            default => SimulateurIa::class,
         });
     }
 

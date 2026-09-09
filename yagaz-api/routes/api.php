@@ -81,6 +81,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // consommation/dépense — cloisonnés au périmètre foyer (`site_acces`).
     Route::get('/historique', [HistoriqueController::class, 'index']);
     Route::get('/analyse', [AnalyseController::class, 'index']);
+    // Insights foyer en langage naturel (ADR 0013, brique 1) : throttle dédié
+    // (indépendant du throttle global `api`) pour limiter le coût/l'abus des
+    // appels IA.
+    Route::get('/analyse/insights', [AnalyseController::class, 'insights'])->middleware('throttle:20,1');
 
     // === Équipements (contrat API, §« Équipements » — ADR 0012) =========
     // Registre unifié balance/température/écran, cloisonné par
