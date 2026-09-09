@@ -51,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const espacesDisponibles = useMemo<Espace[]>(() => {
     if (!user) return []
-    const roles = new Set(user.roles.map((r) => r.role))
+    const roles = new Set((user.roles ?? []).map((r) => r.role))
     const disponibles: Espace[] = []
     if (roles.has('mandataire')) disponibles.push('mandataire')
     if (roles.has('distributeur')) disponibles.push('distributeur')
@@ -71,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const organisationCourante = useMemo<OrganisationRef | null>(() => {
     if (!user) return null
-    return user.roles.find((r) => r.role === espace)?.organisation ?? null
+    return (user.roles ?? []).find((r) => r.role === espace)?.organisation ?? null
   }, [user, espace])
 
   async function login(telephone: string, motDePasse: string) {
