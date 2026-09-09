@@ -29,6 +29,25 @@ import { couleurs, espacements, rayons } from '../../../../theme/couleurs';
 import { formaterDateRelative } from '../../../utils/date';
 import type { Commande, EtapeSuivi, SuiviCommande } from '../../../api/types';
 
+/**
+ * Libellé d'ETA volontairement approximatif (jamais de minute exacte, cf.
+ * contrat API - estimation grossière) : arrondi au multiple de 15 min
+ * au-dessous d'1 h, au multiple de 30 min au-delà (ex. 22 -> « ~30 min »,
+ * 74 -> « ~1 h 30 »).
+ */
+function etaApprox(minutes: number): string {
+  const pas = minutes < 60 ? 15 : 30;
+  const arrondi = Math.ceil(minutes / pas) * pas;
+
+  if (arrondi < 60) {
+    return `~${arrondi} min`;
+  }
+
+  const heures = Math.floor(arrondi / 60);
+  const minutesRestantes = arrondi % 60;
+  return minutesRestantes === 0 ? `~${heures} h` : `~${heures} h ${minutesRestantes}`;
+}
+
 export default function EcranSuiviCommande() {
   const { uuid } = useLocalSearchParams<{ uuid: string }>();
   const { commandes } = useCommandes();
@@ -46,6 +65,7 @@ export default function EcranSuiviCommande() {
       format: formatsDemo[0],
       quantite: 1,
       depot_uuid: '',
+      type: 'echange',
       statut: 'confirmee',
       commission_g: 0,
       mode_paiement: 'a_la_livraison',
@@ -104,7 +124,7 @@ function BlocEta({ suivi }: { suivi: SuiviCommande }) {
     return (
       <View style={styles.carteEta}>
         <Icone nom="livraison" taille={28} couleur={couleurs.rouge} />
-        <Text style={styles.chiffreEta}>~ {suivi.eta_minutes} min</Text>
+        <Text style={styles.chiffreEta}>{etaApprox(suivi.eta_minutes)}</Text>
         <Text style={styles.libelleEta}>
           Arrivée estimée{suivi.livraison.livreur ? ` · ${suivi.livraison.livreur}` : ''}
         </Text>

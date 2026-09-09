@@ -11,13 +11,31 @@ import { useDonnees } from '../../data/DonneesContext';
 import { listerDepots } from '../../api/endpoints';
 import { avecRepliDemo, depotsDemo } from '../../api/demo';
 import { couleurs, espacements, rayons } from '../../../theme/couleurs';
-import type { Depot, Format } from '../../api/types';
+import type { Depot, Format, TypeCommande } from '../../api/types';
+
+const OPTIONS_TYPE: { valeur: TypeCommande; titre: string; description: string }[] = [
+  {
+    valeur: 'echange',
+    titre: 'Recharge (échange)',
+    description: 'On récupère votre bouteille vide et on la remplace par une pleine.',
+  },
+  {
+    valeur: 'achat',
+    titre: 'Acheter une bouteille neuve',
+    description: 'On vous livre une nouvelle bouteille pleine.',
+  },
+];
 
 /** Commander une recharge : format, quantité, dépôt à proximité (UX §2 "Recharge", contrat §3). */
 export default function EcranNouvelleCommande() {
   const { formats, siteActif, bouteilleActive } = useDonnees();
   const { creer } = useCommandes();
   const { alerter } = useDialogue();
+
+  const [typeChoisi, setTypeChoisi] = useState<TypeCommande>('echange');
+  // Marque « souhaitée » = celle de la bouteille active du foyer, pertinente
+  // surtout en échange (on veut la même marque en retour).
+  const marqueSouhaitee = bouteilleActive?.format.marque;
 
   const codes = useMemo(() => Array.from(new Set(formats.map((f) => f.code))), [formats]);
   // Par défaut, on commande le format de la bouteille active (même marque que
@@ -80,6 +98,7 @@ export default function EcranNouvelleCommande() {
         format_id: depotChoisi.format_id ?? formatChoisi.id,
         quantite,
         depot_uuid: depotChoisi.uuid,
+        type: typeChoisi,
       });
       router.back();
     } catch {
@@ -92,6 +111,24 @@ export default function EcranNouvelleCommande() {
   return (
     <SafeAreaView style={styles.conteneur} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.contenu} keyboardShouldPersistTaps="handled">
+        <View style={styles.rangeeType}>
+          {OPTIONS_TYPE.map((option) => (
+            <Pressable
+              key={option.valeur}
+              style={[styles.carteType, typeChoisi === option.valeur && styles.carteTypeActive]}
+              onPress={() => setTypeChoisi(option.valeur)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: typeChoisi === option.valeur }}>
+              <Text style={[styles.titreType, typeChoisi === option.valeur && styles.titreTypeActif]}>
+                {option.titre}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+        <Text style={styles.texteExplicationType}>
+          {OPTIONS_TYPE.find((option) => option.valeur === typeChoisi)?.description}
+        </Text>
+
         <Text style={styles.etapeTitre}>1. Format</Text>
         <SelecteurFormat codes={codes} codeChoisi={codeChoisi} onChoisir={choisirCode} />
 
@@ -135,7 +172,17 @@ export default function EcranNouvelleCommande() {
                     <Icone nom="localisation" taille={16} couleur={couleurs.rouge} />
                     <Text style={styles.nomDepot}>{depot.nom}</Text>
                   </View>
-                  {depot.marque ? <Text style={styles.adresseDepot}>Marque fournie : {depot.marque}</Text> : null}
+                  {depot.marque ? (
+                    marqueSouhaitee && depot.marque !== marqueSouhaitee ? (
+                      <Text style={styles.avertissementMarque}>
+                        Pas de {marqueSouhaitee} ici - proposé : {depot.marque}
+                      </Text>
+                    ) : marqueSouhaitee && depot.marque === marqueSouhaitee ? (
+                      <Text style={styles.marqueDisponible}>{depot.marque} disponible</Text>
+                    ) : (
+                      <Text style={styles.adresseDepot}>Marque fournie : {depot.marque}</Text>
+                    )
+                  ) : null}
                   {depot.adresse ? <Text style={styles.adresseDepot}>{depot.adresse}</Text> : null}
                   {!depot.disponible ? <Text style={styles.texteIndisponible}>Indisponible pour l'instant</Text> : null}
                 </View>
@@ -173,6 +220,39 @@ const styles = StyleSheet.create({
     color: couleurs.texte,
     marginTop: espacements.lg,
     marginBottom: espacements.sm,
+  },
+  rangeeType: {
+    flexDirection: 'row',
+    gap: espacements.sm,
+  },
+  carteType: {
+    flex: 1,
+    backgroundColor: couleurs.carte,
+    borderRadius: rayons.md,
+    borderWidth: 2,
+    borderColor: couleurs.bordure,
+    paddingVertical: espacements.md,
+    paddingHorizontal: espacements.sm,
+    alignItems: 'center',
+  },
+  carteTypeActive: {
+    borderColor: couleurs.rouge,
+    backgroundColor: couleurs.rougeClair,
+  },
+  titreType: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: couleurs.texteDoux,
+    textAlign: 'center',
+  },
+  titreTypeActif: {
+    color: couleurs.rouge,
+  },
+  texteExplicationType: {
+    fontSize: 12,
+    color: couleurs.texteDoux,
+    lineHeight: 17,
+    marginTop: espacements.xs,
   },
   rangeeQuantite: {
     flexDirection: 'row',
@@ -254,6 +334,18 @@ const styles = StyleSheet.create({
   texteIndisponible: {
     fontSize: 12,
     color: couleurs.rouge,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  avertissementMarque: {
+    fontSize: 12,
+    color: couleurs.ambre,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  marqueDisponible: {
+    fontSize: 12,
+    color: couleurs.vertOk,
     fontWeight: '600',
     marginTop: 2,
   },

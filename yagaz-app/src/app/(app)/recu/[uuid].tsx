@@ -44,6 +44,7 @@ export default function EcranRecu() {
       format: formatsDemo[0],
       quantite: 1,
       depot_uuid: '',
+      type: 'echange',
       statut: 'confirmee',
       commission_g: 0,
       mode_paiement: 'a_la_livraison',

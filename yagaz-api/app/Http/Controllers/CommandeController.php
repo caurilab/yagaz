@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\TypeCommande;
 use App\Http\Requests\CommandeConfirmerReapproRequest;
 use App\Http\Requests\CommandeLivraisonRequest;
 use App\Http\Requests\CommandeReponseRequest;
@@ -55,7 +56,12 @@ class CommandeController extends Controller
         $depot = Organisation::where('uuid', $request->validated('depot_uuid'))->firstOrFail();
         $format = FormatBouteille::findOrFail($request->validated('format_id'));
 
+        $typeBrut = $request->validated('type');
+        $type = $typeBrut !== null ? TypeCommande::from($typeBrut) : TypeCommande::Echange;
+
         $commande = $this->cycle->creerDepuisFoyer($site, $depot, $format, (int) $request->validated('quantite'), $user);
+        $commande->type = $type;
+        $commande->save();
 
         return (new CommandeResource($commande->load(self::RELATIONS)))
             ->response()

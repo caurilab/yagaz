@@ -130,6 +130,7 @@ export function CommandesProvider({ children }: { children: ReactNode }) {
         format: { id: corps.format_id, code: '?', marque: '?', tare_nominale_g: 0, contenance_gaz_g: 0 },
         quantite: corps.quantite,
         depot_uuid: corps.depot_uuid,
+        type: corps.type ?? 'echange',
         statut: 'confirmee',
         commission_g: 0,
         mode_paiement: 'a_la_livraison',

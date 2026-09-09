@@ -22,6 +22,7 @@ class CommandeResource extends JsonResource
         return [
             'uuid' => $this->uuid,
             'origine' => $this->origine->value,
+            'type' => $this->type?->value ?? 'echange',
             'statut' => $this->statut->value,
             'site' => $this->whenLoaded(
                 'site',

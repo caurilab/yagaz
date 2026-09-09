@@ -6,6 +6,7 @@ use App\Enums\ModePaiement;
 use App\Enums\OrigineCommande;
 use App\Enums\StatutCommande;
 use App\Enums\StatutPaiement;
+use App\Enums\TypeCommande;
 use App\Models\Commande;
 use App\Models\FormatBouteille;
 use App\Models\Organisation;
@@ -27,6 +28,7 @@ class CommandeFactory extends Factory
     {
         return [
             'origine' => OrigineCommande::Foyer,
+            'type' => TypeCommande::Echange,
             'demandeur_user_id' => User::factory(),
             'demandeur_org_id' => null,
             'cible_org_id' => Organisation::factory()->depot(),

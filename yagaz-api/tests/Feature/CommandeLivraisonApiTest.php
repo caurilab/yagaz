@@ -114,10 +114,12 @@ class CommandeLivraisonApiTest extends TestCase
             'format_id' => $format->id,
             'quantite' => 2,
             'depot_uuid' => $depot->uuid,
+            'type' => 'achat',
         ]);
         $creation->assertCreated();
         $creation->assertJsonPath('data.statut', 'confirmee');
         $creation->assertJsonPath('data.origine', 'foyer');
+        $creation->assertJsonPath('data.type', 'achat');
         $creation->assertJsonPath('data.commission_g', 100);
         $uuid = $creation->json('data.uuid');
 
@@ -186,6 +188,26 @@ class CommandeLivraisonApiTest extends TestCase
             'delta_vides' => 2,
             'livraison_id' => $livraisonId,
         ]);
+    }
+
+    /**
+     * Sans `type` dans la requête, la commande part `echange` par défaut
+     * (v1 « type simple, prix plus tard »).
+     */
+    public function test_une_commande_sans_type_est_echange_par_defaut(): void
+    {
+        [$foyer, $site] = $this->foyerAvecSite();
+        [$depot, $format] = $this->depotAvecStock();
+
+        Sanctum::actingAs($foyer);
+        $creation = $this->postJson('/api/commandes', [
+            'site_uuid' => $site->uuid,
+            'format_id' => $format->id,
+            'quantite' => 1,
+            'depot_uuid' => $depot->uuid,
+        ]);
+        $creation->assertCreated();
+        $creation->assertJsonPath('data.type', 'echange');
     }
 
     // === Cloisonnement ====================================================

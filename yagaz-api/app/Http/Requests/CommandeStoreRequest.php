@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\TypeCommande;
 use App\Enums\TypeOrganisation;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -29,6 +30,7 @@ class CommandeStoreRequest extends FormRequest
             'site_uuid' => ['required', 'uuid', 'exists:sites,uuid'],
             'format_id' => ['required', 'integer', 'exists:formats_bouteille,id'],
             'quantite' => ['required', 'integer', 'min:1', 'max:100'],
+            'type' => ['sometimes', Rule::enum(TypeCommande::class)],
             'depot_uuid' => [
                 'required',
                 'uuid',

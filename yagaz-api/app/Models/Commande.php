@@ -6,6 +6,7 @@ use App\Enums\ModePaiement;
 use App\Enums\OrigineCommande;
 use App\Enums\StatutCommande;
 use App\Enums\StatutPaiement;
+use App\Enums\TypeCommande;
 use App\Traits\HasUuid;
 use Database\Factories\CommandeFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -27,7 +28,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * défense en profondeur, au cas où un futur appel les mass-assignerait par
  * erreur depuis une requête.
  */
-#[Fillable(['origine', 'site_id', 'format_id', 'quantite', 'mode_paiement'])]
+#[Fillable(['origine', 'type', 'site_id', 'format_id', 'quantite', 'mode_paiement'])]
 class Commande extends Model
 {
     /** @use HasFactory<CommandeFactory> */
@@ -37,6 +38,7 @@ class Commande extends Model
     {
         return [
             'origine' => OrigineCommande::class,
+            'type' => TypeCommande::class,
             'statut' => StatutCommande::class,
             'mode_paiement' => ModePaiement::class,
             'statut_paiement' => StatutPaiement::class,

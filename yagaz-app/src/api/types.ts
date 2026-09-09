@@ -297,12 +297,20 @@ export type StatutCommande =
   | 'livree'
   | 'annulee';
 
+/**
+ * Type simple, sans logique de prix en v1 (décision produit) : `echange` =
+ * on récupère la bouteille vide et on la remplace par une pleine ; `achat` =
+ * livraison d'une bouteille neuve, sans reprise.
+ */
+export type TypeCommande = 'echange' | 'achat';
+
 export interface Commande {
   uuid: string;
   site_uuid: string;
   format: Format;
   quantite: number;
   depot_uuid: string;
+  type: TypeCommande;
   statut: StatutCommande;
   commission_g: number;
   /** Défaut `a_la_livraison` (contrat §2 bis, paiement Mobile Money). */
@@ -345,6 +353,8 @@ export interface CorpsCreationCommande {
   format_id: number;
   quantite: number;
   depot_uuid: string;
+  /** Optionnel : défaut `echange` côté API. */
+  type?: TypeCommande;
 }
 
 export interface CorpsReponseCommande {
