@@ -7,9 +7,10 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
-import { ActivityIndicator, Animated, Easing, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BandeauSync } from '../../../components/BandeauSync';
+import { ChargementYagaz } from '../../../components/ChargementYagaz';
 import { FlammeAnimee } from '../../../components/FlammeAnimee';
 import { CourbeTemperatureHoraire } from '../../../components/graphiques/CourbeTemperatureHoraire';
 import { Icone } from '../../../components/icones';
@@ -180,7 +181,7 @@ export default function EcranTemperatureAnalyse() {
 
         {chargementInitial ? (
           <View style={styles.chargement}>
-            <ActivityIndicator color={couleurs.rouge} size="large" />
+            <ChargementYagaz texte="Chargement des températures..." />
           </View>
         ) : !analyse ? (
           <View style={styles.chargement}>

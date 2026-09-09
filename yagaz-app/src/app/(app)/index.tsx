@@ -1,10 +1,8 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
-  ActivityIndicator,
   Animated,
-  Easing,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -18,9 +16,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BadgeEtat } from '../../components/BadgeEtat';
 import { BandeauSync } from '../../components/BandeauSync';
+import { BarreProgression } from '../../components/BarreProgression';
 import { Bouton } from '../../components/Bouton';
 import { BouteilleGaz } from '../../components/BouteilleGaz';
 import { CarteAstuce } from '../../components/CarteAstuce';
+import { ChargementYagaz } from '../../components/ChargementYagaz';
 import { EncartConnecterMateriel } from '../../components/EncartConnecterMateriel';
 import { EncartTemperature } from '../../components/EncartTemperature';
 import { Icone, LogoYagaz } from '../../components/icones';
@@ -125,8 +125,7 @@ export default function EcranAccueilFoyer() {
         refreshControl={<RefreshControl refreshing={false} onRefresh={rafraichir} tintColor={couleurs.rouge} />}>
         {chargementInitial ? (
           <View style={styles.chargement}>
-            <ActivityIndicator color={couleurs.rouge} size="large" />
-            <Text style={styles.texteChargement}>Chargement de vos bouteilles...</Text>
+            <ChargementYagaz texte="Chargement de vos bouteilles..." />
           </View>
         ) : !bouteilleActive ? (
           <EtatVide />
@@ -242,22 +241,6 @@ function CarteBouteilleActive({
   const pctBorne = Math.max(0, Math.min(100, niveau.niveau_pct));
   const gazRestantKg = (niveau.gaz_g / 1000).toFixed(1).replace('.', ',');
 
-  // Remplissage animé de la barre de niveau (jamais quand le niveau est grisé par le gating).
-  const largeurNiveau = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    if (!aBalance) return;
-    largeurNiveau.setValue(0);
-    const animationNiveau = Animated.timing(largeurNiveau, {
-      toValue: pctBorne,
-      duration: 600,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    });
-    animationNiveau.start();
-    return () => animationNiveau.stop();
-  }, [aBalance, pctBorne, bouteille.uuid, largeurNiveau]);
-
   return (
     <CartePressable style={styles.carteActive} onPress={() => router.push(`/bouteille/${bouteille.uuid}`)}>
       <View style={styles.enTeteCarteActive}>
@@ -294,20 +277,8 @@ function CarteBouteilleActive({
                 <BadgeEtat etat={niveau.etat} />
               </View>
 
-              <View style={styles.barreNiveau}>
-                <Animated.View
-                  style={[
-                    styles.barreNiveauRemplie,
-                    styles.barreNiveauRemplieConteneur,
-                    { width: largeurNiveau.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'] }) },
-                  ]}>
-                  <LinearGradient
-                    colors={[couleurs.degradeDebut, couleurs.rouge]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={StyleSheet.absoluteFill}
-                  />
-                </Animated.View>
+              <View style={styles.barreNiveauConteneur}>
+                <BarreProgression pct={pctBorne} hauteur={9} couleurFond={couleurs.rougeClair} />
               </View>
 
               {niveau.estimation ? (
@@ -475,10 +446,6 @@ const styles = StyleSheet.create({
     paddingVertical: espacements.xxl,
     gap: espacements.md,
   },
-  texteChargement: {
-    color: couleurs.texteDoux,
-    fontSize: 14,
-  },
   carteVide: {
     backgroundColor: couleurs.carte,
     borderRadius: rayons.xl,
@@ -586,19 +553,8 @@ const styles = StyleSheet.create({
     color: couleurs.texte,
     letterSpacing: -1,
   },
-  barreNiveau: {
-    height: 9,
-    borderRadius: rayons.rond,
-    backgroundColor: couleurs.rougeClair,
-    overflow: 'hidden',
+  barreNiveauConteneur: {
     marginTop: espacements.xs,
-  },
-  barreNiveauRemplie: {
-    height: '100%',
-    borderRadius: rayons.rond,
-  },
-  barreNiveauRemplieConteneur: {
-    overflow: 'hidden',
   },
   texteEstimation: {
     fontSize: 12,

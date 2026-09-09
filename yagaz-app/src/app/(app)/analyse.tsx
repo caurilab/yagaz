@@ -5,10 +5,11 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BandeauSync } from '../../components/BandeauSync';
+import { ChargementYagaz } from '../../components/ChargementYagaz';
 import { Icone } from '../../components/icones';
 import { BarresConsommation } from '../../components/graphiques/BarresConsommation';
 import { CalendrierHeatmap } from '../../components/graphiques/CalendrierHeatmap';
@@ -153,7 +154,7 @@ export default function EcranAnalyse() {
 
         {chargementInitial ? (
           <View style={styles.chargement}>
-            <ActivityIndicator color={couleurs.rouge} size="large" />
+            <ChargementYagaz texte="Chargement de votre analyse..." />
           </View>
         ) : !analyse ? (
           <View style={styles.chargement}>

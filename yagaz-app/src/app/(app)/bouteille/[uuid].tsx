@@ -4,6 +4,7 @@ import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View } from 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BadgeEtat } from '../../../components/BadgeEtat';
 import { BandeauSync } from '../../../components/BandeauSync';
+import { BarreProgression } from '../../../components/BarreProgression';
 import { Bouton } from '../../../components/Bouton';
 import { BouteilleGaz } from '../../../components/BouteilleGaz';
 import { BouteilleGaz3D } from '../../../components/BouteilleGaz3D';
@@ -58,7 +59,6 @@ export default function EcranDetailBouteille() {
   const echelleBouteille = useRef(new Animated.Value(0.72)).current;
   const translationBouteille = useRef(new Animated.Value(-18)).current;
   const opaciteInfos = useRef(new Animated.Value(0)).current;
-  const largeurNiveau = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     opaciteBouteille.setValue(0);
@@ -87,21 +87,6 @@ export default function EcranDetailBouteille() {
       apparitionInfos.stop();
     };
   }, [uuid, opaciteBouteille, echelleBouteille, translationBouteille, opaciteInfos]);
-
-  // Remplissage animé de la barre de niveau (jamais quand le niveau est grisé par le gating).
-  useEffect(() => {
-    if (!bouteille || !aBalance) return;
-    const pct = Math.max(0, Math.min(100, bouteille.niveau.niveau_pct));
-    largeurNiveau.setValue(0);
-    const animationNiveau = Animated.timing(largeurNiveau, {
-      toValue: pct,
-      duration: 600,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    });
-    animationNiveau.start();
-    return () => animationNiveau.stop();
-  }, [bouteille?.uuid, bouteille?.niveau.niveau_pct, aBalance, largeurNiveau]);
 
   if (!bouteille) {
     return (
@@ -259,12 +244,13 @@ export default function EcranDetailBouteille() {
 
           {aBalance ? (
             <Animated.View style={[styles.blocNiveauAnime, { opacity: opaciteInfos }]}>
-              <View style={styles.barreNiveau}>
-                <Animated.View
-                  style={[
-                    styles.barreNiveauRemplie,
-                    { width: largeurNiveau.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'] }) },
-                  ]}
+              <View style={styles.barreNiveauConteneur}>
+                <BarreProgression
+                  pct={niveau.niveau_pct}
+                  hauteur={10}
+                  couleurDebut={couleurs.rouge}
+                  couleurFin={couleurs.rouge}
+                  couleurFond={couleurs.rougeClair}
                 />
               </View>
               <Text style={styles.texteSecondaire}>Niveau : {niveau.niveau_pct} % ({niveau.gaz_g} g)</Text>
@@ -508,17 +494,8 @@ const styles = StyleSheet.create({
   chiffreDesactive: {
     color: couleurs.grisNeutre,
   },
-  barreNiveau: {
+  barreNiveauConteneur: {
     alignSelf: 'stretch',
-    height: 10,
-    borderRadius: rayons.rond,
-    backgroundColor: couleurs.rougeClair,
-    overflow: 'hidden',
-  },
-  barreNiveauRemplie: {
-    height: '100%',
-    borderRadius: rayons.rond,
-    backgroundColor: couleurs.rouge,
   },
   texteSecondaire: {
     fontSize: 13,

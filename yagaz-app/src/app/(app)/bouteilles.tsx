@@ -4,6 +4,7 @@ import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from '
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BadgeEtat } from '../../components/BadgeEtat';
+import { BarreProgression } from '../../components/BarreProgression';
 import { Bouton } from '../../components/Bouton';
 import { BouteilleGaz } from '../../components/BouteilleGaz';
 import { Icone } from '../../components/icones';
@@ -126,13 +127,8 @@ export default function EcranBouteilles() {
                   </Text>
                 </View>
 
-                <View style={styles.barre}>
-                  <LinearGradient
-                    colors={[couleurs.degradeDebut, couleurs.rouge]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={[styles.barreRemplie, { width: `${pct}%` }]}
-                  />
+                <View style={styles.barreConteneur}>
+                  <BarreProgression pct={pct} hauteur={8} />
                 </View>
               </View>
             </Pressable>
@@ -315,15 +311,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: couleurs.texteDoux,
   },
-  barre: {
-    height: 8,
-    borderRadius: rayons.rond,
-    backgroundColor: couleurs.fond,
-    overflow: 'hidden',
+  barreConteneur: {
     marginTop: espacements.sm,
-  },
-  barreRemplie: {
-    height: '100%',
-    borderRadius: rayons.rond,
   },
 });
