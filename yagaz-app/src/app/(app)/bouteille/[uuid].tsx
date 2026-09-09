@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BadgeEtat } from '../../../components/BadgeEtat';
 import { BandeauSync } from '../../../components/BandeauSync';
@@ -43,6 +43,56 @@ export default function EcranDetailBouteille() {
     () => formats.filter((f) => f.code === codeEdit),
     [formats, codeEdit]
   );
+
+  // Entrée de la bouteille (grandit/avance/se pose) au montage de l'écran.
+  const opaciteBouteille = useRef(new Animated.Value(0)).current;
+  const echelleBouteille = useRef(new Animated.Value(0.72)).current;
+  const translationBouteille = useRef(new Animated.Value(-18)).current;
+  const opaciteInfos = useRef(new Animated.Value(0)).current;
+  const largeurNiveau = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    opaciteBouteille.setValue(0);
+    echelleBouteille.setValue(0.72);
+    translationBouteille.setValue(-18);
+    opaciteInfos.setValue(0);
+
+    const entreeBouteille = Animated.parallel([
+      Animated.spring(opaciteBouteille, { toValue: 1, friction: 6, tension: 90, useNativeDriver: true }),
+      Animated.spring(echelleBouteille, { toValue: 1, friction: 6, tension: 90, useNativeDriver: true }),
+      Animated.spring(translationBouteille, { toValue: 0, friction: 6, tension: 90, useNativeDriver: true }),
+    ]);
+    const apparitionInfos = Animated.timing(opaciteInfos, {
+      toValue: 1,
+      duration: 300,
+      delay: 90,
+      easing: Easing.out(Easing.ease),
+      useNativeDriver: true,
+    });
+
+    entreeBouteille.start();
+    apparitionInfos.start();
+
+    return () => {
+      entreeBouteille.stop();
+      apparitionInfos.stop();
+    };
+  }, [uuid, opaciteBouteille, echelleBouteille, translationBouteille, opaciteInfos]);
+
+  // Remplissage animé de la barre de niveau (jamais quand le niveau est grisé par le gating).
+  useEffect(() => {
+    if (!bouteille || !aBalance) return;
+    const pct = Math.max(0, Math.min(100, bouteille.niveau.niveau_pct));
+    largeurNiveau.setValue(0);
+    const animationNiveau = Animated.timing(largeurNiveau, {
+      toValue: pct,
+      duration: 600,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    });
+    animationNiveau.start();
+    return () => animationNiveau.stop();
+  }, [bouteille?.uuid, bouteille?.niveau.niveau_pct, aBalance, largeurNiveau]);
 
   if (!bouteille) {
     return (
@@ -165,33 +215,46 @@ export default function EcranDetailBouteille() {
 
         <View style={styles.carte}>
           <View style={styles.heroNiveau}>
-            <BouteilleGaz
-              couleur={aBalance ? couleurBouteille : null}
-              code={bouteille.format.code}
-              marqueNom={bouteille.format.marque}
-              niveauPct={aBalance ? niveau.niveau_pct : undefined}
-              taille={150}
-            />
-            <View style={styles.blocAutonomie}>
+            <Animated.View
+              style={{
+                opacity: opaciteBouteille,
+                transform: [{ scale: echelleBouteille }, { translateY: translationBouteille }],
+              }}>
+              <BouteilleGaz
+                couleur={aBalance ? couleurBouteille : null}
+                code={bouteille.format.code}
+                marqueNom={bouteille.format.marque}
+                niveauPct={aBalance ? niveau.niveau_pct : undefined}
+                taille={150}
+              />
+            </Animated.View>
+            <Animated.View style={[styles.blocAutonomie, { opacity: opaciteInfos }]}>
               <Text style={[styles.chiffreAutonomie, !aBalance && styles.chiffreDesactive]}>
                 {aBalance ? formaterAutonomie(niveau.autonomie_heures) : '--'}
               </Text>
               <Text style={styles.libelle}>d'autonomie restante</Text>
-            </View>
+            </Animated.View>
           </View>
 
           {aBalance ? (
-            <>
+            <Animated.View style={[styles.blocNiveauAnime, { opacity: opaciteInfos }]}>
               <View style={styles.barreNiveau}>
-                <View style={[styles.barreNiveauRemplie, { width: `${Math.max(0, Math.min(100, niveau.niveau_pct))}%` }]} />
+                <Animated.View
+                  style={[
+                    styles.barreNiveauRemplie,
+                    { width: largeurNiveau.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'] }) },
+                  ]}
+                />
               </View>
               <Text style={styles.texteSecondaire}>Niveau : {niveau.niveau_pct} % ({niveau.gaz_g} g)</Text>
               {niveau.estimation ? (
                 <Text style={styles.texteEstimation}>Estimation en cours d'affinage</Text>
               ) : null}
-            </>
+            </Animated.View>
           ) : (
-            <EncartConnecterMateriel texte="Connectez votre pèse-bouteille pour voir le niveau" />
+            <Animated.View style={[styles.blocNiveauAnime, { opacity: opaciteInfos }]}>
+              <EncartConnecterMateriel texte="Connectez votre pèse-bouteille pour voir le niveau" />
+            </Animated.View>
           )}
         </View>
 
@@ -405,6 +468,10 @@ const styles = StyleSheet.create({
     marginBottom: espacements.md,
   },
   blocAutonomie: {
+    alignItems: 'center',
+  },
+  blocNiveauAnime: {
+    alignSelf: 'stretch',
     alignItems: 'center',
   },
   chiffreAutonomie: {

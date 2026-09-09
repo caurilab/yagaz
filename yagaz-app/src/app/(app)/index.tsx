@@ -1,6 +1,19 @@
+import { useEffect, useRef, type ReactNode } from 'react';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Animated,
+  Easing,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BadgeEtat } from '../../components/BadgeEtat';
@@ -181,6 +194,36 @@ function EtatVide() {
   );
 }
 
+/**
+ * Pressable avec léger retour tactile (scale ~0.97 au press, retour à 1 au relâchement) - ne
+ * change pas le style visuel au repos, juste un `Animated.View` interne pour le scale.
+ */
+function CartePressable({
+  style,
+  onPress,
+  children,
+}: {
+  style?: StyleProp<ViewStyle>;
+  onPress: () => void;
+  children: ReactNode;
+}) {
+  const echelle = useRef(new Animated.Value(1)).current;
+
+  function surPressIn() {
+    Animated.spring(echelle, { toValue: 0.97, friction: 6, tension: 120, useNativeDriver: true }).start();
+  }
+
+  function surPressOut() {
+    Animated.spring(echelle, { toValue: 1, friction: 6, tension: 120, useNativeDriver: true }).start();
+  }
+
+  return (
+    <Pressable onPress={onPress} onPressIn={surPressIn} onPressOut={surPressOut} style={style}>
+      <Animated.View style={{ transform: [{ scale: echelle }] }}>{children}</Animated.View>
+    </Pressable>
+  );
+}
+
 function CarteBouteilleActive({
   bouteille,
   marques,
@@ -196,8 +239,24 @@ function CarteBouteilleActive({
   const pctBorne = Math.max(0, Math.min(100, niveau.niveau_pct));
   const gazRestantKg = (niveau.gaz_g / 1000).toFixed(1).replace('.', ',');
 
+  // Remplissage animé de la barre de niveau (jamais quand le niveau est grisé par le gating).
+  const largeurNiveau = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (!aBalance) return;
+    largeurNiveau.setValue(0);
+    const animationNiveau = Animated.timing(largeurNiveau, {
+      toValue: pctBorne,
+      duration: 600,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    });
+    animationNiveau.start();
+    return () => animationNiveau.stop();
+  }, [aBalance, pctBorne, bouteille.uuid, largeurNiveau]);
+
   return (
-    <Pressable style={styles.carteActive} onPress={() => router.push(`/bouteille/${bouteille.uuid}`)}>
+    <CartePressable style={styles.carteActive} onPress={() => router.push(`/bouteille/${bouteille.uuid}`)}>
       <View style={styles.enTeteCarteActive}>
         <Text style={styles.titreCarteActive}>Ma bouteille active</Text>
         <View style={styles.lienDetail}>
@@ -233,12 +292,19 @@ function CarteBouteilleActive({
               </View>
 
               <View style={styles.barreNiveau}>
-                <LinearGradient
-                  colors={[couleurs.degradeDebut, couleurs.rouge]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={[styles.barreNiveauRemplie, { width: `${pctBorne}%` }]}
-                />
+                <Animated.View
+                  style={[
+                    styles.barreNiveauRemplie,
+                    styles.barreNiveauRemplieConteneur,
+                    { width: largeurNiveau.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'] }) },
+                  ]}>
+                  <LinearGradient
+                    colors={[couleurs.degradeDebut, couleurs.rouge]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={StyleSheet.absoluteFill}
+                  />
+                </Animated.View>
               </View>
 
               {niveau.estimation ? (
@@ -271,7 +337,7 @@ function CarteBouteilleActive({
           )}
         </View>
       </View>
-    </Pressable>
+    </CartePressable>
   );
 }
 
@@ -279,7 +345,7 @@ function CarteMiniature({ bouteille, marques }: { bouteille: Bouteille; marques:
   const couleurMarqueBouteille = couleurPourFormat(bouteille.format, marques);
   const couleurPct = couleursEtat[bouteille.niveau.etat];
   return (
-    <Pressable style={styles.carteMiniature} onPress={() => router.push(`/bouteille/${bouteille.uuid}`)}>
+    <CartePressable style={styles.carteMiniature} onPress={() => router.push(`/bouteille/${bouteille.uuid}`)}>
       <BouteilleGaz
         couleur={couleurMarqueBouteille}
         code={bouteille.format.code}
@@ -292,7 +358,7 @@ function CarteMiniature({ bouteille, marques }: { bouteille: Bouteille; marques:
         {bouteille.format.code} {bouteille.role_bouteille === 'active' ? 'active' : 'secours'}
       </Text>
       <Text style={[styles.pourcentMiniature, { color: couleurPct }]}>{bouteille.niveau.niveau_pct} %</Text>
-    </Pressable>
+    </CartePressable>
   );
 }
 
@@ -527,6 +593,9 @@ const styles = StyleSheet.create({
   barreNiveauRemplie: {
     height: '100%',
     borderRadius: rayons.rond,
+  },
+  barreNiveauRemplieConteneur: {
+    overflow: 'hidden',
   },
   texteEstimation: {
     fontSize: 12,
