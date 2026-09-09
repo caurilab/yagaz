@@ -385,6 +385,18 @@ export function analyse(params: CorpsAnalyse = {}) {
   return requeteApi<{ data: Analyse }>(`/analyse${suffixe}`);
 }
 
+/**
+ * Conseils en langage naturel générés à partir des agrégats d'analyse
+ * (assistant IA côté serveur, ADR 0013). Réponse enveloppée `data`.
+ */
+export function analyseInsights(params: CorpsAnalyse = {}) {
+  const p = new URLSearchParams();
+  if (params.site_uuid) p.set('site_uuid', params.site_uuid);
+  if (params.periode) p.set('periode', params.periode);
+  const suffixe = p.toString() ? `?${p.toString()}` : '';
+  return requeteApi<{ data: { insights: string; periode: string } }>(`/analyse/insights${suffixe}`);
+}
+
 // --- Température & cuisson (ADR 0011, doc 13 §3) ---
 
 /** Pas d'enveloppe `data` pour cet endpoint (contrat doc 13 §3). */

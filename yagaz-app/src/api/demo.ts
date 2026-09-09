@@ -914,6 +914,15 @@ export const analyseDemoParPeriode: Record<PeriodeAnalyse, Analyse> = {
   },
 };
 
+/** Repli démo des conseils IA (ADR 0013) - offline/sans clé. */
+export function insightsDemo(periode: PeriodeAnalyse): { insights: string; periode: PeriodeAnalyse } {
+  return {
+    periode,
+    insights:
+      'Aperçu hors connexion : ta consommation reste stable. Garde une bouteille de secours pleine pour ne jamais tomber en panne, et recharge avant de descendre sous 15%.',
+  };
+}
+
 // --- Température & cuisson (ADR 0011, doc 13 §3) : repli démo ---
 
 export const temperatureDemoParSite: Record<string, TemperatureSite> = {

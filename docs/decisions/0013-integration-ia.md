@@ -58,6 +58,12 @@ utile plus tard si l'on veut donner au modèle des *outils* (interroger la base,
 déclencher une commande) - envisagé pour l'assistant conversationnel (brique 2),
 hors périmètre de ce premier jet.
 
+**Décision (confirmée par le porteur, 2026-09-09) : on retient l'API directe.**
+MCP n'est **pas adopté** pour l'instant : il n'apporterait de la valeur qu'avec
+de l'automatisation (outils actionnables), non nécessaire aux cas d'usage
+actuels. On rouvrira la question MCP uniquement si un besoin d'automatisation
+concret émerge.
+
 ### Confidentialité et cloisonnement
 
 - On n'envoie au modèle que des **agrégats déjà visibles par l'utilisateur**

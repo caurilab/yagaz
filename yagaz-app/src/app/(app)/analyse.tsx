@@ -13,7 +13,7 @@ import { BarresConsommation } from '../../components/graphiques/BarresConsommati
 import { CalendrierHeatmap } from '../../components/graphiques/CalendrierHeatmap';
 import { Donut, LegendeDonut } from '../../components/graphiques/Donut';
 import * as api from '../../api/endpoints';
-import { analyseDemoParPeriode, executerAvecSource } from '../../api/demo';
+import { analyseDemoParPeriode, executerAvecSource, insightsDemo } from '../../api/demo';
 import { useDonnees } from '../../data/DonneesContext';
 import type { StatutSync } from '../../data/DonneesContext';
 import { couleurs, espacements, rayons } from '../../../theme/couleurs';
@@ -30,6 +30,7 @@ export default function EcranAnalyse() {
   const { siteActif } = useDonnees();
   const [periode, setPeriode] = useState<PeriodeAnalyse>('mois');
   const [analyse, setAnalyse] = useState<Analyse | null>(null);
+  const [conseils, setConseils] = useState<string | null>(null);
   const [statutSync, setStatutSync] = useState<StatutSync>('chargement');
   const [chargementInitial, setChargementInitial] = useState(true);
   const [rafraichissement, setRafraichissement] = useState(false);
@@ -42,6 +43,17 @@ export default function EcranAnalyse() {
     );
     setAnalyse(data);
     setStatutSync(source === 'demo' ? 'hors_ligne' : 'synchronise');
+
+    // Conseils IA (ADR 0013) - best-effort, jamais bloquant pour l'analyse.
+    try {
+      const { data: ins } = await executerAvecSource(
+        () => api.analyseInsights(params).then((r) => r.data),
+        insightsDemo(periode)
+      );
+      setConseils(ins.insights);
+    } catch {
+      setConseils(null);
+    }
   }, [siteActif?.uuid, periode]);
 
   useEffect(() => {
@@ -110,6 +122,16 @@ export default function EcranAnalyse() {
           </View>
         ) : (
           <>
+            {conseils ? (
+              <View style={[styles.carte, styles.carteConseils]}>
+                <View style={styles.ligneConseils}>
+                  <Icone nom="eclair" taille={18} couleur={couleurs.rouge} />
+                  <Text style={styles.titreConseils}>Conseils</Text>
+                </View>
+                <Text style={styles.texteConseils}>{conseils}</Text>
+              </View>
+            ) : null}
+
             <View style={styles.grilleStats}>
               <CarteStat
                 libelle="Consommation"
@@ -343,6 +365,27 @@ const styles = StyleSheet.create({
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 6 },
     elevation: 3,
+  },
+  carteConseils: {
+    backgroundColor: couleurs.rougeClair,
+  },
+  ligneConseils: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espacements.xs,
+    marginBottom: espacements.sm,
+  },
+  titreConseils: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: couleurs.rouge,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  texteConseils: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: couleurs.texte,
   },
   sectionTitre: {
     fontSize: 15,
