@@ -31,6 +31,7 @@ export function Bouton({ titre, onPress, variante = 'plein', enCours = false, de
         <ActivityIndicator color={variante === 'plein' ? couleurs.blanc : couleurs.rouge} />
       ) : (
         <Text
+          numberOfLines={1}
           style={[
             styles.texte,
             variante === 'plein' && styles.textePlein,
