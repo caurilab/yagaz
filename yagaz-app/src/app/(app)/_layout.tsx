@@ -2,8 +2,12 @@ import { router, Tabs } from 'expo-router';
 import { Pressable, Text } from 'react-native';
 
 import { Icone } from '../../components/icones';
+import { useCommandes } from '../../data/CommandesContext';
 import { couleurs } from '../../../theme/couleurs';
 import { styleBarreOnglets } from '../../components/styleBarreOnglets';
+
+/** Une commande est "en cours" tant qu'elle n'est ni livrée ni annulée. */
+const STATUTS_TERMINES = ['livree', 'annulee'];
 
 function BoutonRetour() {
   return (
@@ -23,6 +27,9 @@ function BoutonRetour() {
  * onglet dédié (href: null), ouvertes avec un bouton retour explicite.
  */
 export default function LayoutApp() {
+  const { commandes } = useCommandes();
+  const nbCommandesEnCours = commandes.filter((c) => !STATUTS_TERMINES.includes(c.statut)).length;
+
   return (
     <Tabs
       screenOptions={{
@@ -53,6 +60,9 @@ export default function LayoutApp() {
         options={{
           title: 'Commandes',
           tabBarIcon: ({ color }) => <Icone nom="commande" couleur={color as string} />,
+          // Indicateur de commande en cours, visible depuis toutes les pages.
+          tabBarBadge: nbCommandesEnCours > 0 ? nbCommandesEnCours : undefined,
+          tabBarBadgeStyle: { backgroundColor: couleurs.rouge, color: couleurs.blanc, fontSize: 11 },
         }}
       />
       <Tabs.Screen
