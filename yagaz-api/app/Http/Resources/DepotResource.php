@@ -32,6 +32,10 @@ class DepotResource extends JsonResource
             'nom' => $this->nom,
             'distance_km' => $this->distance_km !== null ? round($this->distance_km, 1) : null,
             'disponible' => $stock !== null && $stock->pleines > 0,
+            // Format (taille + marque) que ce dépôt fournira réellement pour la
+            // recharge : la commande doit cibler ce `format_id`.
+            'format_id' => $this->format_fulfillable_id,
+            'marque' => $this->format_fulfillable_marque,
         ];
     }
 }

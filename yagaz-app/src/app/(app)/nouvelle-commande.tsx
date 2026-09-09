@@ -73,7 +73,9 @@ export default function EcranNouvelleCommande() {
     try {
       await creer({
         site_uuid: siteActif.uuid,
-        format_id: formatChoisi.id,
+        // On cible le format que le dépôt fournira réellement (même taille,
+        // marque qu'il a en stock) plutôt que la marque affichée par défaut.
+        format_id: depotChoisi.format_id ?? formatChoisi.id,
         quantite,
         depot_uuid: depotChoisi.uuid,
       });
@@ -131,6 +133,7 @@ export default function EcranNouvelleCommande() {
                     <Icone nom="localisation" taille={16} couleur={couleurs.rouge} />
                     <Text style={styles.nomDepot}>{depot.nom}</Text>
                   </View>
+                  {depot.marque ? <Text style={styles.adresseDepot}>Marque fournie : {depot.marque}</Text> : null}
                   {depot.adresse ? <Text style={styles.adresseDepot}>{depot.adresse}</Text> : null}
                   {!depot.disponible ? <Text style={styles.texteIndisponible}>Indisponible pour l'instant</Text> : null}
                 </View>

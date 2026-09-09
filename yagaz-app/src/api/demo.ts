@@ -306,6 +306,8 @@ export const depotsDemo: Depot[] = [
     adresse: 'Route de Ouakam, Dakar',
     distance_km: 1.2,
     disponible: true,
+    format_id: 2,
+    marque: 'Total',
   },
   {
     uuid: 'org-depot-ouakam',
@@ -313,6 +315,8 @@ export const depotsDemo: Depot[] = [
     adresse: 'Corniche Ouest, Dakar',
     distance_km: 3.8,
     disponible: true,
+    format_id: 2,
+    marque: 'Total',
   },
 ];
 

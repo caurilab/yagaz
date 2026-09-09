@@ -258,6 +258,10 @@ export interface Depot {
   adresse: string | null;
   distance_km: number;
   disponible: boolean;
+  /** Format (taille + marque) que ce dépôt fournira : à cibler pour la commande. */
+  format_id: number;
+  /** Marque réellement fournie par ce dépôt pour cette taille. */
+  marque?: string | null;
 }
 
 // --- Rôles et espaces (Phase 4, contrat 10 §1) ---
