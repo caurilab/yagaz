@@ -31,7 +31,21 @@ final class AssistantFoyer
     {
         $agregats = $this->agregation->analyser($siteIds, $periode);
 
-        return $this->ia->generer($this->instructions(), $this->message($agregats));
+        return $this->ia->generer($this->instructions(), $this->message($agregats, $periode));
+    }
+
+    /**
+     * Libellé en langage naturel de la période analysée, pour éviter que la
+     * réponse mentionne une mauvaise période (ex. « semaine » pour un mois).
+     */
+    private function libellePeriode(string $periode): string
+    {
+        return match ($periode) {
+            'jour' => "aujourd'hui",
+            'semaine' => 'cette semaine',
+            'annee' => 'cette année',
+            default => 'ce mois-ci',
+        };
     }
 
     /**
@@ -47,7 +61,9 @@ final class AssistantFoyer
             .'reste bref et concret, et donne 2 à 3 conseils maximum, '
             .'bienveillants et actionnables. Si besoin de ponctuation, '
             .'utilise uniquement le tiret simple du clavier (-), jamais le '
-            .'tiret cadratin long.';
+            .'tiret cadratin long. La période analysée est précisée en tête '
+            .'des données : parle de cette période-là (ex. « ce mois-ci ») et '
+            .'d\'aucune autre.';
     }
 
     /**
@@ -56,9 +72,10 @@ final class AssistantFoyer
      *
      * @param  array<string, mixed>  $agregats
      */
-    private function message(array $agregats): string
+    private function message(array $agregats, string $periode): string
     {
         $lignes = [
+            sprintf('Période analysée : %s.', $this->libellePeriode($periode)),
             sprintf(
                 'Consommation : %s kg (%s).',
                 $agregats['consommation_kg'],
