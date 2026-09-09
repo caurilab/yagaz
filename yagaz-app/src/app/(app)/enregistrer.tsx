@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { router } from 'expo-router';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -6,11 +6,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Bouton } from '../../components/Bouton';
 import { BouteilleGaz } from '../../components/BouteilleGaz';
 import { Champ } from '../../components/Champ';
+import { Icone } from '../../components/icones';
 import { SelecteurFormat } from '../../components/SelecteurFormat';
 import { useDonnees } from '../../data/DonneesContext';
+import { piecesBouteille } from '../../api/endpoints';
+import { avecRepliDemo, piecesBouteilleDemo } from '../../api/demo';
 import { couleurs, espacements, rayons } from '../../../theme/couleurs';
 import { couleurPourFormat } from '../../utils/marque';
-import type { Format, RoleBouteille } from '../../api/types';
+import type { Format, PieceBouteille, RoleBouteille } from '../../api/types';
 
 /** Parcours guidé d'enregistrement d'une bouteille (UX §2). */
 export default function EcranEnregistrerBouteille() {
@@ -26,6 +29,32 @@ export default function EcranEnregistrerBouteille() {
   const [tareTexte, setTareTexte] = useState('');
   const [role, setRole] = useState<RoleBouteille>(bouteilles.length === 0 ? 'active' : 'secours');
   const [enCours, setEnCours] = useState(false);
+
+  // Tare ajustable (pièces manquantes) : référentiel des pièces amovibles,
+  // chargé une fois (avec repli démo si l'API ne répond pas).
+  const [piecesReferentiel, setPiecesReferentiel] = useState<PieceBouteille[]>([]);
+  const [piecesCochees, setPiecesCochees] = useState<string[]>([]);
+
+  useEffect(() => {
+    avecRepliDemo(() => piecesBouteille().then((r) => r.data), piecesBouteilleDemo).then(setPiecesReferentiel);
+  }, []);
+
+  function basculerPiece(cle: string) {
+    setPiecesCochees((precedent) =>
+      precedent.includes(cle) ? precedent.filter((c) => c !== cle) : [...precedent, cle]
+    );
+  }
+
+  const deltaTotalCoche = useMemo(
+    () =>
+      piecesReferentiel
+        .filter((piece) => piecesCochees.includes(piece.cle))
+        .reduce((somme, piece) => somme + piece.delta_g, 0),
+    [piecesReferentiel, piecesCochees]
+  );
+
+  const tareEstimee =
+    formatChoisi && piecesCochees.length > 0 ? Math.max(0, formatChoisi.tare_nominale_g - deltaTotalCoche) : null;
 
   function choisirCode(code: string) {
     setCodeChoisi(code);
@@ -51,6 +80,7 @@ export default function EcranEnregistrerBouteille() {
         tare_g: tareNombre,
         tare_source: tareNombre ? 'saisie' : 'nominale',
         role_bouteille: role,
+        pieces_manquantes: piecesCochees.length > 0 ? piecesCochees : undefined,
       });
       router.back();
     } catch {
@@ -103,6 +133,32 @@ export default function EcranEnregistrerBouteille() {
           Vous ne connaissez pas la tare exacte ? Laissez ce champ vide : la mesure s'affinera
           automatiquement avec l'usage.
         </Text>
+
+        <Text style={styles.etapeTitre}>Éléments manquants (optionnel)</Text>
+        <Text style={styles.texteRassurant}>
+          Cochez les pièces absentes sur cette bouteille : leur poids est retranché de la tare de
+          référence du format pour ajuster automatiquement la tare.
+        </Text>
+        <View style={styles.listePieces}>
+          {piecesReferentiel.map((piece) => {
+            const cochee = piecesCochees.includes(piece.cle);
+            return (
+              <Pressable
+                key={piece.cle}
+                style={[styles.cartePiece, cochee && styles.cartePieceActive]}
+                onPress={() => basculerPiece(piece.cle)}>
+                <Text style={styles.libellePiece}>{piece.libelle}</Text>
+                <View style={styles.zoneDeltaPiece}>
+                  <Text style={styles.deltaPiece}>-{piece.delta_g} g</Text>
+                  {cochee ? <Icone nom="check" taille={20} couleur={couleurs.rouge} /> : null}
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+        {tareEstimee !== null ? (
+          <Text style={styles.texteApercuTare}>Tare estimée : {tareEstimee} g</Text>
+        ) : null}
 
         <Text style={styles.etapeTitre}>4. Rôle</Text>
         <View style={styles.rangee}>
@@ -201,6 +257,46 @@ const styles = StyleSheet.create({
     color: couleurs.texteDoux,
     marginTop: espacements.sm,
     lineHeight: 18,
+  },
+  listePieces: {
+    gap: espacements.sm,
+    marginTop: espacements.sm,
+  },
+  cartePiece: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: couleurs.carte,
+    borderRadius: rayons.md,
+    borderWidth: 1,
+    borderColor: couleurs.bordure,
+    padding: espacements.md,
+  },
+  cartePieceActive: {
+    borderColor: couleurs.rouge,
+    borderWidth: 2,
+  },
+  libellePiece: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: couleurs.texte,
+  },
+  zoneDeltaPiece: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espacements.xs,
+  },
+  deltaPiece: {
+    fontSize: 13,
+    color: couleurs.texteDoux,
+    fontWeight: '600',
+  },
+  texteApercuTare: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: couleurs.rouge,
+    marginTop: espacements.sm,
   },
   piedDePage: {
     padding: espacements.lg,

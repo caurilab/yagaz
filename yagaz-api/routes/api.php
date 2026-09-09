@@ -107,6 +107,14 @@ Route::middleware('auth:sanctum')->group(function () {
     // bouteille.
     Route::get('/marques', [MarqueController::class, 'index']);
 
+    // === Pièces amovibles de bouteille (contrat API, §« Bouteilles ») ===
+    // Référentiel pour la tare ajustable (pièces manquantes cochées à
+    // l'enregistrement) - `config/bouteille.php`, valeurs par défaut
+    // ajustables.
+    Route::get('/pieces-bouteille', function () {
+        return ['data' => config('bouteille.pieces_amovibles')];
+    });
+
     // === Bouteilles (contrat API, §« Bouteilles ») ======================
     Route::get('/sites/{site:uuid}/bouteilles', [BouteilleController::class, 'index']);
     Route::post('/sites/{site:uuid}/bouteilles', [BouteilleController::class, 'store']);

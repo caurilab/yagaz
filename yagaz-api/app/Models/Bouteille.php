@@ -22,7 +22,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * volontairement exclu — dérivé côté serveur du site de la route (ADR 0005),
  * posé par affectation directe de propriété dans `BouteilleController`.
  */
-#[Fillable(['format_id', 'tare_g', 'tare_source', 'tare_fiable', 'role_bouteille', 'seuil_bas_pct', 'plateau_id'])]
+#[Fillable(['format_id', 'tare_g', 'tare_source', 'tare_fiable', 'role_bouteille', 'seuil_bas_pct', 'plateau_id', 'pieces_manquantes'])]
 class Bouteille extends Model
 {
     /** @use HasFactory<BouteilleFactory> */
@@ -34,6 +34,7 @@ class Bouteille extends Model
             'tare_source' => TareSource::class,
             'tare_fiable' => 'boolean',
             'role_bouteille' => RoleBouteille::class,
+            'pieces_manquantes' => 'array',
         ];
     }
 

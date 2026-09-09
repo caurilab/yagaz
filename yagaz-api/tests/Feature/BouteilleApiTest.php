@@ -329,4 +329,55 @@ class BouteilleApiTest extends TestCase
 
         $this->assertDatabaseMissing('bouteilles', ['id' => $bouteille->id]);
     }
+
+    public function test_enregistrement_avec_pieces_manquantes_calcule_la_tare_ajustee(): void
+    {
+        [$foyer, $site] = $this->foyerAvecSite();
+        $format = FormatBouteille::factory()->create(['tare_nominale_g' => 13000]);
+
+        Sanctum::actingAs($foyer);
+
+        $reponse = $this->postJson("/api/sites/{$site->uuid}/bouteilles", [
+            'format_id' => $format->id,
+            'pieces_manquantes' => ['collerette', 'chapeau'],
+        ]);
+
+        // 13000 - 250 (collerette) - 80 (chapeau) = 12670.
+        $reponse->assertCreated();
+        $reponse->assertJsonPath('data.tare_g', 12670);
+        $reponse->assertJsonPath('data.tare_source', 'saisie');
+        $reponse->assertJsonPath('data.pieces_manquantes', ['collerette', 'chapeau']);
+
+        $bouteille = Bouteille::where('uuid', $reponse->json('data.uuid'))->firstOrFail();
+        $this->assertSame(12670, $bouteille->tare_g);
+        $this->assertSame(['collerette', 'chapeau'], $bouteille->pieces_manquantes);
+    }
+
+    public function test_le_referentiel_des_pieces_amovibles_est_expose(): void
+    {
+        Sanctum::actingAs(User::factory()->create());
+
+        $reponse = $this->getJson('/api/pieces-bouteille');
+
+        $reponse->assertOk();
+        $reponse->assertJsonCount(3, 'data');
+        $reponse->assertJsonStructure(['data' => [['cle', 'libelle', 'delta_g']]]);
+        $this->assertSame(
+            ['collerette', 'poignee', 'chapeau'],
+            collect($reponse->json('data'))->pluck('cle')->all()
+        );
+    }
+
+    public function test_une_cle_de_piece_manquante_inconnue_est_refusee(): void
+    {
+        [$foyer, $site] = $this->foyerAvecSite();
+        $format = FormatBouteille::factory()->create();
+
+        Sanctum::actingAs($foyer);
+
+        $this->postJson("/api/sites/{$site->uuid}/bouteilles", [
+            'format_id' => $format->id,
+            'pieces_manquantes' => ['inconnue'],
+        ])->assertUnprocessable();
+    }
 }

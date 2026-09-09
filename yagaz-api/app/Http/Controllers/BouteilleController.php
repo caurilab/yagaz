@@ -10,6 +10,7 @@ use App\Http\Requests\BouteilleStoreRequest;
 use App\Http\Requests\BouteilleUpdateRequest;
 use App\Http\Resources\BouteilleResource;
 use App\Models\Bouteille;
+use App\Models\FormatBouteille;
 use App\Models\Plateau;
 use App\Models\Site;
 use Illuminate\Http\JsonResponse;
@@ -55,9 +56,21 @@ class BouteilleController extends Controller
                 ? RoleBouteille::from($validated['role_bouteille'])
                 : ($premiereBouteille ? RoleBouteille::Active : RoleBouteille::Secours);
 
-            $tareSource = isset($validated['tare_source'])
-                ? TareSource::from($validated['tare_source'])
-                : (isset($validated['tare_g']) ? TareSource::Saisie : TareSource::Nominale);
+            $piecesManquantes = $validated['pieces_manquantes'] ?? null;
+            $tareG = $validated['tare_g'] ?? null;
+
+            if (! empty($piecesManquantes) && $tareG === null) {
+                // Tare ajustable (pièces manquantes) : ne s'applique que si
+                // le client n'a pas déjà saisi une tare explicite - le
+                // mécanisme prime sur les grammages par défaut, mais jamais
+                // sur une saisie directe de tare.
+                $tareG = $this->tareAjustee($validated['format_id'], $piecesManquantes);
+                $tareSource = TareSource::Saisie;
+            } else {
+                $tareSource = isset($validated['tare_source'])
+                    ? TareSource::from($validated['tare_source'])
+                    : ($tareG !== null ? TareSource::Saisie : TareSource::Nominale);
+            }
 
             // `site_id` est dérivé du site de la route (ADR 0005), jamais du
             // corps de la requête : posé par affectation directe de
@@ -66,7 +79,7 @@ class BouteilleController extends Controller
             // sécurité, [INFO] $fillable explicite).
             $bouteille = new Bouteille([
                 'format_id' => $validated['format_id'],
-                'tare_g' => $validated['tare_g'] ?? null,
+                'tare_g' => $tareG,
                 'tare_source' => $tareSource,
                 'tare_fiable' => $tareSource === TareSource::Saisie,
                 // Toujours créée en secours : la promotion (avec démotion de
@@ -74,6 +87,7 @@ class BouteilleController extends Controller
                 // juste après si nécessaire, pour ne jamais violer l'index
                 // unique partiel « une seule active par site ».
                 'role_bouteille' => RoleBouteille::Secours,
+                'pieces_manquantes' => $piecesManquantes,
             ]);
             $bouteille->site_id = $site->id;
             $bouteille->save();
@@ -142,6 +156,25 @@ class BouteilleController extends Controller
                 $bouteille->tare_g = $validated['tare_g'];
             }
 
+            if (array_key_exists('pieces_manquantes', $validated)) {
+                $bouteille->pieces_manquantes = $validated['pieces_manquantes'];
+
+                // Tare ajustable (pièces manquantes) : recalcule à partir du
+                // format (déjà mis à jour ci-dessus le cas échéant), sauf si
+                // le client a saisi une tare explicite dans la même requête
+                // - le mécanisme prime sur les grammages par défaut, jamais
+                // sur une saisie directe de tare.
+                if (! array_key_exists('tare_g', $validated) && $validated['pieces_manquantes'] !== []) {
+                    $tareAjustee = $this->tareAjustee($bouteille->format_id, $validated['pieces_manquantes']);
+
+                    if ($tareAjustee !== null) {
+                        $bouteille->tare_g = $tareAjustee;
+                        $bouteille->tare_source = TareSource::Saisie;
+                        $bouteille->tare_fiable = true;
+                    }
+                }
+            }
+
             $bouteille->save();
         });
 
@@ -193,6 +226,30 @@ class BouteilleController extends Controller
 
         $bouteille->role_bouteille = RoleBouteille::Active;
         $bouteille->save();
+    }
+
+    /**
+     * Tare ajustable (pièces manquantes) : part de la tare de référence du
+     * format et retranche la somme des poids des pièces manquantes
+     * reconnues (`config('bouteille.pieces_amovibles')`), bornée à 0.
+     * Retourne `null` si le format est introuvable.
+     *
+     * @param  array<int, string>  $piecesManquantes
+     */
+    private function tareAjustee(int $formatId, array $piecesManquantes): ?int
+    {
+        $tareNominale = FormatBouteille::find($formatId)?->tare_nominale_g;
+
+        if ($tareNominale === null) {
+            return null;
+        }
+
+        $piecesAmovibles = collect(config('bouteille.pieces_amovibles'))->keyBy('cle');
+
+        $deltaTotal = collect($piecesManquantes)
+            ->sum(fn (string $cle) => $piecesAmovibles->get($cle)['delta_g'] ?? 0);
+
+        return max(0, $tareNominale - $deltaTotal);
     }
 
     /**

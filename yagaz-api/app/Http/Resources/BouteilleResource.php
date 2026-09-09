@@ -30,6 +30,7 @@ class BouteilleResource extends JsonResource
             'tare_g' => $this->tare_g,
             'tare_source' => $this->tare_source->value,
             'tare_fiable' => $this->tare_fiable,
+            'pieces_manquantes' => $this->pieces_manquantes ?? [],
             'niveau' => app(NiveauPresenter::class)->presenter($this->resource),
         ];
     }

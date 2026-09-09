@@ -116,6 +116,14 @@ export interface Marque {
   couleur: string;
 }
 
+// --- Pièces amovibles de bouteille (référentiel - tare ajustable) ---
+
+export interface PieceBouteille {
+  cle: string;
+  libelle: string;
+  delta_g: number;
+}
+
 // --- Niveau (objet embarqué dans une bouteille) ---
 
 export type EtatNiveau = 'plein' | 'correct' | 'bas' | 'presque_vide' | 'inconnu';
@@ -148,6 +156,8 @@ export interface Bouteille {
   tare_g: number | null;
   tare_source: SourceTare;
   tare_fiable: boolean;
+  /** Clés des pièces amovibles cochées comme manquantes (tare ajustable). */
+  pieces_manquantes?: string[];
   seuil_bas_pct: number;
   plateau_uid: string | null;
   niveau: Niveau;
@@ -160,6 +170,8 @@ export interface CorpsCreationBouteille {
   tare_source?: SourceTare;
   role_bouteille?: RoleBouteille;
   plateau_uid?: string;
+  /** Tare ajustable : clés des pièces amovibles cochées comme manquantes. */
+  pieces_manquantes?: string[];
 }
 
 export interface CorpsMajBouteille {
@@ -168,6 +180,8 @@ export interface CorpsMajBouteille {
   seuil_bas_pct?: number;
   tare_g?: number;
   tare_source?: SourceTare;
+  /** Tare ajustable : clés des pièces amovibles cochées comme manquantes. */
+  pieces_manquantes?: string[];
 }
 
 export interface CorpsPlateau {

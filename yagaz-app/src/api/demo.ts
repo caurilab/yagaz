@@ -30,6 +30,7 @@ import type {
   Pagination,
   PeriodeAnalyse,
   PeriodeTemperature,
+  PieceBouteille,
   PointCuissonHoraire,
   PointSerieConsommation,
   PointTemperatureHoraire,
@@ -78,6 +79,13 @@ export const formatsDemo: Format[] = [
   { id: 3, code: 'B32', marque: 'Petro Ivoire', tare_nominale_g: 30000, contenance_gaz_g: 32000, couleur: '#26307A' },
   { id: 4, code: 'B12', marque: 'Sodigaz', tare_nominale_g: 13000, contenance_gaz_g: 12500, couleur: '#F08A24' },
   { id: 5, code: 'B35', marque: 'Corlay', tare_nominale_g: 33000, contenance_gaz_g: 35000, couleur: '#2FA84F' },
+];
+
+/** Pièces amovibles de bouteille (repli démo - mêmes clés/deltas que le référentiel réel `config/bouteille.php`). */
+export const piecesBouteilleDemo: PieceBouteille[] = [
+  { cle: 'collerette', libelle: 'Collerette / arceau de protection', delta_g: 250 },
+  { cle: 'poignee', libelle: 'Poignée', delta_g: 150 },
+  { cle: 'chapeau', libelle: 'Chapeau de valve', delta_g: 80 },
 ];
 
 export const sitesDemo: Site[] = [

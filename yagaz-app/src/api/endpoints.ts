@@ -50,6 +50,7 @@ import type {
   Paiement,
   Pagination,
   PeriodeTemperature,
+  PieceBouteille,
   PointMesure,
   Reappro,
   ReapproMandataire,
@@ -121,6 +122,12 @@ export function listerFormats() {
 
 export function listerMarques() {
   return requeteApi<{ data: Marque[] }>('/marques');
+}
+
+// --- Pièces amovibles de bouteille (référentiel - tare ajustable) ---
+
+export function piecesBouteille() {
+  return requeteApi<{ data: PieceBouteille[] }>('/pieces-bouteille');
 }
 
 // --- Bouteilles ---

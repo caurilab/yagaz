@@ -27,12 +27,18 @@ class BouteilleUpdateRequest extends FormRequest
      */
     public function rules(): array
     {
+        $clesPiecesAmovibles = array_column(config('bouteille.pieces_amovibles'), 'cle');
+
         return [
             'format_id' => ['sometimes', 'integer', 'exists:formats_bouteille,id'],
             'role_bouteille' => ['sometimes', Rule::enum(RoleBouteille::class)],
             'seuil_bas_pct' => ['sometimes', 'integer', 'min:1', 'max:100'],
             'tare_g' => ['sometimes', 'nullable', 'integer', 'min:0'],
             'tare_source' => ['sometimes', Rule::enum(TareSource::class)],
+            // Tare ajustable (pièces manquantes) : recalculée dans le
+            // contrôleur si ce champ est fourni.
+            'pieces_manquantes' => ['sometimes', 'array'],
+            'pieces_manquantes.*' => ['string', Rule::in($clesPiecesAmovibles)],
         ];
     }
 }
