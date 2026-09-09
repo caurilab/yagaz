@@ -20,6 +20,7 @@ import { BadgeEtat } from '../../components/BadgeEtat';
 import { BandeauSync } from '../../components/BandeauSync';
 import { Bouton } from '../../components/Bouton';
 import { BouteilleGaz } from '../../components/BouteilleGaz';
+import { CarteAstuce } from '../../components/CarteAstuce';
 import { EncartConnecterMateriel } from '../../components/EncartConnecterMateriel';
 import { EncartTemperature } from '../../components/EncartTemperature';
 import { Icone, LogoYagaz } from '../../components/icones';
@@ -163,6 +164,8 @@ export default function EcranAccueilFoyer() {
                 </ScrollView>
               </>
             ) : null}
+
+            <CarteAstuce />
           </>
         )}
       </ScrollView>
