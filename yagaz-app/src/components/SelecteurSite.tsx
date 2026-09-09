@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { router } from 'expo-router';
-import { FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Icone } from './icones';
 import { couleurs, espacements, rayons } from '../../theme/couleurs';
 import type { Site } from '../api/types';
 
@@ -12,55 +13,113 @@ interface Props {
   onChoisir: (uuid: string) => void;
 }
 
-/** Sélecteur multi-sites en tête d'accueil (UX §2 "Multi-sites"). */
-export function SelecteurSite({ sites, siteActif, onChoisir }: Props) {
-  const [ouvert, setOuvert] = useState(false);
+const TRANSLATION_FERMEE = 560;
 
-  function ouvrirNouveauLieu() {
-    setOuvert(false);
-    router.push('/(app)/nouveau-lieu');
-  }
+/**
+ * Sélecteur multi-lieux (UX §2). La feuille monte du bas et le fond apparaît
+ * en fondu (opacité) - pas de balayage de tout l'écran : l'overlay est animé
+ * séparément du panneau, pour un rendu doux et moderne.
+ */
+export function SelecteurSite({ sites, siteActif, onChoisir }: Props) {
+  const [visible, setVisible] = useState(false);
+  const opacite = useRef(new Animated.Value(0)).current;
+  const translation = useRef(new Animated.Value(TRANSLATION_FERMEE)).current;
+
+  const ouvrir = useCallback(() => {
+    setVisible(true);
+  }, []);
+
+  const fermer = useCallback(
+    (apres?: () => void) => {
+      Animated.parallel([
+        Animated.timing(opacite, { toValue: 0, duration: 180, useNativeDriver: true }),
+        Animated.timing(translation, {
+          toValue: TRANSLATION_FERMEE,
+          duration: 220,
+          easing: Easing.in(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setVisible(false);
+        apres?.();
+      });
+    },
+    [opacite, translation]
+  );
+
+  // Anime l'entrée dès que la modale est montée.
+  useEffect(() => {
+    if (!visible) return;
+    opacite.setValue(0);
+    translation.setValue(TRANSLATION_FERMEE);
+    Animated.parallel([
+      Animated.timing(opacite, { toValue: 1, duration: 220, useNativeDriver: true }),
+      Animated.spring(translation, { toValue: 0, friction: 9, tension: 70, useNativeDriver: true }),
+    ]).start();
+  }, [visible, opacite, translation]);
 
   return (
     <>
-      <Pressable style={styles.pilule} onPress={() => setOuvert(true)} accessibilityRole="button">
+      <Pressable style={styles.pilule} onPress={ouvrir} accessibilityRole="button">
+        <Icone nom="localisation" taille={15} couleur={couleurs.blanc} />
         <Text style={styles.texteSite} numberOfLines={1}>
-          {siteActif?.nom ?? (sites.length === 0 ? 'Ajouter un lieu' : 'Choisir un site')}
+          {siteActif?.nom ?? (sites.length === 0 ? 'Ajouter un lieu' : 'Choisir un lieu')}
         </Text>
         <Text style={styles.chevron}>▾</Text>
       </Pressable>
 
-      <Modal visible={ouvert} animationType="slide" transparent onRequestClose={() => setOuvert(false)}>
-        <View style={styles.superposition}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={() => setOuvert(false)} />
-          <View style={styles.feuille}>
+      <Modal visible={visible} animationType="none" transparent onRequestClose={() => fermer()}>
+        <View style={styles.conteneur}>
+          <Animated.View style={[styles.overlay, { opacity: opacite }]}>
+            <Pressable style={StyleSheet.absoluteFill} onPress={() => fermer()} />
+          </Animated.View>
+
+          <Animated.View style={[styles.feuille, { transform: [{ translateY: translation }] }]}>
             <SafeAreaView edges={['bottom']}>
-              <Text style={styles.titreFeuille}>Mes sites</Text>
+              <View style={styles.poignee} />
+              <Text style={styles.titreFeuille}>Mes lieux</Text>
               <FlatList
                 data={sites}
                 keyExtractor={(s) => s.uuid}
-                renderItem={({ item }) => (
-                  <Pressable
-                    style={[styles.ligne, item.uuid === siteActif?.uuid && styles.ligneActive]}
-                    onPress={() => {
-                      onChoisir(item.uuid);
-                      setOuvert(false);
-                    }}>
-                    <View style={styles.ligneTexte}>
-                      <Text style={styles.nomSite}>{item.nom}</Text>
-                      {item.adresse ? <Text style={styles.adresseSite}>{item.adresse}</Text> : null}
-                    </View>
-                    {item.a_alerte_active ? <View style={styles.pointAlerte} /> : null}
-                  </Pressable>
-                )}
+                showsVerticalScrollIndicator={false}
+                renderItem={({ item }) => {
+                  const actif = item.uuid === siteActif?.uuid;
+                  return (
+                    <Pressable
+                      style={[styles.ligne, actif && styles.ligneActive]}
+                      onPress={() => fermer(() => onChoisir(item.uuid))}>
+                      <View style={[styles.iconeLieu, actif && styles.iconeLieuActive]}>
+                        <Icone nom="localisation" taille={18} couleur={actif ? couleurs.blanc : couleurs.rouge} />
+                      </View>
+                      <View style={styles.ligneTexte}>
+                        <Text style={styles.nomSite} numberOfLines={1}>
+                          {item.nom}
+                        </Text>
+                        {item.adresse ? (
+                          <Text style={styles.adresseSite} numberOfLines={1}>
+                            {item.adresse}
+                          </Text>
+                        ) : null}
+                      </View>
+                      {item.a_alerte_active ? <View style={styles.pointAlerte} /> : null}
+                      {actif ? <Icone nom="check" taille={20} couleur={couleurs.rouge} /> : null}
+                    </Pressable>
+                  );
+                }}
                 ListFooterComponent={
-                  <Pressable style={styles.ligneAjout} onPress={ouvrirNouveauLieu} accessibilityRole="button">
-                    <Text style={styles.texteAjout}>+ Nouveau lieu</Text>
+                  <Pressable
+                    style={styles.ligneAjout}
+                    onPress={() => fermer(() => router.push('/(app)/nouveau-lieu'))}
+                    accessibilityRole="button">
+                    <View style={styles.iconeAjout}>
+                      <Icone nom="plus" taille={18} couleur={couleurs.rouge} />
+                    </View>
+                    <Text style={styles.texteAjout}>Nouveau lieu</Text>
                   </Pressable>
                 }
               />
             </SafeAreaView>
-          </View>
+          </Animated.View>
         </View>
       </Modal>
     </>
@@ -77,7 +136,7 @@ const styles = StyleSheet.create({
     borderRadius: rayons.rond,
     paddingHorizontal: espacements.md,
     paddingVertical: espacements.sm,
-    maxWidth: 240,
+    maxWidth: 260,
   },
   texteSite: {
     color: couleurs.blanc,
@@ -88,45 +147,74 @@ const styles = StyleSheet.create({
     color: couleurs.blanc,
     fontSize: 14,
   },
-  superposition: {
+  conteneur: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.35)',
+  },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(20,25,40,0.45)',
   },
   feuille: {
     backgroundColor: couleurs.carte,
     borderTopLeftRadius: rayons.xl,
     borderTopRightRadius: rayons.xl,
     paddingHorizontal: espacements.lg,
-    paddingTop: espacements.lg,
-    maxHeight: '70%',
+    paddingTop: espacements.sm,
+    maxHeight: '76%',
+    shadowColor: '#000',
+    shadowOpacity: 0.18,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: -8 },
+    elevation: 12,
+  },
+  poignee: {
+    alignSelf: 'center',
+    width: 42,
+    height: 5,
+    borderRadius: rayons.rond,
+    backgroundColor: couleurs.bordure,
+    marginBottom: espacements.md,
   },
   titreFeuille: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 20,
+    fontWeight: '800',
     color: couleurs.texte,
     marginBottom: espacements.md,
   },
   ligne: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: espacements.md,
-    borderBottomWidth: 1,
-    borderBottomColor: couleurs.bordure,
+    gap: espacements.md,
+    paddingVertical: espacements.sm,
+    paddingHorizontal: espacements.sm,
+    borderRadius: rayons.lg,
+    marginBottom: espacements.xs,
   },
   ligneActive: {
     backgroundColor: couleurs.rougeClair,
-    marginHorizontal: -espacements.md,
-    paddingHorizontal: espacements.md,
-    borderRadius: rayons.md,
+  },
+  iconeLieu: {
+    width: 40,
+    height: 40,
+    borderRadius: rayons.rond,
+    backgroundColor: couleurs.rougeClair,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconeLieuActive: {
+    backgroundColor: couleurs.rouge,
   },
   ligneTexte: {
     flex: 1,
   },
   nomSite: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: couleurs.texte,
   },
   adresseSite: {
@@ -135,13 +223,29 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   pointAlerte: {
-    width: 10,
-    height: 10,
+    width: 9,
+    height: 9,
     borderRadius: rayons.rond,
     backgroundColor: couleurs.danger,
   },
   ligneAjout: {
-    paddingVertical: espacements.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espacements.md,
+    paddingVertical: espacements.sm,
+    paddingHorizontal: espacements.sm,
+    marginTop: espacements.xs,
+  },
+  iconeAjout: {
+    width: 40,
+    height: 40,
+    borderRadius: rayons.rond,
+    backgroundColor: couleurs.rougeClair,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: couleurs.rouge,
+    borderStyle: 'dashed',
   },
   texteAjout: {
     fontSize: 16,
