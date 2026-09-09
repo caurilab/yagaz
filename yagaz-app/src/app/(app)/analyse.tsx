@@ -4,6 +4,7 @@
  * projection prochaine recharge, série de consommation (barres).
  */
 import { useCallback, useEffect, useState } from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -25,6 +26,12 @@ const PERIODES: { valeur: PeriodeAnalyse; libelle: string }[] = [
   { valeur: 'mois', libelle: 'Mois' },
   { valeur: 'annee', libelle: 'Année' },
 ];
+
+const LIBELLES_PERIODE: Record<PeriodeAnalyse, string> = {
+  semaine: 'cette semaine',
+  mois: 'ce mois-ci',
+  annee: 'cette année',
+};
 
 export default function EcranAnalyse() {
   const { siteActif } = useDonnees();
@@ -82,15 +89,50 @@ export default function EcranAnalyse() {
     }
   }
 
+  const libellePeriode = LIBELLES_PERIODE[periode];
+
   return (
-    <SafeAreaView style={styles.conteneur} edges={['top']}>
+    <View style={styles.conteneur}>
+      <LinearGradient
+        colors={[couleurs.degradeDebut, couleurs.degradeFin]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.entete}>
+        <SafeAreaView edges={['top']}>
+          <View style={styles.ligneHaut}>
+            <View style={styles.ligneMarque}>
+              <View style={styles.badgeMarque}>
+                <Icone nom="analyse" taille={18} couleur={couleurs.blanc} />
+              </View>
+              <Text style={styles.texteMarque}>Analyse</Text>
+            </View>
+          </View>
+
+          {analyse ? (
+            <>
+              <Text style={styles.texteSalut} numberOfLines={1}>
+                Ta consommation, {libellePeriode}
+              </Text>
+              <View style={styles.ligneHero}>
+                <Text style={styles.heroChiffre}>{analyse.consommation_kg}</Text>
+                <Text style={styles.heroUnite}>kg consommés</Text>
+              </View>
+            </>
+          ) : (
+            <Text style={styles.texteSalut} numberOfLines={1}>
+              Ta consommation, {libellePeriode}
+            </Text>
+          )}
+        </SafeAreaView>
+      </LinearGradient>
+
       <ScrollView
+        style={styles.zoneContenu}
         contentContainerStyle={styles.contenu}
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={rafraichissement} onRefresh={rafraichir} tintColor={couleurs.rouge} />
         }>
-        <Text style={styles.titre}>Analyse</Text>
-
         <View style={styles.selecteurPeriode}>
           {PERIODES.map((p) => (
             <Pressable
@@ -123,9 +165,9 @@ export default function EcranAnalyse() {
         ) : (
           <>
             {conseils ? (
-              <View style={[styles.carte, styles.carteConseils]}>
+              <View style={styles.carteConseils}>
                 <View style={styles.ligneConseils}>
-                  <Icone nom="eclair" taille={18} couleur={couleurs.rouge} />
+                  <Icone nom="eclair" taille={16} couleur={couleurs.degradeFin} />
                   <Text style={styles.titreConseils}>Conseils</Text>
                 </View>
                 <Text style={styles.texteConseils}>{conseils}</Text>
@@ -205,7 +247,7 @@ export default function EcranAnalyse() {
           </>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -226,26 +268,30 @@ function CarteStat({
       <Text style={styles.chiffreStat} numberOfLines={1}>
         {valeur}
       </Text>
-      {tendancePct != null ? <Tendance pct={tendancePct} /> : null}
       {sousValeur ? (
         <Text style={styles.sousValeurStat} numberOfLines={1}>
           {sousValeur}
         </Text>
       ) : null}
+      {tendancePct != null ? <Tendance pct={tendancePct} /> : null}
     </View>
   );
 }
 
 function Tendance({ pct }: { pct: number }) {
   if (pct === 0) {
-    return <Text style={styles.tendanceNeutre}>Stable</Text>;
+    return (
+      <View style={[styles.pucePct, styles.pucePctNeutre]}>
+        <Text style={[styles.textePucePct, styles.textePucePctNeutre]}>Stable</Text>
+      </View>
+    );
   }
   const hausse = pct > 0;
   return (
-    <View style={styles.ligneTendance}>
-      <Icone nom={hausse ? 'flecheHaut' : 'flecheBas'} taille={12} couleur={hausse ? couleurs.ambre : couleurs.vertOk} />
-      <Text style={[styles.texteTendance, { color: hausse ? couleurs.ambre : couleurs.vertOk }]}>
-        {Math.abs(pct)} % vs période précédente
+    <View style={[styles.pucePct, hausse ? styles.pucePctHausse : styles.pucePctBaisse]}>
+      <Icone nom={hausse ? 'flecheHaut' : 'flecheBas'} taille={10} couleur={hausse ? couleurs.ambre : couleurs.vertOk} />
+      <Text style={[styles.textePucePct, { color: hausse ? couleurs.ambre : couleurs.vertOk }]}>
+        {Math.abs(pct)} %
       </Text>
     </View>
   );
@@ -256,15 +302,72 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: couleurs.fond,
   },
+  entete: {
+    paddingHorizontal: espacements.lg,
+    paddingBottom: espacements.xl,
+    borderBottomLeftRadius: rayons.xl,
+    borderBottomRightRadius: rayons.xl,
+  },
+  ligneHaut: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: espacements.sm,
+    marginBottom: espacements.lg,
+  },
+  ligneMarque: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espacements.sm,
+  },
+  badgeMarque: {
+    width: 34,
+    height: 34,
+    borderRadius: rayons.md - 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.85)',
+  },
+  texteMarque: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: couleurs.blanc,
+    letterSpacing: -0.3,
+  },
+  texteSalut: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: couleurs.blanc,
+    opacity: 0.9,
+  },
+  ligneHero: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: espacements.sm,
+    marginTop: espacements.xs,
+  },
+  heroChiffre: {
+    fontSize: 44,
+    fontWeight: '800',
+    color: couleurs.blanc,
+    lineHeight: 46,
+    letterSpacing: -1,
+  },
+  heroUnite: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: couleurs.blanc,
+    opacity: 0.92,
+    paddingBottom: espacements.xs,
+  },
+  zoneContenu: {
+    flex: 1,
+  },
   contenu: {
     padding: espacements.lg,
     paddingBottom: espacements.xxl,
-  },
-  titre: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: couleurs.texte,
-    marginBottom: espacements.md,
   },
   selecteurPeriode: {
     flexDirection: 'row',
@@ -273,21 +376,23 @@ const styles = StyleSheet.create({
   },
   chipPeriode: {
     flex: 1,
-    paddingVertical: espacements.sm,
+    paddingVertical: espacements.sm + 1,
     alignItems: 'center',
-    borderRadius: rayons.rond,
-    borderWidth: 1,
-    borderColor: couleurs.bordure,
+    borderRadius: rayons.md,
     backgroundColor: couleurs.carte,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
   },
   chipPeriodeActif: {
     backgroundColor: couleurs.rouge,
-    borderColor: couleurs.rouge,
   },
   chipPeriodeTexte: {
-    fontSize: 14,
+    fontSize: 12.5,
     fontWeight: '700',
-    color: couleurs.texte,
+    color: couleurs.texteDoux,
   },
   chipPeriodeTexteActif: {
     color: couleurs.blanc,
@@ -328,31 +433,45 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   libelleStat: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '600',
     color: couleurs.texteDoux,
   },
   chiffreStat: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '800',
     color: couleurs.texte,
+    letterSpacing: -0.5,
+    marginTop: 2,
   },
   sousValeurStat: {
-    fontSize: 11,
+    fontSize: 11.5,
     color: couleurs.texteDoux,
   },
-  ligneTendance: {
+  pucePct: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
+    alignSelf: 'flex-start',
+    paddingHorizontal: espacements.sm,
+    paddingVertical: 3,
+    borderRadius: rayons.rond,
+    marginTop: 2,
   },
-  texteTendance: {
-    fontSize: 11,
-    fontWeight: '700',
+  pucePctHausse: {
+    backgroundColor: '#FDF2E2',
   },
-  tendanceNeutre: {
+  pucePctBaisse: {
+    backgroundColor: '#E7F8EF',
+  },
+  pucePctNeutre: {
+    backgroundColor: couleurs.fond,
+  },
+  textePucePct: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '800',
+  },
+  textePucePctNeutre: {
     color: couleurs.texteDoux,
   },
   carte: {
@@ -368,6 +487,11 @@ const styles = StyleSheet.create({
   },
   carteConseils: {
     backgroundColor: couleurs.rougeClair,
+    borderRadius: rayons.xl,
+    padding: espacements.lg,
+    marginBottom: espacements.md,
+    borderWidth: 1,
+    borderColor: couleurs.bordure,
   },
   ligneConseils: {
     flexDirection: 'row',
@@ -376,14 +500,14 @@ const styles = StyleSheet.create({
     marginBottom: espacements.sm,
   },
   titreConseils: {
-    fontSize: 14,
+    fontSize: 12.5,
     fontWeight: '800',
-    color: couleurs.rouge,
+    color: couleurs.degradeFin,
     textTransform: 'uppercase',
-    letterSpacing: 0.3,
+    letterSpacing: 0.6,
   },
   texteConseils: {
-    fontSize: 14,
+    fontSize: 13.5,
     lineHeight: 20,
     color: couleurs.texte,
   },
