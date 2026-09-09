@@ -11,6 +11,7 @@ const DESCRIPTIONS: Record<string, string> = {
   depot: 'Gérer le stock et les commandes du comptoir.',
   livreur: 'Voir mes missions de livraison du jour.',
   mandataire: 'Suivre la tournée du jour et mes dépôts.',
+  distributeur: 'Pilotage régional - sur le tableau de bord web.',
 };
 
 const SYMBOLES: Record<string, string> = {
@@ -18,6 +19,7 @@ const SYMBOLES: Record<string, string> = {
   depot: '🏬',
   livreur: '🛵',
   mandataire: '🚚',
+  distributeur: '📊',
 };
 
 /**

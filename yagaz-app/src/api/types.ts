@@ -267,7 +267,7 @@ export interface MesRoles {
   distributeurs?: RoleMandataire[];
 }
 
-export type EspaceType = 'foyer' | 'depot' | 'livreur' | 'mandataire';
+export type EspaceType = 'foyer' | 'depot' | 'livreur' | 'mandataire' | 'distributeur';
 
 // --- Commandes (contrat 10 §2-3) ---
 

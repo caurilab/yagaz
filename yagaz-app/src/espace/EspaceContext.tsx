@@ -51,6 +51,7 @@ function libelleEspace(type: EspaceType): string {
   if (type === 'depot') return 'Dépôt';
   if (type === 'livreur') return 'Livreur';
   if (type === 'mandataire') return 'Mandataire';
+  if (type === 'distributeur') return 'Distributeur';
   return 'Foyer';
 }
 
@@ -190,6 +191,7 @@ function calculerEspacesDisponibles(roles: MesRoles | null): OptionEspace[] {
   if ((roles.depots?.length ?? 0) > 0) options.push({ type: 'depot', libelle: libelleEspace('depot') });
   if (roles.livreur) options.push({ type: 'livreur', libelle: libelleEspace('livreur') });
   if ((roles.mandataires?.length ?? 0) > 0) options.push({ type: 'mandataire', libelle: libelleEspace('mandataire') });
+  if ((roles.distributeurs?.length ?? 0) > 0) options.push({ type: 'distributeur', libelle: libelleEspace('distributeur') });
   return options.length > 0 ? options : [{ type: 'foyer', libelle: libelleEspace('foyer') }];
 }
 

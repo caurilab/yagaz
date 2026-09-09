@@ -66,6 +66,9 @@ function NavigationRacine() {
       <Stack.Protected guard={estConnecte && espaceActif === 'mandataire'}>
         <Stack.Screen name="(mandataire)" />
       </Stack.Protected>
+      <Stack.Protected guard={estConnecte && espaceActif === 'distributeur'}>
+        <Stack.Screen name="(distributeur)" />
+      </Stack.Protected>
       <Stack.Protected guard={estConnecte && espaceActif === null}>
         <Stack.Screen name="choisir-espace" />
       </Stack.Protected>
