@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\OrigineCommande;
+use App\Enums\RoleMembership;
 use App\Enums\TypeOrganisation;
 use App\Http\Requests\DepotCommandeIndexRequest;
 use App\Http\Requests\MandataireDepotStoreRequest;
@@ -10,6 +11,7 @@ use App\Http\Requests\MandataireTourneeStoreRequest;
 use App\Http\Resources\DepotConsolideResource;
 use App\Http\Resources\ReapproResource;
 use App\Http\Resources\TourneeResource;
+use App\Http\Resources\UserPubliqueResource;
 use App\Models\Commande;
 use App\Models\MouvementStock;
 use App\Models\Organisation;
@@ -112,6 +114,32 @@ class MandataireController extends Controller
             ->get();
 
         return TourneeResource::collection($tournees);
+    }
+
+    /**
+     * Livreurs actifs de tous les dépôts (organisations enfants) du
+     * mandataire — pour l'affectation d'une tournée (contrat API doc 11,
+     * §1, `GET /api/mandataires/{orgUuid}/livreurs`).
+     */
+    public function livreurs(Request $request, Organisation $organisation): AnonymousResourceCollection
+    {
+        abort_unless($request->user()->can('gererMandataire', $organisation), 404);
+
+        $depotIds = Organisation::where('parent_id', $organisation->id)
+            ->where('type', TypeOrganisation::Depot->value)
+            ->pluck('id');
+
+        // `whereHas` (EXISTS) renvoie déjà chaque utilisateur une seule fois :
+        // pas de `distinct()` (qui, sur pgsql, tenterait un SELECT DISTINCT *
+        // et échouerait sur la colonne json `canaux_alerte` - pas d'opérateur
+        // d'égalité json).
+        $livreurs = User::whereHas('memberships', fn ($query) => $query
+            ->whereIn('organisation_id', $depotIds)
+            ->where('role', RoleMembership::Livreur->value)
+            ->where('actif', true))
+            ->get();
+
+        return UserPubliqueResource::collection($livreurs);
     }
 
     /**

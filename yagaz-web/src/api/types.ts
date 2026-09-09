@@ -98,11 +98,12 @@ export interface TourneeLigne {
   vides_a_recuperer: number
 }
 
+/** Vue plate consommée par les composants (voir `versTourneeVM` dans `./mandataire`). */
 export interface Tournee {
   uuid: string
   date: string
   statut: StatutTournee
-  livreur_user_id: number | null
+  livreur_uuid: string | null
   livreur_nom: string | null
   lignes: TourneeLigne[]
 }
@@ -116,19 +117,38 @@ export interface CreerTourneeLignePayload {
 
 export interface CreerTourneePayload {
   date: string
-  livreur_user_id?: number
+  livreur_user_id?: string
   lignes: CreerTourneeLignePayload[]
 }
 
 export interface AjusterTourneePayload {
   statut?: StatutTournee
-  livreur_user_id?: number
+  livreur_user_id?: string
   lignes?: CreerTourneeLignePayload[]
 }
 
 export interface Livreur {
-  user_id: number
+  uuid: string
   nom: string
+}
+
+/**
+ * Forme imbriquée réelle renvoyée par l'API (`TourneeResource`,
+ * `GET/POST /mandataires/{uuid}/tournees`, `PATCH /tournees/{uuid}`).
+ * `livreur` et `lignes` sont absents si non chargés côté back.
+ */
+export interface TourneeBrute {
+  uuid: string
+  date: string
+  statut: StatutTournee
+  livreur?: { uuid: string; nom: string } | null
+  lignes?: Array<{
+    depot: { uuid: string; nom: string } | null
+    format: Format | null
+    pleines: number
+    vides_a_recuperer: number
+  }>
+  created_at: string
 }
 
 // ---- Distributeur : agrégats régionaux (jamais de donnée foyer) ----

@@ -28,9 +28,9 @@ export function formatCode(formatId: number): string {
 export const DEMO_ZONES = ['Abidjan', 'Bouaké', 'San-Pédro', 'Yamoussoukro', 'Korhogo', 'Daloa']
 
 export const DEMO_LIVREURS: Livreur[] = [
-  { user_id: 101, nom: 'Ibrahim Coulibaly' },
-  { user_id: 102, nom: 'Aya Bamba' },
-  { user_id: 103, nom: 'Salif Ouattara' },
+  { uuid: 'livreur-101', nom: 'Ibrahim Coulibaly' },
+  { uuid: 'livreur-102', nom: 'Aya Bamba' },
+  { uuid: 'livreur-103', nom: 'Salif Ouattara' },
 ]
 
 // ---- Utilisateur démo (double casquette mandataire + distributeur) ----
@@ -219,7 +219,7 @@ export const DEMO_TOURNEES: Tournee[] = [
     uuid: 'tournee-2026-09-08-a',
     date: '2026-09-08',
     statut: 'proposee',
-    livreur_user_id: null,
+    livreur_uuid: null,
     livreur_nom: null,
     lignes: [
       { depot_uuid: 'depot-abobo', depot_nom: 'Dépôt Abobo', format_id: 1, format_code: 'B6', pleines: 20, vides_a_recuperer: 34 },
@@ -231,7 +231,7 @@ export const DEMO_TOURNEES: Tournee[] = [
     uuid: 'tournee-2026-09-08-b',
     date: '2026-09-08',
     statut: 'validee',
-    livreur_user_id: 101,
+    livreur_uuid: 'livreur-101',
     livreur_nom: 'Ibrahim Coulibaly',
     lignes: [
       { depot_uuid: 'depot-marcory', depot_nom: 'Dépôt Marcory', format_id: 1, format_code: 'B6', pleines: 15, vides_a_recuperer: 30 },
@@ -242,7 +242,7 @@ export const DEMO_TOURNEES: Tournee[] = [
     uuid: 'tournee-2026-09-08-c',
     date: '2026-09-08',
     statut: 'en_cours',
-    livreur_user_id: 102,
+    livreur_uuid: 'livreur-102',
     livreur_nom: 'Aya Bamba',
     lignes: [
       { depot_uuid: 'depot-koumassi', depot_nom: 'Dépôt Koumassi', format_id: 2, format_code: 'B12', pleines: 16, vides_a_recuperer: 33 },
@@ -252,7 +252,7 @@ export const DEMO_TOURNEES: Tournee[] = [
     uuid: 'tournee-2026-09-07-a',
     date: '2026-09-07',
     statut: 'terminee',
-    livreur_user_id: 103,
+    livreur_uuid: 'livreur-103',
     livreur_nom: 'Salif Ouattara',
     lignes: [
       { depot_uuid: 'depot-treichville', depot_nom: 'Dépôt Treichville', format_id: 1, format_code: 'B6', pleines: 12, vides_a_recuperer: 16 },
@@ -263,7 +263,7 @@ export const DEMO_TOURNEES: Tournee[] = [
     uuid: 'tournee-2026-09-06-a',
     date: '2026-09-06',
     statut: 'terminee',
-    livreur_user_id: 101,
+    livreur_uuid: 'livreur-101',
     livreur_nom: 'Ibrahim Coulibaly',
     lignes: [
       { depot_uuid: 'depot-cocody', depot_nom: 'Dépôt Cocody', format_id: 3, format_code: 'B24', pleines: 8, vides_a_recuperer: 5 },

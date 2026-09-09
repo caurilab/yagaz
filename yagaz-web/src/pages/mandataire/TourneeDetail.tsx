@@ -61,7 +61,7 @@ export function MandataireTourneeDetail() {
   )
 
   const [date, setDate] = useState('2026-09-08')
-  const [livreurId, setLivreurId] = useState<number | ''>('')
+  const [livreurId, setLivreurId] = useState<string>('')
   const [statut, setStatut] = useState<StatutTournee>('proposee')
   const [lignes, setLignes] = useState<LigneEdition[]>([])
   const [message, setMessage] = useState<string | null>(null)
@@ -90,7 +90,7 @@ export function MandataireTourneeDetail() {
       setInitialise(true)
     } else if (!estNouvelle && tourneeExistante) {
       setDate(tourneeExistante.date)
-      setLivreurId(tourneeExistante.livreur_user_id ?? '')
+      setLivreurId(tourneeExistante.livreur_uuid ?? '')
       setStatut(tourneeExistante.statut)
       setLignes(tourneeExistante.lignes.map(ligneVersEdition))
       setInitialise(true)
@@ -103,13 +103,13 @@ export function MandataireTourneeDetail() {
       if (estNouvelle) {
         return creerTournee(orgUuid, {
           date,
-          livreur_user_id: livreurId === '' ? undefined : livreurId,
+          livreur_user_id: livreurId || undefined,
           lignes: payloadLignes,
         })
       }
       return ajusterTournee(uuid ?? '', {
         statut,
-        livreur_user_id: livreurId === '' ? undefined : livreurId,
+        livreur_user_id: livreurId || undefined,
         lignes: payloadLignes,
       })
     },
@@ -186,13 +186,10 @@ export function MandataireTourneeDetail() {
 
             <label>
               <span>Livreur</span>
-              <select
-                value={livreurId}
-                onChange={(e) => setLivreurId(e.target.value === '' ? '' : Number(e.target.value))}
-              >
+              <select value={livreurId} onChange={(e) => setLivreurId(e.target.value)}>
                 <option value="">Non affecté</option>
                 {livreursQuery.data?.map((livreur) => (
-                  <option key={livreur.user_id} value={livreur.user_id}>
+                  <option key={livreur.uuid} value={livreur.uuid}>
                     {livreur.nom}
                   </option>
                 ))}

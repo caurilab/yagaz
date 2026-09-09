@@ -165,6 +165,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/mandataires/{organisation:uuid}/reappros', [MandataireController::class, 'reappros']);
     Route::get('/mandataires/{organisation:uuid}/tournees', [MandataireController::class, 'tournees']);
     Route::post('/mandataires/{organisation:uuid}/tournees', [MandataireController::class, 'storeTournee']);
+    Route::get('/mandataires/{organisation:uuid}/livreurs', [MandataireController::class, 'livreurs']);
     Route::patch('/tournees/{tournee:uuid}', [TourneeController::class, 'update']);
 
     // === Distributeur — demande régionale agrégée (contrat API doc 11, §2)
