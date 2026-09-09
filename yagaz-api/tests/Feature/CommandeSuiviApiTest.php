@@ -46,7 +46,10 @@ class CommandeSuiviApiTest extends TestCase
     public function test_le_suivi_d_une_commande_confirmee_ne_renvoie_que_les_deux_premieres_etapes(): void
     {
         [$foyer, $site] = $this->foyerAvecSite();
-        $depot = Organisation::factory()->depot()->create();
+        $depot = Organisation::factory()->depot()->create([
+            'nom' => 'Dépôt Gaz Cocody',
+            'telephone' => '+225 07 10 11 12 13',
+        ]);
         $commande = Commande::factory()->create([
             'demandeur_user_id' => $foyer->id,
             'site_id' => $site->id,
@@ -59,6 +62,8 @@ class CommandeSuiviApiTest extends TestCase
 
         $reponse->assertOk();
         $reponse->assertJsonPath('data.statut_courant', 'confirmee');
+        $reponse->assertJsonPath('data.depot.nom', 'Dépôt Gaz Cocody');
+        $reponse->assertJsonPath('data.depot.telephone', '+225 07 10 11 12 13');
         $reponse->assertJsonPath('data.etapes.0.cle', 'passee');
         $reponse->assertJsonPath('data.etapes.0.atteinte', true);
         $reponse->assertJsonPath('data.etapes.1.cle', 'confirmee');

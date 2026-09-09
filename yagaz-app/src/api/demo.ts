@@ -1121,6 +1121,7 @@ export function suiviCommandeDemo(commande: Commande): SuiviCommande {
       statut: commande.livraison?.statut ?? null,
       livreur: commande.livraison?.livreur_nom ?? null,
     },
+    depot: { nom: 'Dépôt Sacré-Cœur', telephone: '+225 07 00 00 00 00' },
     distance_km: enLivraison || commande.statut === 'preparee' ? 3.4 : null,
     eta_minutes: enLivraison ? 18 : null,
   };

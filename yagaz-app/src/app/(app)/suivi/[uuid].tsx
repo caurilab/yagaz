@@ -7,7 +7,18 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
-import { ActivityIndicator, Animated, Easing, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Animated,
+  Easing,
+  Linking,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Icone } from '../../../components/icones';
@@ -73,6 +84,8 @@ export default function EcranSuiviCommande() {
           <>
             <BlocEta suivi={suivi} />
 
+            {suivi.depot?.telephone ? <CarteContactDepot nom={suivi.depot.nom} telephone={suivi.depot.telephone} /> : null}
+
             <Text style={styles.sectionTitre}>Étapes</Text>
             <View style={styles.carteTimeline}>
               {suivi.etapes.map((etape, index) => (
@@ -115,6 +128,38 @@ function BlocEta({ suivi }: { suivi: SuiviCommande }) {
     <View style={styles.carteEta}>
       <Icone nom="horloge" taille={28} couleur={couleurs.texteDoux} />
       <Text style={styles.libelleEtaNeutre}>Suivi de votre commande</Text>
+    </View>
+  );
+}
+
+/**
+ * Contact rapide du dépôt (retard, question) : appel direct ou WhatsApp.
+ * N'apparaît que si le dépôt a un numéro renseigné (`telephone` nullable).
+ */
+function CarteContactDepot({ nom, telephone }: { nom: string; telephone: string }) {
+  const appeler = () => {
+    Linking.openURL(`tel:${telephone}`).catch(() => {});
+  };
+
+  const contacterWhatsApp = () => {
+    const numero = telephone.replace(/[^0-9]/g, '');
+    Linking.openURL(`https://wa.me/${numero}`).catch(() => {});
+  };
+
+  return (
+    <View style={styles.carteContact}>
+      <Text style={styles.sectionTitre}>Contacter le dépôt</Text>
+      <Text style={styles.texteDepot}>{nom}</Text>
+      <View style={styles.rangeeBoutonsContact}>
+        <Pressable style={[styles.boutonContact, styles.boutonAppel]} onPress={appeler}>
+          <Icone nom="telephone" taille={18} couleur={couleurs.blanc} />
+          <Text style={styles.texteBoutonAppel}>Appeler</Text>
+        </Pressable>
+        <Pressable style={[styles.boutonContact, styles.boutonWhatsApp]} onPress={contacterWhatsApp}>
+          <Icone nom="message" taille={18} couleur={couleurs.rouge} />
+          <Text style={styles.texteBoutonWhatsApp}>WhatsApp</Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -228,6 +273,51 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: couleurs.texte,
     marginBottom: espacements.sm,
+  },
+  carteContact: {
+    backgroundColor: couleurs.carte,
+    borderRadius: rayons.xl,
+    padding: espacements.lg,
+    marginBottom: espacements.lg,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
+  },
+  texteDepot: {
+    fontSize: 14,
+    color: couleurs.texteDoux,
+    marginBottom: espacements.md,
+  },
+  rangeeBoutonsContact: {
+    flexDirection: 'row',
+    gap: espacements.sm,
+  },
+  boutonContact: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: espacements.xs,
+    paddingVertical: espacements.sm,
+    borderRadius: rayons.md,
+  },
+  boutonAppel: {
+    backgroundColor: couleurs.rouge,
+  },
+  boutonWhatsApp: {
+    backgroundColor: couleurs.rougeClair,
+  },
+  texteBoutonAppel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: couleurs.blanc,
+  },
+  texteBoutonWhatsApp: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: couleurs.rouge,
   },
   carteTimeline: {
     backgroundColor: couleurs.carte,

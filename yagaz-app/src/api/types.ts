@@ -766,6 +766,8 @@ export interface SuiviCommande {
   etapes: EtapeSuivi[];
   statut_courant: StatutCommande;
   livraison: SuiviLivraisonCommande;
+  /** Contact du dépôt cible (appel/WhatsApp) - `telephone` nullable côté `organisations`. */
+  depot: { nom: string; telephone: string | null };
   /** Distance à vol d'oiseau dépôt <-> site - jamais de position GPS live. */
   distance_km: number | null;
   /** Estimation grossière (vitesse urbaine moyenne), non nulle seulement en `en_livraison`. */

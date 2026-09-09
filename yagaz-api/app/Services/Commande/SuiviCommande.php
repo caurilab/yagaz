@@ -57,6 +57,7 @@ final class SuiviCommande
         $commande->loadMissing(['cibleOrg', 'site', 'livraison.livreur']);
 
         $livraison = $commande->livraison;
+        $depot = $commande->cibleOrg;
 
         [$distanceKm, $etaMinutes] = $this->estimerEta($commande);
 
@@ -66,6 +67,12 @@ final class SuiviCommande
             'livraison' => [
                 'statut' => $livraison?->statut->value,
                 'livreur' => $livraison?->livreur?->name,
+            ],
+            // Contact du dépôt (appel/WhatsApp) affiché sur l'écran de suivi
+            // en cas de retard - `telephone` est nullable côté `organisations`.
+            'depot' => [
+                'nom' => $depot?->nom,
+                'telephone' => $depot?->telephone,
             ],
             'distance_km' => $distanceKm,
             // Estimation grossière (vitesse urbaine moyenne configurée), pas

@@ -57,6 +57,21 @@ class DepotsAbidjanSeeder extends Seeder
         'Koumassi' => ['b12Total' => 22, 'b6Total' => 30, 'b6Oryx' => 14],
     ];
 
+    /**
+     * Numéros de contact plausibles, distincts par commune (démonstration).
+     *
+     * @var array<string, string>
+     */
+    private const array TELEPHONES = [
+        'Cocody' => '+225 07 10 11 12 13',
+        'Plateau' => '+225 07 20 21 22 23',
+        'Yopougon' => '+225 07 30 31 32 33',
+        'Abobo' => '+225 07 40 41 42 43',
+        'Marcory' => '+225 07 50 51 52 53',
+        'Treichville' => '+225 07 60 61 62 63',
+        'Koumassi' => '+225 07 70 71 72 73',
+    ];
+
     public function run(): void
     {
         $mandataire = Organisation::query()
@@ -93,6 +108,7 @@ class DepotsAbidjanSeeder extends Seeder
                     'zone' => $commune,
                     'lat' => $lat,
                     'lng' => $lng,
+                    'telephone' => self::TELEPHONES[$commune],
                     'abonnement_actif' => true,
                 ]
             );

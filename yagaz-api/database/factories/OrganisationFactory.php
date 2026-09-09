@@ -21,6 +21,7 @@ class OrganisationFactory extends Factory
         return [
             'type' => TypeOrganisation::Depot,
             'nom' => fake()->company(),
+            'telephone' => '+225 07 '.fake()->numerify('## ## ## ##'),
             'parent_id' => null,
             'zone' => fake()->city(),
             'lat' => fake()->latitude(),

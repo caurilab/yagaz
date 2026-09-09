@@ -56,12 +56,14 @@ class DemoSeeder extends Seeder
 
         $depot1 = Organisation::factory()->depot()->create([
             'nom' => 'Dépôt Demo Abobo',
+            'telephone' => '+225 07 01 02 03 04',
             'parent_id' => $mandataire->id,
             'zone' => 'Abobo',
         ]);
 
         $depot2 = Organisation::factory()->depot()->create([
             'nom' => 'Dépôt Demo Koumassi',
+            'telephone' => '+225 07 05 06 07 08',
             'parent_id' => $mandataire->id,
             'zone' => 'Koumassi',
         ]);
