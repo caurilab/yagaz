@@ -674,26 +674,24 @@ export interface PointCuissonHoraire {
   sessions: number;
 }
 
-/** Plage horaire dominante d'utilisation de la cuisine (ex. déjeuner, dîner). */
-export interface PeriodeDominante {
-  heure_debut: number;
-  heure_fin: number;
-  libelle: string;
-}
-
 export interface FrequenceCuisson {
   jours_cuisine: number;
   sessions_par_jour: number;
   duree_moyenne_min: number;
 }
 
+/**
+ * Analyse de température (drill-down, endpoint `/sites/{uuid}/temperature/
+ * analyse`). Aligné sur `AgregationTemperature` : l'état COURANT
+ * (temp_courante_c, cuisson_en_cours) vient de l'endpoint séparé
+ * `/sites/{uuid}/temperature` (`TemperatureSite`), pas d'ici.
+ */
 export interface TemperatureAnalyse {
-  temp_courante_c: number;
-  cuisson_en_cours: boolean;
   courbe_horaire: PointTemperatureHoraire[];
-  histogramme_cuissons: PointCuissonHoraire[];
-  heure_pointe: number;
-  periode_dominante: PeriodeDominante;
+  cuisson_par_heure: PointCuissonHoraire[];
+  heure_pointe_cuisson: number | null;
+  /** Plage dominante : 'matin' | 'midi' | 'apres_midi' | 'soir', ou `null`. */
+  periode_dominante: string | null;
   frequence: FrequenceCuisson;
 }
 

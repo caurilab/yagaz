@@ -13,12 +13,35 @@ import { BandeauSync } from '../../../components/BandeauSync';
 import { CourbeTemperatureHoraire } from '../../../components/graphiques/CourbeTemperatureHoraire';
 import { Icone } from '../../../components/icones';
 import * as api from '../../../api/endpoints';
-import { executerAvecSource, temperatureAnalyseDemoParPeriode } from '../../../api/demo';
+import { executerAvecSource, temperatureAnalyseDemoParPeriode, temperatureDemoParSite } from '../../../api/demo';
 import { useDonnees } from '../../../data/DonneesContext';
 import type { StatutSync } from '../../../data/DonneesContext';
 import { couleurs, espacements, rayons } from '../../../../theme/couleurs';
 import { SEUIL_TEMPERATURE_ELEVEE_C } from '../../../components/EncartTemperature';
-import type { PeriodeTemperature, TemperatureAnalyse } from '../../../api/types';
+import type { PeriodeTemperature, TemperatureAnalyse, TemperatureSite } from '../../../api/types';
+
+const TEMPERATURE_COURANTE_DEFAUT: TemperatureSite = {
+  temp_courante_c: 0,
+  frais: false,
+  cuisson_en_cours: false,
+  debut_cuisson_at: null,
+};
+
+/** Libellé lisible de la plage dominante d'utilisation de la cuisine. */
+function libellePeriodeDominante(periode: string | null): string {
+  switch (periode) {
+    case 'matin':
+      return 'Matin';
+    case 'midi':
+      return 'Midi';
+    case 'apres_midi':
+      return 'Après-midi';
+    case 'soir':
+      return 'Soir';
+    default:
+      return '-';
+  }
+}
 
 const PERIODES: { valeur: PeriodeTemperature; libelle: string }[] = [
   { valeur: 'jour', libelle: 'Jour' },
@@ -37,18 +60,23 @@ export default function EcranTemperatureAnalyse() {
 
   const [periode, setPeriode] = useState<PeriodeTemperature>('jour');
   const [analyse, setAnalyse] = useState<TemperatureAnalyse | null>(null);
+  const [courant, setCourant] = useState<TemperatureSite | null>(null);
   const [statutSync, setStatutSync] = useState<StatutSync>('chargement');
   const [chargementInitial, setChargementInitial] = useState(true);
   const [rafraichissement, setRafraichissement] = useState(false);
 
   const charger = useCallback(async () => {
     if (!uuid) return;
-    const { data, source } = await executerAvecSource(
-      () => api.temperatureAnalyse(uuid, periode),
-      temperatureAnalyseDemoParPeriode[periode]
-    );
-    setAnalyse(data);
-    setStatutSync(source === 'demo' ? 'hors_ligne' : 'synchronise');
+    // L'analyse (agrégats) et l'état courant (temp_courante_c, cuisson) sont
+    // deux endpoints distincts - on charge les deux en parallèle.
+    const [resultatAnalyse, resultatCourant] = await Promise.all([
+      executerAvecSource(() => api.temperatureAnalyse(uuid, periode), temperatureAnalyseDemoParPeriode[periode]),
+      executerAvecSource(() => api.temperatureSite(uuid), temperatureDemoParSite[uuid] ?? TEMPERATURE_COURANTE_DEFAUT),
+    ]);
+    setAnalyse(resultatAnalyse.data);
+    setCourant(resultatCourant.data);
+    const horsLigne = resultatAnalyse.source === 'demo' || resultatCourant.source === 'demo';
+    setStatutSync(horsLigne ? 'hors_ligne' : 'synchronise');
   }, [uuid, periode]);
 
   useEffect(() => {
@@ -77,8 +105,9 @@ export default function EcranTemperatureAnalyse() {
     }
   }
 
-  const elevee = analyse != null && analyse.temp_courante_c >= SEUIL_TEMPERATURE_ELEVEE_C;
-  const maxCuissons = analyse ? Math.max(...analyse.histogramme_cuissons.map((p) => p.sessions), 1) : 1;
+  const elevee = courant != null && courant.temp_courante_c >= SEUIL_TEMPERATURE_ELEVEE_C;
+  const cuissonParHeure = analyse?.cuisson_par_heure ?? [];
+  const maxCuissons = cuissonParHeure.length > 0 ? Math.max(...cuissonParHeure.map((p) => p.sessions), 1) : 1;
 
   return (
     <SafeAreaView style={styles.conteneur} edges={['bottom']}>
@@ -123,7 +152,7 @@ export default function EcranTemperatureAnalyse() {
               <View style={styles.ligneEnteteTemperature}>
                 <Icone nom="thermometre" taille={20} couleur={elevee ? couleurs.danger : couleurs.rouge} />
                 <Text style={styles.libelleTemperature}>Température courante</Text>
-                {analyse.cuisson_en_cours ? (
+                {courant?.cuisson_en_cours ? (
                   <View style={styles.badgeCuisson}>
                     <Icone nom="flamme" taille={12} couleur={couleurs.blanc} />
                     <Text style={styles.texteBadgeCuisson}>Cuisson en cours</Text>
@@ -131,14 +160,14 @@ export default function EcranTemperatureAnalyse() {
                 ) : null}
               </View>
               <Text style={[styles.chiffreTemperature, elevee && styles.chiffreAlerte]}>
-                {Math.round(analyse.temp_courante_c)} °C
+                {courant ? `${Math.round(courant.temp_courante_c)} °C` : '-'}
               </Text>
               {elevee ? <Text style={styles.texteAlerte}>Température élevée - vérifiez la cuisine</Text> : null}
             </View>
 
             <View style={styles.carte}>
               <Text style={styles.sectionTitre}>Courbe horaire - température moyenne</Text>
-              <CourbeTemperatureHoraire points={analyse.courbe_horaire} />
+              <CourbeTemperatureHoraire points={analyse.courbe_horaire ?? []} />
               <View style={styles.ligneRepereHeures}>
                 <Text style={styles.texteRepereHeure}>0h</Text>
                 <Text style={styles.texteRepereHeure}>6h</Text>
@@ -151,14 +180,14 @@ export default function EcranTemperatureAnalyse() {
             <View style={styles.carte}>
               <Text style={styles.sectionTitre}>Cuissons par heure</Text>
               <View style={styles.histogramme}>
-                {analyse.histogramme_cuissons.map((point) => (
+                {cuissonParHeure.map((point) => (
                   <View key={point.heure} style={styles.colonneHistogramme}>
                     <View
                       style={[
                         styles.barreHistogramme,
                         {
                           height: Math.max(2, (point.sessions / maxCuissons) * 64),
-                          backgroundColor: point.heure === analyse.heure_pointe ? couleurs.rouge : couleurs.rougeClair,
+                          backgroundColor: point.heure === analyse.heure_pointe_cuisson ? couleurs.rouge : couleurs.rougeClair,
                         },
                       ]}
                     />
@@ -178,14 +207,16 @@ export default function EcranTemperatureAnalyse() {
               <View style={styles.blocEnEvidence}>
                 <Icone nom="flamme" taille={22} couleur={couleurs.rouge} />
                 <Text style={styles.libelleEnEvidence}>Heure de pointe</Text>
-                <Text style={styles.chiffreEnEvidence}>{libelleHeure(analyse.heure_pointe)}</Text>
+                <Text style={styles.chiffreEnEvidence}>
+                  {analyse.heure_pointe_cuisson != null ? libelleHeure(analyse.heure_pointe_cuisson) : '-'}
+                </Text>
               </View>
               <View style={styles.separateurVertical} />
               <View style={styles.blocEnEvidence}>
                 <Icone nom="cuisine" taille={22} couleur={couleurs.rouge} />
                 <Text style={styles.libelleEnEvidence}>Période dominante</Text>
                 <Text style={styles.chiffreEnEvidence} numberOfLines={1}>
-                  {analyse.periode_dominante.libelle}
+                  {libellePeriodeDominante(analyse.periode_dominante)}
                 </Text>
               </View>
             </View>

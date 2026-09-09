@@ -394,10 +394,12 @@ export function temperatureSite(uuid: string) {
 
 /**
  * Analyse détaillée (drill-down) de la température du site : courbe horaire,
- * histogramme des cuissons, heure de pointe, période dominante, fréquence
- * (doc 13 §3). Pas d'enveloppe `data`, même convention que `temperatureSite`.
+ * cuissons par heure, heure de pointe, période dominante, fréquence
+ * (doc 13 §3). Réponse enveloppée dans `data` (contrairement à
+ * `temperatureSite`) - on la déballe ici pour renvoyer directement l'analyse.
  */
-export function temperatureAnalyse(uuid: string, periode?: PeriodeTemperature) {
+export async function temperatureAnalyse(uuid: string, periode?: PeriodeTemperature): Promise<TemperatureAnalyse> {
   const suffixe = periode ? `?periode=${periode}` : '';
-  return requeteApi<TemperatureAnalyse>(`/sites/${uuid}/temperature/analyse${suffixe}`);
+  const reponse = await requeteApi<{ data: TemperatureAnalyse }>(`/sites/${uuid}/temperature/analyse${suffixe}`);
+  return reponse.data;
 }
