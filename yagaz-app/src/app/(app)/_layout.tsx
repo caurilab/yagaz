@@ -94,6 +94,14 @@ export default function LayoutApp() {
         }}
       />
       <Tabs.Screen
+        name="nouveau-lieu"
+        options={{
+          href: null,
+          title: 'Nouveau lieu',
+          headerLeft: () => <BoutonRetour />,
+        }}
+      />
+      <Tabs.Screen
         name="bouteille/[uuid]"
         options={{
           href: null,

@@ -40,6 +40,12 @@
           "cameraPermission": "Yagaz a besoin de la caméra pour scanner le QR code de votre matériel."
         }
       ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Yagaz utilise votre position pour trouver les dépôts de gaz les plus proches."
+        }
+      ],
       "expo-asset"
     ],
     "experiments": {

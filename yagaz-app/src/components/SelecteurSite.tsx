@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { router } from 'expo-router';
 import { FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -15,15 +16,16 @@ interface Props {
 export function SelecteurSite({ sites, siteActif, onChoisir }: Props) {
   const [ouvert, setOuvert] = useState(false);
 
-  if (sites.length <= 1) {
-    return <Text style={styles.libelleUnique}>{siteActif?.nom ?? 'Mon domicile'}</Text>;
+  function ouvrirNouveauLieu() {
+    setOuvert(false);
+    router.push('/(app)/nouveau-lieu');
   }
 
   return (
     <>
       <Pressable style={styles.pilule} onPress={() => setOuvert(true)} accessibilityRole="button">
         <Text style={styles.texteSite} numberOfLines={1}>
-          {siteActif?.nom ?? 'Choisir un site'}
+          {siteActif?.nom ?? (sites.length === 0 ? 'Ajouter un lieu' : 'Choisir un site')}
         </Text>
         <Text style={styles.chevron}>▾</Text>
       </Pressable>
@@ -51,6 +53,11 @@ export function SelecteurSite({ sites, siteActif, onChoisir }: Props) {
                     {item.a_alerte_active ? <View style={styles.pointAlerte} /> : null}
                   </Pressable>
                 )}
+                ListFooterComponent={
+                  <Pressable style={styles.ligneAjout} onPress={ouvrirNouveauLieu} accessibilityRole="button">
+                    <Text style={styles.texteAjout}>+ Nouveau lieu</Text>
+                  </Pressable>
+                }
               />
             </SafeAreaView>
           </View>
@@ -61,11 +68,6 @@ export function SelecteurSite({ sites, siteActif, onChoisir }: Props) {
 }
 
 const styles = StyleSheet.create({
-  libelleUnique: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: couleurs.blanc,
-  },
   pilule: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -137,5 +139,13 @@ const styles = StyleSheet.create({
     height: 10,
     borderRadius: rayons.rond,
     backgroundColor: couleurs.danger,
+  },
+  ligneAjout: {
+    paddingVertical: espacements.md,
+  },
+  texteAjout: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: couleurs.rouge,
   },
 });

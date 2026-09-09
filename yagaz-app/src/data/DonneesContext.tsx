@@ -30,6 +30,7 @@ import type {
   Bouteille,
   CorpsCreationBouteille,
   CorpsCreationEquipement,
+  CorpsCreationSite,
   CorpsMajBouteille,
   Equipement,
   Format,
@@ -56,6 +57,8 @@ interface ContexteDonneesValeur {
   siteActifUuid: string | null;
   siteActif: Site | null;
   definirSiteActif: (uuid: string) => void;
+  /** Création d'un lieu (site), avec position GPS optionnelle - devient le site actif. */
+  creerLieu: (corps: CorpsCreationSite) => Promise<Site>;
   bouteilles: Bouteille[];
   bouteilleActive: Bouteille | undefined;
   formats: Format[];
@@ -259,6 +262,51 @@ export function DonneesProvider({ children }: { children: ReactNode }) {
     [sites, bouteillesParSite, formats, marques, alertes]
   );
 
+  const appliquerSites = useCallback(
+    (valeur: Site[]) => {
+      setSites(valeur);
+      ecrireCache<DonneesCache>(CLES_CACHE.sites, {
+        sites: valeur,
+        bouteillesParSite,
+        formats,
+        marques,
+        alertes,
+        equipements,
+      });
+    },
+    [bouteillesParSite, formats, marques, alertes, equipements]
+  );
+
+  const creerLieu = useCallback(
+    async (corps: CorpsCreationSite): Promise<Site> => {
+      try {
+        const { data: site } = await api.creerSite(corps);
+        await rafraichir();
+        definirSiteActif(site.uuid);
+        return site;
+      } catch (erreur) {
+        if (!MODE_DEMO) throw erreur;
+        const nouveauSite: Site = {
+          uuid: genererUuidLocal('site'),
+          nom: corps.nom,
+          adresse: corps.adresse ?? null,
+          lat: corps.lat ?? null,
+          lng: corps.lng ?? null,
+          niveau_acces: 'proprietaire',
+          nb_bouteilles: 0,
+          a_alerte_active: false,
+          a_balance: false,
+          a_temperature: false,
+          a_ecran: false,
+        };
+        appliquerSites([...sites, nouveauSite]);
+        definirSiteActif(nouveauSite.uuid);
+        return nouveauSite;
+      }
+    },
+    [rafraichir, definirSiteActif, sites, appliquerSites]
+  );
+
   const activerBouteille = useCallback(
     async (uuid: string) => {
       if (!siteActifUuid) return;
@@ -444,6 +492,7 @@ export function DonneesProvider({ children }: { children: ReactNode }) {
       siteActifUuid,
       siteActif,
       definirSiteActif,
+      creerLieu,
       bouteilles,
       bouteilleActive,
       formats,
@@ -467,6 +516,7 @@ export function DonneesProvider({ children }: { children: ReactNode }) {
       siteActifUuid,
       siteActif,
       definirSiteActif,
+      creerLieu,
       bouteilles,
       bouteilleActive,
       formats,
