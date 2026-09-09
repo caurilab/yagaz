@@ -5,11 +5,12 @@
  * des cuissons par heure, heure de pointe + période dominante, fréquence.
  * Style élégant orange, cartes blanches sans bordure colorée.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Animated, Easing, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BandeauSync } from '../../../components/BandeauSync';
+import { FlammeAnimee } from '../../../components/FlammeAnimee';
 import { CourbeTemperatureHoraire } from '../../../components/graphiques/CourbeTemperatureHoraire';
 import { Icone } from '../../../components/icones';
 import * as api from '../../../api/endpoints';
@@ -24,6 +25,29 @@ import type { StatutSync } from '../../../data/DonneesContext';
 import { couleurs, espacements, rayons } from '../../../../theme/couleurs';
 import { SEUIL_TEMPERATURE_ELEVEE_C } from '../../../components/EncartTemperature';
 import type { PeriodeTemperature, TemperatureAnalyse, TemperatureSite } from '../../../api/types';
+
+/** Halo pulsant discret posé sur la carte « Température courante » quand elle est élevée. */
+function HaloChaleur() {
+  const pulsation = useRef(new Animated.Value(0)).current;
+  const animation = useRef<Animated.CompositeAnimation | null>(null);
+
+  useEffect(() => {
+    animation.current = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulsation, { toValue: 1, duration: 1200, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(pulsation, { toValue: 0, duration: 1200, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+      ])
+    );
+    animation.current.start();
+    return () => animation.current?.stop();
+  }, [pulsation]);
+
+  const opacite = pulsation.interpolate({ inputRange: [0, 1], outputRange: [0, 0.5] });
+
+  return (
+    <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.haloTemperature, { opacity: opacite }]} />
+  );
+}
 
 const TEMPERATURE_COURANTE_DEFAUT: TemperatureSite = {
   temp_courante_c: 0,
@@ -165,13 +189,14 @@ export default function EcranTemperatureAnalyse() {
           </View>
         ) : (
           <>
-            <View style={[styles.carte, styles.carteTemperature]}>
+            <View style={[styles.carte, styles.carteTemperature, elevee && styles.carteTemperatureAlerte]}>
+              {elevee ? <HaloChaleur /> : null}
               <View style={styles.ligneEnteteTemperature}>
                 <Icone nom="thermometre" taille={20} couleur={elevee ? couleurs.danger : couleurs.rouge} />
                 <Text style={styles.libelleTemperature}>Température courante</Text>
                 {courant?.cuisson_en_cours ? (
                   <View style={styles.badgeCuisson}>
-                    <Icone nom="flamme" taille={12} couleur={couleurs.blanc} />
+                    <FlammeAnimee taille={12} couleur={couleurs.blanc} />
                     <Text style={styles.texteBadgeCuisson}>Cuisson en cours</Text>
                   </View>
                 ) : null}
@@ -341,6 +366,17 @@ const styles = StyleSheet.create({
   carteTemperature: {
     alignItems: 'flex-start',
     gap: espacements.xs,
+    borderWidth: 1,
+    borderColor: 'transparent',
+    overflow: 'hidden',
+  },
+  carteTemperatureAlerte: {
+    backgroundColor: couleurs.rougeClair,
+    borderColor: couleurs.danger,
+  },
+  haloTemperature: {
+    backgroundColor: couleurs.danger,
+    borderRadius: rayons.xl,
   },
   ligneEnteteTemperature: {
     flexDirection: 'row',

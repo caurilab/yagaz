@@ -5,12 +5,37 @@
  * ouvre l'écran d'analyse détaillée (`/temperature/{uuid}`, doc 13 §3).
  */
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { couleurs, espacements, rayons } from '../../theme/couleurs';
 import type { TemperatureSite } from '../api/types';
 import { EncartConnecterMateriel } from './EncartConnecterMateriel';
+import { FlammeAnimee } from './FlammeAnimee';
 import { Icone } from './icones';
+
+/** Halo pulsant discret posé sur la carte quand la température est élevée. */
+function HaloChaleur() {
+  const pulsation = useRef(new Animated.Value(0)).current;
+  const animation = useRef<Animated.CompositeAnimation | null>(null);
+
+  useEffect(() => {
+    animation.current = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulsation, { toValue: 1, duration: 1200, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(pulsation, { toValue: 0, duration: 1200, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+      ])
+    );
+    animation.current.start();
+    return () => animation.current?.stop();
+  }, [pulsation]);
+
+  const opacite = pulsation.interpolate({ inputRange: [0, 1], outputRange: [0, 0.5] });
+
+  return (
+    <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.halo, { opacity: opacite }]} />
+  );
+}
 
 /** Seuil d'alerte visuelle - la sécurité (notification `temperature_elevee`) reste côté API. */
 export const SEUIL_TEMPERATURE_ELEVEE_C = 60;
@@ -52,7 +77,7 @@ export function EncartTemperature({
         </View>
         {temperature.cuisson_en_cours ? (
           <View style={styles.badgeCuisson}>
-            <Icone nom="flamme" taille={12} couleur={couleurs.blanc} />
+            <FlammeAnimee taille={12} couleur={couleurs.blanc} />
             <Text style={styles.texteBadgeCuisson}>Cuisson en cours</Text>
           </View>
         ) : null}
@@ -73,7 +98,12 @@ export function EncartTemperature({
   );
 
   if (!siteUuid) {
-    return <View style={[styles.carte, elevee && styles.carteAlerte]}>{contenu}</View>;
+    return (
+      <View style={[styles.carte, elevee && styles.carteAlerte]}>
+        {elevee ? <HaloChaleur /> : null}
+        {contenu}
+      </View>
+    );
   }
 
   return (
@@ -82,6 +112,7 @@ export function EncartTemperature({
       onPress={() => router.push(`/temperature/${siteUuid}`)}
       accessibilityRole="button"
       accessibilityLabel="Voir le détail de la température">
+      {elevee ? <HaloChaleur /> : null}
       {contenu}
     </Pressable>
   );
@@ -98,9 +129,17 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
     elevation: 2,
+    borderWidth: 1,
+    borderColor: 'transparent',
+    overflow: 'hidden',
   },
   carteAlerte: {
-    backgroundColor: '#FDECEC',
+    backgroundColor: couleurs.rougeClair,
+    borderColor: couleurs.danger,
+  },
+  halo: {
+    backgroundColor: couleurs.danger,
+    borderRadius: rayons.lg,
   },
   ligneEntete: {
     flexDirection: 'row',
