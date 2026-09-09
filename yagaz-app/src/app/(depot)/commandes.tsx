@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
-import { Alert, FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BadgeStatutCommande } from '../../components/BadgeStatut';
 import { Bouton } from '../../components/Bouton';
 import { useDepot } from '../../data/DepotContext';
+import { useDialogue } from '../../data/DialogueContext';
 import { couleurs, espacements, rayons } from '../../../theme/couleurs';
 import type { CommandeDepot, MembreLivreur } from '../../api/types';
 
@@ -13,6 +14,7 @@ const STATUTS_FILE: CommandeDepot['statut'][] = ['confirmee', 'preparee', 'en_li
 /** File des commandes entrantes : préparer, puis affecter un livreur (UX §3, contrat §4). */
 export default function EcranCommandesDepot() {
   const { commandes, livreurs, preparerCommande, affecterLivraison } = useDepot();
+  const { alerter } = useDialogue();
   const [uuidEnCours, setUuidEnCours] = useState<string | null>(null);
   const [commandeAffectation, setCommandeAffectation] = useState<string | null>(null);
 
@@ -29,7 +31,7 @@ export default function EcranCommandesDepot() {
     try {
       await preparerCommande(commande.uuid);
     } catch {
-      Alert.alert('Action impossible', 'Impossible de préparer cette commande pour le moment.');
+      void alerter({ titre: 'Action impossible', message: 'Impossible de préparer cette commande pour le moment.' });
     } finally {
       setUuidEnCours(null);
     }
@@ -43,7 +45,7 @@ export default function EcranCommandesDepot() {
     try {
       await affecterLivraison(uuid, livreur.user_id);
     } catch {
-      Alert.alert('Action impossible', "Impossible d'affecter ce livreur pour le moment.");
+      void alerter({ titre: 'Action impossible', message: "Impossible d'affecter ce livreur pour le moment." });
     } finally {
       setUuidEnCours(null);
     }

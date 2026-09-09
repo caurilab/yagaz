@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
-import { Alert, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BadgeStatutLivraison } from '../../components/BadgeStatut';
 import { BandeauSync } from '../../components/BandeauSync';
 import { Bouton } from '../../components/Bouton';
+import { useDialogue } from '../../data/DialogueContext';
 import { useLivreur } from '../../data/LivreurContext';
 import { couleurs, espacements, rayons } from '../../../theme/couleurs';
 import { libelleActionLivraison, statutLivraisonSuivant } from '../../utils/statuts';
@@ -13,6 +14,7 @@ import type { MissionLivreur } from '../../api/types';
 /** Missions du livreur : adresse, format, quantité, statut, gros boutons (UX §6, contrat §5). */
 export default function EcranMissionsLivreur() {
   const { missions, statutSync, rafraichir, majStatut } = useLivreur();
+  const { alerter } = useDialogue();
   const [idEnCours, setIdEnCours] = useState<number | null>(null);
 
   const enCours = useMemo(
@@ -28,7 +30,7 @@ export default function EcranMissionsLivreur() {
     try {
       await majStatut(mission.livraison_id, suivant, suivant === 'vide_recupere' ? mission.a_recuperer : undefined);
     } catch {
-      Alert.alert('Action impossible', 'Impossible de mettre à jour cette mission pour le moment.');
+      void alerter({ titre: 'Action impossible', message: 'Impossible de mettre à jour cette mission pour le moment.' });
     } finally {
       setIdEnCours(null);
     }

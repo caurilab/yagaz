@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { router } from 'expo-router';
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Bouton } from '../../components/Bouton';
@@ -9,6 +9,7 @@ import { Icone } from '../../components/icones';
 import { useAuth } from '../../auth/AuthContext';
 import { majReglagesAlertes } from '../../api/endpoints';
 import { MODE_DEMO } from '../../api/demo';
+import { useDialogue } from '../../data/DialogueContext';
 import { useEspace } from '../../espace/EspaceContext';
 import { couleurs, espacements, rayons } from '../../../theme/couleurs';
 import type { Canal } from '../../api/types';
@@ -22,6 +23,7 @@ const CANAUX: { valeur: Canal; libelle: string }[] = [
 export default function EcranReglages() {
   const { user, deconnecter } = useAuth();
   const { espacesDisponibles, reinitialiserChoix } = useEspace();
+  const { alerter, confirmer } = useDialogue();
   const [canaux, setCanaux] = useState<Canal[]>(['push']);
   const [livreurHabituel, setLivreurHabituel] = useState('');
   const [enCours, setEnCours] = useState(false);
@@ -39,23 +41,29 @@ export default function EcranReglages() {
         canaux,
         livreur_habituel: livreurHabituel.trim() || undefined,
       });
-      Alert.alert('Réglages enregistrés', 'Vos préférences ont été mises à jour.');
+      void alerter({ titre: 'Réglages enregistrés', message: 'Vos préférences ont été mises à jour.' });
     } catch {
       if (!MODE_DEMO) {
-        Alert.alert('Erreur', "Impossible d'enregistrer les réglages pour l'instant.");
+        void alerter({ titre: 'Erreur', message: "Impossible d'enregistrer les réglages pour l'instant." });
       } else {
-        Alert.alert('Réglages enregistrés', 'Vos préférences ont été mises à jour (mode démo).');
+        void alerter({ titre: 'Réglages enregistrés', message: 'Vos préférences ont été mises à jour (mode démo).' });
       }
     } finally {
       setEnCours(false);
     }
   }
 
-  function confirmerDeconnexion() {
-    Alert.alert('Se déconnecter', 'Voulez-vous vraiment vous déconnecter ?', [
-      { text: 'Annuler', style: 'cancel' },
-      { text: 'Se déconnecter', style: 'destructive', onPress: () => deconnecter() },
-    ]);
+  async function confirmerDeconnexion() {
+    if (
+      await confirmer({
+        titre: 'Se déconnecter',
+        message: 'Voulez-vous vraiment vous déconnecter ?',
+        texteConfirmer: 'Se déconnecter',
+        destructif: true,
+      })
+    ) {
+      deconnecter();
+    }
   }
 
   return (

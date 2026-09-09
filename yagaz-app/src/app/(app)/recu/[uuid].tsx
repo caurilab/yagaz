@@ -7,12 +7,13 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
-import { ActivityIndicator, Alert, RefreshControl, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, RefreshControl, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Bouton } from '../../../components/Bouton';
 import { LogoYagaz } from '../../../components/icones';
 import { useCommandes } from '../../../data/CommandesContext';
+import { useDialogue } from '../../../data/DialogueContext';
 import { recuCommande } from '../../../api/endpoints';
 import { avecRepliDemo, formatsDemo, recuCommandeDemo } from '../../../api/demo';
 import { couleurs, espacements, rayons } from '../../../../theme/couleurs';
@@ -28,6 +29,7 @@ const LIBELLES_MODE_PAIEMENT: Record<ModePaiement, string> = {
 export default function EcranRecu() {
   const { uuid } = useLocalSearchParams<{ uuid: string }>();
   const { commandes } = useCommandes();
+  const { alerter } = useDialogue();
   const commande = commandes.find((c) => c.uuid === uuid);
 
   const [recu, setRecu] = useState<RecuPaiement | null>(null);
@@ -73,7 +75,7 @@ export default function EcranRecu() {
         message: `Reçu Yagaz - ${detailFormat} · ${formaterMontantFcfa(recu.montant)} (${libellesStatutPaiement[recu.statut_paiement]})${recu.reference ? ` - réf. ${recu.reference}` : ''}`,
       });
     } catch {
-      Alert.alert('Erreur', "Impossible de partager le reçu pour l'instant.");
+      void alerter({ titre: 'Erreur', message: "Impossible de partager le reçu pour l'instant." });
     }
   }
 

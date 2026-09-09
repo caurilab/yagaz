@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { router } from 'expo-router';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Bouton } from '../../components/Bouton';
 import { Icone } from '../../components/icones';
 import { SelecteurFormat } from '../../components/SelecteurFormat';
 import { useCommandes } from '../../data/CommandesContext';
+import { useDialogue } from '../../data/DialogueContext';
 import { useDonnees } from '../../data/DonneesContext';
 import { listerDepots } from '../../api/endpoints';
 import { avecRepliDemo, depotsDemo } from '../../api/demo';
@@ -16,6 +17,7 @@ import type { Depot, Format } from '../../api/types';
 export default function EcranNouvelleCommande() {
   const { formats, siteActif, bouteilleActive } = useDonnees();
   const { creer } = useCommandes();
+  const { alerter } = useDialogue();
 
   const codes = useMemo(() => Array.from(new Set(formats.map((f) => f.code))), [formats]);
   // Par défaut, on commande le format de la bouteille active (même marque que
@@ -58,15 +60,15 @@ export default function EcranNouvelleCommande() {
 
   async function valider() {
     if (!siteActif) {
-      Alert.alert('Site requis', 'Choisissez un site avant de commander.');
+      void alerter({ titre: 'Site requis', message: 'Choisissez un site avant de commander.' });
       return;
     }
     if (!formatChoisi) {
-      Alert.alert('Format requis', 'Choisissez le format à commander.');
+      void alerter({ titre: 'Format requis', message: 'Choisissez le format à commander.' });
       return;
     }
     if (!depotChoisi) {
-      Alert.alert('Dépôt requis', 'Choisissez un dépôt pour la livraison.');
+      void alerter({ titre: 'Dépôt requis', message: 'Choisissez un dépôt pour la livraison.' });
       return;
     }
     setEnCours(true);
@@ -81,7 +83,7 @@ export default function EcranNouvelleCommande() {
       });
       router.back();
     } catch {
-      Alert.alert('Erreur', 'La commande a échoué. Réessayez.');
+      void alerter({ titre: 'Erreur', message: 'La commande a échoué. Réessayez.' });
     } finally {
       setEnCours(false);
     }

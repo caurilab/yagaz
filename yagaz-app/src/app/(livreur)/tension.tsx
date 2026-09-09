@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Alert, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BandeauSync } from '../../components/BandeauSync';
 import { Bouton } from '../../components/Bouton';
+import { useDialogue } from '../../data/DialogueContext';
 import { useLivreur } from '../../data/LivreurContext';
 import { couleurs, espacements, rayons } from '../../../theme/couleurs';
 import type { FoyerEnTensionLivreur } from '../../api/types';
@@ -17,15 +18,19 @@ import type { FoyerEnTensionLivreur } from '../../api/types';
  */
 export default function EcranTensionLivreur() {
   const { foyersEnTension, statutSync, rafraichir, proposerLivraison } = useLivreur();
+  const { alerter } = useDialogue();
   const [siteEnCours, setSiteEnCours] = useState<string | null>(null);
 
   async function proposer(foyer: FoyerEnTensionLivreur) {
     setSiteEnCours(foyer.site_uuid);
     try {
       await proposerLivraison(foyer);
-      Alert.alert('Proposition envoyée', "Le foyer va recevoir votre proposition et pourra l'accepter ou la refuser.");
+      void alerter({
+        titre: 'Proposition envoyée',
+        message: "Le foyer va recevoir votre proposition et pourra l'accepter ou la refuser.",
+      });
     } catch {
-      Alert.alert('Erreur', "L'envoi de la proposition a échoué. Réessayez.");
+      void alerter({ titre: 'Erreur', message: "L'envoi de la proposition a échoué. Réessayez." });
     } finally {
       setSiteEnCours(null);
     }

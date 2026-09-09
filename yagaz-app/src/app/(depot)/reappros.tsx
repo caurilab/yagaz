@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Bouton } from '../../components/Bouton';
 import { useDepot } from '../../data/DepotContext';
+import { useDialogue } from '../../data/DialogueContext';
 import { couleurs, espacements, rayons } from '../../../theme/couleurs';
 import type { Reappro } from '../../api/types';
 
@@ -14,6 +15,7 @@ import type { Reappro } from '../../api/types';
  */
 export default function EcranReapprosDepot() {
   const { reappros, confirmerReappro } = useDepot();
+  const { alerter } = useDialogue();
   const [quantites, setQuantites] = useState<Record<string, number>>({});
   const [uuidEnCours, setUuidEnCours] = useState<string | null>(null);
 
@@ -37,7 +39,7 @@ export default function EcranReapprosDepot() {
         quantiteAjustee != null && quantiteAjustee !== reappro.quantite ? { quantite: quantiteAjustee } : undefined
       );
     } catch {
-      Alert.alert('Action impossible', 'Impossible de confirmer ce réappro pour le moment.');
+      void alerter({ titre: 'Action impossible', message: 'Impossible de confirmer ce réappro pour le moment.' });
     } finally {
       setUuidEnCours(null);
     }

@@ -9,7 +9,6 @@ import { useRef, useState } from 'react';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import {
   ActivityIndicator,
-  Alert,
   Linking,
   Modal,
   Pressable,
@@ -24,6 +23,7 @@ import { BadgeStatutEquipement } from '../../components/BadgeStatut';
 import { Bouton } from '../../components/Bouton';
 import { Champ } from '../../components/Champ';
 import { Icone, type NomIcone } from '../../components/icones';
+import { useDialogue } from '../../data/DialogueContext';
 import { useDonnees } from '../../data/DonneesContext';
 import { couleurs, espacements, rayons } from '../../../theme/couleurs';
 import { formaterDateRelative } from '../../utils/date';
@@ -69,6 +69,7 @@ function parserQrEquipement(donnee: string): { type: TypeEquipement | null; refe
 
 export default function EcranMateriels() {
   const { siteActif, equipements, enregistrerEquipement, supprimerEquipement } = useDonnees();
+  const { alerter, confirmer } = useDialogue();
 
   const [etapeAjout, setEtapeAjout] = useState<EtapeAjout>('fermee');
   const [typeSaisi, setTypeSaisi] = useState<TypeEquipement>('balance');
@@ -85,7 +86,7 @@ export default function EcranMateriels() {
   async function soumettreAjout(type: TypeEquipement, referenceBrute: string) {
     const reference = referenceBrute.trim();
     if (!reference) {
-      Alert.alert('Code requis', 'Saisissez ou scannez le code du matériel.');
+      void alerter({ titre: 'Code requis', message: 'Saisissez ou scannez le code du matériel.' });
       return;
     }
     setEnCours(true);
@@ -93,7 +94,10 @@ export default function EcranMateriels() {
       await enregistrerEquipement({ type, reference, site_uuid: siteActif?.uuid });
       fermerAjout();
     } catch {
-      Alert.alert('Erreur', "Impossible d'ajouter ce matériel pour l'instant. Vérifiez le code et réessayez.");
+      void alerter({
+        titre: 'Erreur',
+        message: "Impossible d'ajouter ce matériel pour l'instant. Vérifiez le code et réessayez.",
+      });
     } finally {
       setEnCours(false);
     }
@@ -111,28 +115,24 @@ export default function EcranMateriels() {
     }
   }
 
-  function confirmerSuppression(equipement: Equipement) {
-    Alert.alert(
-      'Supprimer ce matériel',
-      `Voulez-vous vraiment supprimer "${equipement.reference}" ? Cette action est définitive.`,
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Supprimer',
-          style: 'destructive',
-          onPress: async () => {
-            setUuidSuppressionEnCours(equipement.uuid);
-            try {
-              await supprimerEquipement(equipement.uuid);
-            } catch {
-              Alert.alert('Erreur', 'Impossible de supprimer ce matériel pour l\'instant.');
-            } finally {
-              setUuidSuppressionEnCours(null);
-            }
-          },
-        },
-      ]
-    );
+  async function confirmerSuppression(equipement: Equipement) {
+    if (
+      await confirmer({
+        titre: 'Supprimer ce matériel',
+        message: `Voulez-vous vraiment supprimer "${equipement.reference}" ? Cette action est définitive.`,
+        texteConfirmer: 'Supprimer',
+        destructif: true,
+      })
+    ) {
+      setUuidSuppressionEnCours(equipement.uuid);
+      try {
+        await supprimerEquipement(equipement.uuid);
+      } catch {
+        void alerter({ titre: 'Erreur', message: 'Impossible de supprimer ce matériel pour l\'instant.' });
+      } finally {
+        setUuidSuppressionEnCours(null);
+      }
+    }
   }
 
   return (

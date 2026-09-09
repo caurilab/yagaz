@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BadgeStatutLigneTournee, BadgeStatutTournee } from '../../components/BadgeStatut';
 import { BandeauSync } from '../../components/BandeauSync';
 import { Bouton } from '../../components/Bouton';
+import { useDialogue } from '../../data/DialogueContext';
 import { useMandataire } from '../../data/MandataireContext';
 import { couleurs, espacements, rayons } from '../../../theme/couleurs';
 import { libelleActionLigneTournee, statutArretTournee, statutLigneTourneeSuivant } from '../../utils/statuts';
@@ -44,6 +45,7 @@ function formaterDateTournee(dateIso: string): string {
  */
 export default function EcranTourneeDuJour() {
   const { tourneeDuJour, statutSync, chargementInitial, rafraichir, avancerArret } = useMandataire();
+  const { alerter } = useDialogue();
   const [depotUuidEnCours, setDepotUuidEnCours] = useState<string | null>(null);
 
   const arrets = useMemo(() => (tourneeDuJour ? grouperParDepot(tourneeDuJour.lignes) : []), [tourneeDuJour]);
@@ -62,7 +64,7 @@ export default function EcranTourneeDuJour() {
         suivant
       );
     } catch {
-      Alert.alert('Action impossible', 'Impossible de mettre à jour cet arrêt pour le moment.');
+      void alerter({ titre: 'Action impossible', message: 'Impossible de mettre à jour cet arrêt pour le moment.' });
     } finally {
       setDepotUuidEnCours(null);
     }

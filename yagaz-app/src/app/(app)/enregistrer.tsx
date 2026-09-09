@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { router } from 'expo-router';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Bouton } from '../../components/Bouton';
@@ -8,6 +8,7 @@ import { BouteilleGaz } from '../../components/BouteilleGaz';
 import { Champ } from '../../components/Champ';
 import { Icone } from '../../components/icones';
 import { SelecteurFormat } from '../../components/SelecteurFormat';
+import { useDialogue } from '../../data/DialogueContext';
 import { useDonnees } from '../../data/DonneesContext';
 import { piecesBouteille } from '../../api/endpoints';
 import { avecRepliDemo, piecesBouteilleDemo } from '../../api/demo';
@@ -18,6 +19,7 @@ import type { Format, PieceBouteille, RoleBouteille } from '../../api/types';
 /** Parcours guidé d'enregistrement d'une bouteille (UX §2). */
 export default function EcranEnregistrerBouteille() {
   const { formats, marques, bouteilles, enregistrerBouteille } = useDonnees();
+  const { alerter } = useDialogue();
 
   const codes = useMemo(() => Array.from(new Set(formats.map((f) => f.code))), [formats]);
   const [codeChoisi, setCodeChoisi] = useState<string | null>(codes[0] ?? null);
@@ -64,12 +66,12 @@ export default function EcranEnregistrerBouteille() {
 
   async function valider() {
     if (!formatChoisi) {
-      Alert.alert('Format requis', 'Choisissez le format de la bouteille.');
+      void alerter({ titre: 'Format requis', message: 'Choisissez le format de la bouteille.' });
       return;
     }
     const tareNombre = tareTexte.trim() ? Number(tareTexte.replace(',', '.')) : undefined;
     if (tareTexte.trim() && (Number.isNaN(tareNombre) || (tareNombre ?? 0) <= 0)) {
-      Alert.alert('Tare invalide', 'Saisissez un poids en grammes, ou laissez vide.');
+      void alerter({ titre: 'Tare invalide', message: 'Saisissez un poids en grammes, ou laissez vide.' });
       return;
     }
 
@@ -84,7 +86,7 @@ export default function EcranEnregistrerBouteille() {
       });
       router.back();
     } catch {
-      Alert.alert('Erreur', "L'enregistrement a échoué. Réessayez.");
+      void alerter({ titre: 'Erreur', message: "L'enregistrement a échoué. Réessayez." });
     } finally {
       setEnCours(false);
     }

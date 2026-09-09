@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
 import { router } from 'expo-router';
-import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BadgeStatutCommande, BadgeStatutPaiement } from '../../components/BadgeStatut';
 import { BandeauSync } from '../../components/BandeauSync';
 import { Bouton } from '../../components/Bouton';
 import { useCommandes } from '../../data/CommandesContext';
+import { useDialogue } from '../../data/DialogueContext';
 import { useDonnees } from '../../data/DonneesContext';
 import { couleurs, espacements, rayons } from '../../../theme/couleurs';
 import type { Commande, StatutPaiement } from '../../api/types';
@@ -18,6 +19,7 @@ import type { Commande, StatutPaiement } from '../../api/types';
 export default function EcranCommandesFoyer() {
   const { commandes, statutSync, rafraichir, repondre, paiements, payerMobileMoney } = useCommandes();
   const { sites } = useDonnees();
+  const { alerter } = useDialogue();
   const [uuidEnCours, setUuidEnCours] = useState<string | null>(null);
   const [uuidPaiementEnCours, setUuidPaiementEnCours] = useState<string | null>(null);
 
@@ -31,7 +33,7 @@ export default function EcranCommandesFoyer() {
     try {
       await repondre(commande.uuid, accepte);
     } catch {
-      Alert.alert('Action impossible', 'Impossible d\'enregistrer votre réponse pour le moment.');
+      void alerter({ titre: 'Action impossible', message: 'Impossible d\'enregistrer votre réponse pour le moment.' });
     } finally {
       setUuidEnCours(null);
     }
@@ -42,10 +44,10 @@ export default function EcranCommandesFoyer() {
     try {
       await payerMobileMoney(commande.uuid);
     } catch {
-      Alert.alert(
-        'Paiement impossible',
-        "Impossible d'initier le paiement Mobile Money pour le moment - vous pouvez payer à la livraison."
-      );
+      void alerter({
+        titre: 'Paiement impossible',
+        message: "Impossible d'initier le paiement Mobile Money pour le moment - vous pouvez payer à la livraison.",
+      });
     } finally {
       setUuidPaiementEnCours(null);
     }

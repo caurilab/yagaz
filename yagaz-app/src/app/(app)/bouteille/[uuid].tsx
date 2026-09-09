@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Alert, Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BadgeEtat } from '../../../components/BadgeEtat';
 import { BandeauSync } from '../../../components/BandeauSync';
@@ -12,6 +12,7 @@ import { EncartConnecterMateriel } from '../../../components/EncartConnecterMate
 import { EncartTemperature } from '../../../components/EncartTemperature';
 import { Icone } from '../../../components/icones';
 import { SelecteurFormat } from '../../../components/SelecteurFormat';
+import { useDialogue } from '../../../data/DialogueContext';
 import { useDonnees } from '../../../data/DonneesContext';
 import { useTemperatureSite } from '../../../data/useTemperatureSite';
 import { couleurs, espacements, rayons } from '../../../../theme/couleurs';
@@ -26,6 +27,7 @@ const SEUIL_MAX = 50;
 export default function EcranDetailBouteille() {
   const { uuid } = useLocalSearchParams<{ uuid: string }>();
   const { sites, bouteilles, formats, marques, modifierBouteille, supprimerBouteille, rafraichir } = useDonnees();
+  const { alerter, confirmer } = useDialogue();
   const bouteille = bouteilles.find((b) => b.uuid === uuid);
   const site = sites.find((s) => s.uuid === bouteille?.site_uuid);
   const aBalance = site?.a_balance ?? true;
@@ -135,12 +137,12 @@ export default function EcranDetailBouteille() {
 
   async function enregistrerModifications() {
     if (!formatEdit) {
-      Alert.alert('Format requis', 'Choisissez le format de la bouteille.');
+      void alerter({ titre: 'Format requis', message: 'Choisissez le format de la bouteille.' });
       return;
     }
     const tareNombre = tareTexte.trim() ? Number(tareTexte.replace(',', '.')) : undefined;
     if (tareTexte.trim() && (Number.isNaN(tareNombre) || (tareNombre ?? 0) <= 0)) {
-      Alert.alert('Tare invalide', 'Saisissez un poids en grammes, ou laissez vide.');
+      void alerter({ titre: 'Tare invalide', message: 'Saisissez un poids en grammes, ou laissez vide.' });
       return;
     }
 
@@ -163,38 +165,34 @@ export default function EcranDetailBouteille() {
       await modifierBouteille(bouteille!.uuid, corps);
       await rafraichir();
       setModeEdition(false);
-      Alert.alert('Bouteille mise à jour', 'Les modifications ont été enregistrées.');
+      void alerter({ titre: 'Bouteille mise à jour', message: 'Les modifications ont été enregistrées.' });
     } catch {
-      Alert.alert('Erreur', "Impossible d'enregistrer les modifications.");
+      void alerter({ titre: 'Erreur', message: "Impossible d'enregistrer les modifications." });
     } finally {
       setEnCours(false);
     }
   }
 
-  function confirmerSuppression() {
-    Alert.alert(
-      'Supprimer la bouteille',
-      'Cette action est définitive. Voulez-vous vraiment supprimer cette bouteille ?',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Supprimer',
-          style: 'destructive',
-          onPress: async () => {
-            setEnCours(true);
-            try {
-              await supprimerBouteille(bouteille!.uuid);
-              await rafraichir();
-              router.back();
-            } catch {
-              Alert.alert('Erreur', 'Impossible de supprimer la bouteille.');
-            } finally {
-              setEnCours(false);
-            }
-          },
-        },
-      ]
-    );
+  async function confirmerSuppression() {
+    if (
+      await confirmer({
+        titre: 'Supprimer la bouteille',
+        message: 'Cette action est définitive. Voulez-vous vraiment supprimer cette bouteille ?',
+        texteConfirmer: 'Supprimer',
+        destructif: true,
+      })
+    ) {
+      setEnCours(true);
+      try {
+        await supprimerBouteille(bouteille!.uuid);
+        await rafraichir();
+        router.back();
+      } catch {
+        void alerter({ titre: 'Erreur', message: 'Impossible de supprimer la bouteille.' });
+      } finally {
+        setEnCours(false);
+      }
+    }
   }
 
   return (

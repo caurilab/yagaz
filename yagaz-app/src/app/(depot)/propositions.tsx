@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
-import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Bouton } from '../../components/Bouton';
 import { useDepot } from '../../data/DepotContext';
+import { useDialogue } from '../../data/DialogueContext';
 import { couleurs, espacements, rayons } from '../../../theme/couleurs';
 import type { FoyerEnTension } from '../../api/types';
 
@@ -14,6 +15,7 @@ import type { FoyerEnTension } from '../../api/types';
  */
 export default function EcranPropositionsDepot() {
   const { foyersEnTension, commandes, proposerDepuisTension } = useDepot();
+  const { alerter } = useDialogue();
   const [siteEnCours, setSiteEnCours] = useState<string | null>(null);
 
   const propositionsEnvoyees = useMemo(
@@ -26,7 +28,7 @@ export default function EcranPropositionsDepot() {
     try {
       await proposerDepuisTension(foyer);
     } catch {
-      Alert.alert('Erreur', "L'envoi de la proposition a échoué. Réessayez.");
+      void alerter({ titre: 'Erreur', message: "L'envoi de la proposition a échoué. Réessayez." });
     } finally {
       setSiteEnCours(null);
     }

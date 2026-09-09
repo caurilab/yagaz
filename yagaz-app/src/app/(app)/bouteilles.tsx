@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { router } from 'expo-router';
-import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BadgeEtat } from '../../components/BadgeEtat';
 import { Bouton } from '../../components/Bouton';
 import { BouteilleGaz } from '../../components/BouteilleGaz';
 import { Icone } from '../../components/icones';
+import { useDialogue } from '../../data/DialogueContext';
 import { useDonnees } from '../../data/DonneesContext';
 import { couleurs, espacements, rayons } from '../../../theme/couleurs';
 import { formaterAutonomie } from '../../utils/niveau';
@@ -14,6 +15,7 @@ import type { Bouteille } from '../../api/types';
 
 export default function EcranBouteilles() {
   const { siteActif, bouteilles, marques, activerBouteille } = useDonnees();
+  const { alerter } = useDialogue();
   const [uuidEnCours, setUuidEnCours] = useState<string | null>(null);
 
   async function definirActive(bouteille: Bouteille) {
@@ -21,7 +23,7 @@ export default function EcranBouteilles() {
     try {
       await activerBouteille(bouteille.uuid);
     } catch {
-      Alert.alert('Action impossible', "Impossible de définir cette bouteille comme active pour l'instant.");
+      void alerter({ titre: 'Action impossible', message: "Impossible de définir cette bouteille comme active pour l'instant." });
     } finally {
       setUuidEnCours(null);
     }

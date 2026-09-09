@@ -1,9 +1,10 @@
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Bouton } from '../../components/Bouton';
 import { useAuth } from '../../auth/AuthContext';
 import { useDepot } from '../../data/DepotContext';
+import { useDialogue } from '../../data/DialogueContext';
 import { useEspace } from '../../espace/EspaceContext';
 import { couleurs, espacements, rayons } from '../../../theme/couleurs';
 
@@ -11,12 +12,19 @@ export default function EcranReglagesDepot() {
   const { user, deconnecter } = useAuth();
   const { orgNom } = useDepot();
   const { roles, espacesDisponibles, definirDepotOrgActif, depotOrgActifUuid, reinitialiserChoix } = useEspace();
+  const { confirmer } = useDialogue();
 
-  function confirmerDeconnexion() {
-    Alert.alert('Se déconnecter', 'Voulez-vous vraiment vous déconnecter ?', [
-      { text: 'Annuler', style: 'cancel' },
-      { text: 'Se déconnecter', style: 'destructive', onPress: () => deconnecter() },
-    ]);
+  async function confirmerDeconnexion() {
+    if (
+      await confirmer({
+        titre: 'Se déconnecter',
+        message: 'Voulez-vous vraiment vous déconnecter ?',
+        texteConfirmer: 'Se déconnecter',
+        destructif: true,
+      })
+    ) {
+      deconnecter();
+    }
   }
 
   return (

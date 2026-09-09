@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider, useAuth } from '../auth/AuthContext';
+import { DialogueProvider } from '../data/DialogueContext';
 import { DonneesProvider } from '../data/DonneesContext';
 import { CommandesProvider } from '../data/CommandesContext';
 import { EspaceProvider, useEspace } from '../espace/EspaceContext';
@@ -14,16 +15,18 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <EspaceProvider>
-          <DonneesProvider>
-            <CommandesProvider>
-              <StatusBar style="light" />
-              <NavigationRacine />
-            </CommandesProvider>
-          </DonneesProvider>
-        </EspaceProvider>
-      </AuthProvider>
+      <DialogueProvider>
+        <AuthProvider>
+          <EspaceProvider>
+            <DonneesProvider>
+              <CommandesProvider>
+                <StatusBar style="light" />
+                <NavigationRacine />
+              </CommandesProvider>
+            </DonneesProvider>
+          </EspaceProvider>
+        </AuthProvider>
+      </DialogueProvider>
     </SafeAreaProvider>
   );
 }
