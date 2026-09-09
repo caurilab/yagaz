@@ -938,7 +938,7 @@ function courbeHoraireDemo(base: number, amplitude: number): PointTemperatureHor
     const picDejeuner = Math.exp(-((heure - 13) ** 2) / 8);
     const picDiner = Math.exp(-((heure - 20) ** 2) / 6);
     const valeur = base + amplitude * Math.max(picDejeuner, picDiner * 0.85);
-    points.push({ heure, temp_moy_c: Math.round(valeur * 10) / 10 });
+    points.push({ heure, temp_moyenne_c: Math.round(valeur * 10) / 10 });
   }
   return points;
 }
@@ -946,7 +946,7 @@ function courbeHoraireDemo(base: number, amplitude: number): PointTemperatureHor
 /** Histogramme démo des cuissons par heure - concentré déjeuner/dîner. */
 function histogrammeCuissonsDemo(): PointCuissonHoraire[] {
   const parHeure: Record<number, number> = { 7: 1, 12: 3, 13: 4, 14: 1, 19: 2, 20: 4, 21: 2 };
-  return Array.from({ length: 24 }, (_, heure) => ({ heure, nb_cuissons: parHeure[heure] ?? 0 }));
+  return Array.from({ length: 24 }, (_, heure) => ({ heure, sessions: parHeure[heure] ?? 0 }));
 }
 
 /** Repli démo de l'analyse détaillée température (doc 13 §3), une entrée par période. */

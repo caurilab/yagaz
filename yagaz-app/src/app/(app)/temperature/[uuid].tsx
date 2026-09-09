@@ -78,7 +78,7 @@ export default function EcranTemperatureAnalyse() {
   }
 
   const elevee = analyse != null && analyse.temp_courante_c >= SEUIL_TEMPERATURE_ELEVEE_C;
-  const maxCuissons = analyse ? Math.max(...analyse.histogramme_cuissons.map((p) => p.nb_cuissons), 1) : 1;
+  const maxCuissons = analyse ? Math.max(...analyse.histogramme_cuissons.map((p) => p.sessions), 1) : 1;
 
   return (
     <SafeAreaView style={styles.conteneur} edges={['bottom']}>
@@ -157,7 +157,7 @@ export default function EcranTemperatureAnalyse() {
                       style={[
                         styles.barreHistogramme,
                         {
-                          height: Math.max(2, (point.nb_cuissons / maxCuissons) * 64),
+                          height: Math.max(2, (point.sessions / maxCuissons) * 64),
                           backgroundColor: point.heure === analyse.heure_pointe ? couleurs.rouge : couleurs.rougeClair,
                         },
                       ]}

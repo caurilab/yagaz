@@ -18,18 +18,27 @@ export function CourbeTemperatureHoraire({ points }: { points: PointTemperatureH
   const { width: largeurFenetre } = useWindowDimensions();
   const largeur = Math.max(240, largeurFenetre - espacements.lg * 2 - espacements.lg * 2);
 
-  if (points.length === 0) return null;
+  // On ne garde que les heures ayant une moyenne réelle : `temp_moyenne_c` est
+  // `null` pour un créneau sans relevé, et une coordonnée NaN transmise à
+  // react-native-svg crashe l'app en natif (iOS). Filtrer ici garantit un path
+  // toujours valide.
+  const valides = points.filter(
+    (p): p is { heure: number; temp_moyenne_c: number } =>
+      typeof p.temp_moyenne_c === 'number' && Number.isFinite(p.temp_moyenne_c)
+  );
 
-  const valeurs = points.map((p) => p.temp_moy_c);
+  if (valides.length < 2) return null;
+
+  const valeurs = valides.map((p) => p.temp_moyenne_c);
   const min = Math.min(...valeurs);
   const max = Math.max(...valeurs, min + 1);
-  const pas = largeur / (points.length - 1 || 1);
+  const pas = largeur / (valides.length - 1 || 1);
 
   const yDe = (v: number) =>
     HAUTEUR - MARGE_VERTICALE - ((v - min) / (max - min)) * (HAUTEUR - MARGE_VERTICALE * 2);
 
-  const ligne = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${i * pas} ${yDe(p.temp_moy_c)}`).join(' ');
-  const aire = `${ligne} L ${(points.length - 1) * pas} ${HAUTEUR} L 0 ${HAUTEUR} Z`;
+  const ligne = valides.map((p, i) => `${i === 0 ? 'M' : 'L'} ${i * pas} ${yDe(p.temp_moyenne_c)}`).join(' ');
+  const aire = `${ligne} L ${(valides.length - 1) * pas} ${HAUTEUR} L 0 ${HAUTEUR} Z`;
 
   return (
     <View style={styles.conteneur}>
@@ -42,8 +51,8 @@ export function CourbeTemperatureHoraire({ points }: { points: PointTemperatureH
         </Defs>
         <Path d={aire} fill={`url(#${idAire})`} />
         <Path d={ligne} fill="none" stroke={couleurs.rouge} strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
-        {points.map((p, i) =>
-          i % 4 === 0 ? <Circle key={p.heure} cx={i * pas} cy={yDe(p.temp_moy_c)} r={2.5} fill={couleurs.rouge} /> : null
+        {valides.map((p, i) =>
+          i % 4 === 0 ? <Circle key={p.heure} cx={i * pas} cy={yDe(p.temp_moyenne_c)} r={2.5} fill={couleurs.rouge} /> : null
         )}
       </Svg>
     </View>

@@ -664,13 +664,14 @@ export type PeriodeTemperature = 'jour' | 'semaine' | 'mois';
 /** Point de la courbe horaire : température moyenne observée pour cette heure de la journée (0-23). */
 export interface PointTemperatureHoraire {
   heure: number;
-  temp_moy_c: number;
+  /** Température moyenne de l'heure, `null` si aucun relevé sur ce créneau. */
+  temp_moyenne_c: number | null;
 }
 
 /** Point de l'histogramme des cuissons : nombre de sessions de cuisson démarrées à cette heure (0-23). */
 export interface PointCuissonHoraire {
   heure: number;
-  nb_cuissons: number;
+  sessions: number;
 }
 
 /** Plage horaire dominante d'utilisation de la cuisine (ex. déjeuner, dîner). */
