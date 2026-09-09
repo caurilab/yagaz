@@ -1,7 +1,9 @@
+import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Bouton } from '../../components/Bouton';
+import { EnteteEcran } from '../../components/EnteteEcran';
+import { Icone } from '../../components/icones';
 import { useAuth } from '../../auth/AuthContext';
 import { useDepot } from '../../data/DepotContext';
 import { useDialogue } from '../../data/DialogueContext';
@@ -28,10 +30,9 @@ export default function EcranReglagesDepot() {
   }
 
   return (
-    <SafeAreaView style={styles.conteneur} edges={['top', 'bottom']}>
+    <View style={styles.conteneur}>
+      <EnteteEcran titre="Réglages" />
       <ScrollView contentContainerStyle={styles.contenu}>
-        <Text style={styles.titre}>Réglages</Text>
-
         {user ? (
           <View style={styles.carte}>
             <Text style={styles.nomUtilisateur}>{user.nom}</Text>
@@ -39,6 +40,15 @@ export default function EcranReglagesDepot() {
             <Text style={styles.orgActuel}>{orgNom ?? 'Dépôt'}</Text>
           </View>
         ) : null}
+
+        <Text style={styles.sectionTitre}>Équipe</Text>
+        <Pressable style={styles.carteLien} onPress={() => router.push('/(depot)/equipe')} accessibilityRole="button">
+          <View style={styles.ligneLien}>
+            <Icone nom="livraison" taille={20} couleur={couleurs.rouge} />
+            <Text style={styles.libelleLien}>Mon équipe (livreurs)</Text>
+          </View>
+          <Icone nom="chevron" taille={18} couleur={couleurs.texteDoux} />
+        </Pressable>
 
         {roles && roles.depots.length > 1 ? (
           <>
@@ -63,7 +73,7 @@ export default function EcranReglagesDepot() {
 
         <Bouton titre="Se déconnecter" variante="discret" onPress={confirmerDeconnexion} style={styles.bouton} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -75,12 +85,6 @@ const styles = StyleSheet.create({
   contenu: {
     padding: espacements.lg,
     paddingBottom: espacements.xxl,
-  },
-  titre: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: couleurs.texte,
-    marginBottom: espacements.lg,
   },
   carte: {
     backgroundColor: couleurs.carte,
@@ -109,6 +113,27 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: couleurs.texte,
     marginBottom: espacements.sm,
+  },
+  carteLien: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: couleurs.carte,
+    borderRadius: rayons.lg,
+    padding: espacements.lg,
+    marginBottom: espacements.lg,
+  },
+  ligneLien: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espacements.sm,
+    flexShrink: 1,
+  },
+  libelleLien: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: couleurs.texte,
+    flexShrink: 1,
   },
   ligne: {
     flexDirection: 'row',

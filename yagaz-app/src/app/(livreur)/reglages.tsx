@@ -1,7 +1,7 @@
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Bouton } from '../../components/Bouton';
+import { EnteteEcran } from '../../components/EnteteEcran';
 import { useAuth } from '../../auth/AuthContext';
 import { useDialogue } from '../../data/DialogueContext';
 import { useEspace } from '../../espace/EspaceContext';
@@ -26,10 +26,9 @@ export default function EcranReglagesLivreur() {
   }
 
   return (
-    <SafeAreaView style={styles.conteneur} edges={['top', 'bottom']}>
+    <View style={styles.conteneur}>
+      <EnteteEcran titre="Réglages" />
       <ScrollView contentContainerStyle={styles.contenu}>
-        <Text style={styles.titre}>Réglages</Text>
-
         {user ? (
           <View style={styles.carte}>
             <Text style={styles.nomUtilisateur}>{user.nom}</Text>
@@ -43,7 +42,7 @@ export default function EcranReglagesLivreur() {
 
         <Bouton titre="Se déconnecter" variante="discret" onPress={confirmerDeconnexion} style={styles.bouton} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -55,12 +54,6 @@ const styles = StyleSheet.create({
   contenu: {
     padding: espacements.lg,
     paddingBottom: espacements.xxl,
-  },
-  titre: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: couleurs.texte,
-    marginBottom: espacements.lg,
   },
   carte: {
     backgroundColor: couleurs.carte,

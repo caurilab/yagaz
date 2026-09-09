@@ -1,8 +1,8 @@
-import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BandeauSync } from '../../components/BandeauSync';
+import { EnteteEcran } from '../../components/EnteteEcran';
 import { useMandataire } from '../../data/MandataireContext';
 import { couleurs, espacements, rayons } from '../../../theme/couleurs';
 import type { DepotConsolide, DepotStockConsolide } from '../../api/types';
@@ -17,16 +17,11 @@ export default function EcranDepotsMandataire() {
 
   return (
     <View style={styles.conteneur}>
-      <LinearGradient
-        colors={[couleurs.degradeDebut, couleurs.degradeFin]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.entete}>
-        <SafeAreaView edges={['top']}>
-          <Text style={styles.texteEntete}>{orgNom ?? 'Mes dépôts'}</Text>
-          <Text style={styles.sousTexteEntete}>Vue rapide - pilotage complet sur le web</Text>
-        </SafeAreaView>
-      </LinearGradient>
+      <EnteteEcran
+        titre="Mes dépôts"
+        sousTitre={orgNom ?? undefined}
+        bouton={{ titre: 'Ajouter un dépôt', icone: 'plus', onPress: () => router.push('/(mandataire)/nouveau-depot') }}
+      />
 
       <ScrollView
         style={styles.zoneContenu}
@@ -112,24 +107,6 @@ const styles = StyleSheet.create({
   conteneur: {
     flex: 1,
     backgroundColor: couleurs.fond,
-  },
-  entete: {
-    paddingHorizontal: espacements.lg,
-    paddingBottom: espacements.xl,
-    borderBottomLeftRadius: rayons.xl,
-    borderBottomRightRadius: rayons.xl,
-  },
-  texteEntete: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: couleurs.blanc,
-    marginTop: espacements.sm,
-  },
-  sousTexteEntete: {
-    fontSize: 14,
-    color: couleurs.blanc,
-    opacity: 0.9,
-    marginTop: espacements.xs,
   },
   zoneContenu: {
     flex: 1,

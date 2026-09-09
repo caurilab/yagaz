@@ -1,14 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { BadgeStatutLigneTournee, BadgeStatutTournee } from '../../components/BadgeStatut';
+import { BadgeStatutTournee } from '../../components/BadgeStatut';
 import { BandeauSync } from '../../components/BandeauSync';
-import { Bouton } from '../../components/Bouton';
-import { useDialogue } from '../../data/DialogueContext';
+import { EnteteEcran } from '../../components/EnteteEcran';
 import { useMandataire } from '../../data/MandataireContext';
 import { couleurs, espacements, rayons } from '../../../theme/couleurs';
-import { libelleActionLigneTournee, statutArretTournee, statutLigneTourneeSuivant } from '../../utils/statuts';
 import type { TourneeLigne } from '../../api/types';
 
 interface Arret {
@@ -20,6 +17,9 @@ interface Arret {
 function grouperParDepot(lignes: TourneeLigne[]): Arret[] {
   const parDepot = new Map<string, Arret>();
   for (const ligne of lignes) {
+    // `depot` peut être null côté API (relation absente) : on ignore la ligne
+    // plutôt que de planter sur `ligne.depot.uuid`.
+    if (!ligne.depot) continue;
     const existant = parDepot.get(ligne.depot.uuid);
     if (existant) {
       existant.lignes.push(ligne);
@@ -44,34 +44,13 @@ function formaterDateTournee(dateIso: string): string {
  * reste sur le web - ici, uniquement l'exécution terrain.
  */
 export default function EcranTourneeDuJour() {
-  const { tourneeDuJour, statutSync, chargementInitial, rafraichir, avancerArret } = useMandataire();
-  const { alerter } = useDialogue();
-  const [depotUuidEnCours, setDepotUuidEnCours] = useState<string | null>(null);
+  const { tourneeDuJour, statutSync, chargementInitial, rafraichir } = useMandataire();
 
   const arrets = useMemo(() => (tourneeDuJour ? grouperParDepot(tourneeDuJour.lignes) : []), [tourneeDuJour]);
-  const arretsTermines = arrets.filter((a) => statutArretTournee(a.lignes.map((l) => l.statut)) === 'vides_recuperes').length;
-
-  async function avancer(arret: Arret) {
-    if (!tourneeDuJour) return;
-    const statutActuel = statutArretTournee(arret.lignes.map((l) => l.statut));
-    const suivant = statutLigneTourneeSuivant(statutActuel);
-    if (!suivant) return;
-    setDepotUuidEnCours(arret.depotUuid);
-    try {
-      await avancerArret(
-        tourneeDuJour.uuid,
-        arret.lignes.map((l) => l.id),
-        suivant
-      );
-    } catch {
-      void alerter({ titre: 'Action impossible', message: 'Impossible de mettre à jour cet arrêt pour le moment.' });
-    } finally {
-      setDepotUuidEnCours(null);
-    }
-  }
 
   return (
-    <SafeAreaView style={styles.conteneur} edges={['top']}>
+    <View style={styles.conteneur}>
+      <EnteteEcran titre="Tournée du jour" />
       <FlatList
         data={arrets}
         keyExtractor={(a) => a.depotUuid}
@@ -79,25 +58,22 @@ export default function EcranTourneeDuJour() {
         refreshControl={<RefreshControl refreshing={false} onRefresh={rafraichir} tintColor={couleurs.rouge} />}
         ListHeaderComponent={
           <>
-            <View style={styles.entete}>
-              <Text style={styles.titre}>Tournée du jour</Text>
-              {tourneeDuJour ? (
-                <>
-                  <View style={styles.ligneSousTitre}>
-                    <Text style={styles.sousTitre}>{formaterDateTournee(tourneeDuJour.date)}</Text>
-                    <BadgeStatutTournee statut={tourneeDuJour.statut} />
-                  </View>
-                  {tourneeDuJour.livreur_nom ? (
-                    <Text style={styles.livreur}>Livreur : {tourneeDuJour.livreur_nom}</Text>
-                  ) : null}
-                  {arrets.length > 0 ? (
-                    <Text style={styles.progression}>
-                      {arretsTermines} / {arrets.length} arrêts terminés
-                    </Text>
-                  ) : null}
-                </>
-              ) : null}
-            </View>
+            {tourneeDuJour ? (
+              <View style={styles.entete}>
+                <View style={styles.ligneSousTitre}>
+                  <Text style={styles.sousTitre}>{formaterDateTournee(tourneeDuJour.date)}</Text>
+                  <BadgeStatutTournee statut={tourneeDuJour.statut} />
+                </View>
+                {tourneeDuJour.livreur_nom ? (
+                  <Text style={styles.livreur}>Livreur : {tourneeDuJour.livreur_nom}</Text>
+                ) : null}
+                {arrets.length > 0 ? (
+                  <Text style={styles.progression}>
+                    {arrets.length} arrêt{arrets.length > 1 ? 's' : ''}
+                  </Text>
+                ) : null}
+              </View>
+            ) : null}
             {statutSync === 'hors_ligne' ? (
               <BandeauSync texte="Connexion indisponible - dernières valeurs connues affichées" />
             ) : null}
@@ -119,34 +95,29 @@ export default function EcranTourneeDuJour() {
             </View>
           )
         }
-        renderItem={({ item }) => (
-          <CarteArret arret={item} enCours={depotUuidEnCours === item.depotUuid} onAvancer={() => avancer(item)} />
-        )}
+        renderItem={({ item }) => <CarteArret arret={item} />}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
-function CarteArret({ arret, enCours, onAvancer }: { arret: Arret; enCours: boolean; onAvancer: () => void }) {
-  const statutArret = statutArretTournee(arret.lignes.map((l) => l.statut));
-  const libelleAction = libelleActionLigneTournee(statutArret);
-  const termine = statutArret === 'vides_recuperes';
-
+function CarteArret({ arret }: { arret: Arret }) {
   return (
-    <View style={[styles.carte, termine && styles.carteTerminee]}>
+    <View style={styles.carte}>
       <View style={styles.ligneEnteteCarte}>
         <Text style={styles.nomDepot} numberOfLines={1}>
           {arret.depotNom}
         </Text>
-        <BadgeStatutLigneTournee statut={statutArret} />
       </View>
 
       <View style={styles.ligneFormats}>
-        {arret.lignes.map((ligne) => (
-          <View key={ligne.id} style={styles.ligneFormat}>
-            <Text style={styles.formatCode}>
-              {ligne.format.code} - {ligne.format.marque}
-            </Text>
+        {arret.lignes.map((ligne, index) => (
+          <View key={index} style={styles.ligneFormat}>
+            {ligne.format ? (
+              <Text style={styles.formatCode}>
+                {ligne.format.code} - {ligne.format.marque}
+              </Text>
+            ) : null}
             <View style={styles.formatChiffres}>
               <Text style={styles.texteDepotRecup}>À déposer : {ligne.pleines}</Text>
               <Text style={styles.texteDepotRecup}>À récupérer : {ligne.vides_a_recuperer}</Text>
@@ -154,10 +125,6 @@ function CarteArret({ arret, enCours, onAvancer }: { arret: Arret; enCours: bool
           </View>
         ))}
       </View>
-
-      {libelleAction ? (
-        <Bouton titre={libelleAction} enCours={enCours} onPress={onAvancer} style={styles.boutonAction} />
-      ) : null}
     </View>
   );
 }
@@ -168,19 +135,12 @@ const styles = StyleSheet.create({
     backgroundColor: couleurs.fond,
   },
   entete: {
-    paddingHorizontal: espacements.lg,
-    paddingTop: espacements.md,
-  },
-  titre: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: couleurs.texte,
+    marginBottom: espacements.md,
   },
   ligneSousTitre: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: espacements.sm,
   },
   sousTitre: {
     fontSize: 16,
@@ -223,13 +183,13 @@ const styles = StyleSheet.create({
   carte: {
     backgroundColor: couleurs.carte,
     borderRadius: rayons.lg,
-    borderWidth: 1,
-    borderColor: couleurs.bordure,
     padding: espacements.lg,
     marginBottom: espacements.md,
-  },
-  carteTerminee: {
-    opacity: 0.6,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   ligneEnteteCarte: {
     flexDirection: 'row',
@@ -265,8 +225,5 @@ const styles = StyleSheet.create({
   texteDepotRecup: {
     fontSize: 13,
     color: couleurs.texteDoux,
-  },
-  boutonAction: {
-    marginTop: espacements.lg,
   },
 });

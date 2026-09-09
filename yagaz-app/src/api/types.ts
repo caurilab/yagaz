@@ -386,23 +386,25 @@ export interface CorpsMajStatutLivraison {
 
 /** Membre `livreur` d'un dépôt, pour la sélection à l'affectation (contrat §4/§6). */
 export interface MembreLivreur {
-  user_id: string;
+  /** UUID public du livreur (envoyé comme `livreur_user_id` à l'affectation). */
+  uuid: string;
   nom: string;
 }
 
 /** Une ligne de la liste "missions" du livreur (contrat §5, UX §6). */
 export interface MissionLivreur {
-  livraison_id: number;
-  commande_uuid: string;
+  /** Id de la livraison (sert à `PATCH /livraisons/{id}/statut`). */
+  id: number;
+  commande_uuid: string | null;
   statut: StatutLivraison;
-  format: Format;
-  quantite: number;
-  site: Pick<Site, 'uuid' | 'nom' | 'adresse'>;
+  format: Format | null;
+  quantite: number | null;
+  site: Pick<Site, 'uuid' | 'nom' | 'adresse'> | null;
   /** Pleines à déposer chez le foyer. */
-  a_deposer: number;
+  pleines_a_deposer: number;
   /** Vides à récupérer (estimation avant passage, confirmée par `vides_recuperes`). */
-  a_recuperer: number;
-  created_at: string;
+  vides_a_recuperer: number | null;
+  vides_recuperes: number | null;
 }
 
 // --- Stock dépôt (contrat 10 §4, §6) ---
@@ -437,7 +439,8 @@ export interface FoyerEnTension {
   site_uuid: string;
   nom: string;
   zone: string;
-  format: Format;
+  /** Peut être null si la bouteille en tension n'a pas de format connu. */
+  format: Format | null;
   distance_km: number;
 }
 
@@ -483,7 +486,8 @@ export interface FoyerEnTensionLivreur {
   site_uuid: string;
   nom: string;
   zone: string;
-  format: Format;
+  /** Peut être null si la bouteille en tension n'a pas de format connu. */
+  format: Format | null;
 }
 
 /**
@@ -524,6 +528,32 @@ export interface DepotConsolide {
   stocks: DepotStockConsolide[];
 }
 
+/** Création d'un dépôt par le mandataire (+ gérant optionnel, provisioning descendant). */
+export interface CorpsCreationDepot {
+  nom: string;
+  zone?: string;
+  gerant_nom?: string;
+  gerant_telephone?: string;
+  gerant_mot_de_passe?: string;
+}
+
+/**
+ * Compte provisionné (gérant ou livreur) renvoyé par les endpoints de création :
+ * `mot_de_passe_temporaire` n'est présent qu'une fois, quand le compte vient
+ * d'être créé sans mot de passe imposé (à communiquer à la personne).
+ */
+export interface CompteProvisionne {
+  compte_cree: boolean;
+  mot_de_passe_temporaire: string | null;
+}
+
+/** Ajout d'un livreur à un dépôt (provisioning descendant, par téléphone). */
+export interface CorpsAjoutLivreur {
+  nom: string;
+  telephone: string;
+  mot_de_passe?: string;
+}
+
 export type StatutTournee = 'proposee' | 'validee' | 'en_cours' | 'terminee';
 
 /**
@@ -540,12 +570,16 @@ export interface DepotTournee {
 }
 
 export interface TourneeLigne {
-  id: number;
-  depot: DepotTournee;
-  format: Format;
+  depot: DepotTournee | null;
+  format: Format | null;
   pleines: number;
   vides_a_recuperer: number;
-  statut: StatutLigneTournee;
+  // NOTE(contrat): l'API `TourneeResource` n'émet PAS `id` ni `statut` par
+  // ligne - le statut est porté par la tournée entière, et `PATCH /tournees`
+  // remplace les lignes en bloc. La progression « arrêt par arrêt » de cet
+  // écran est donc à réaligner (voir MandataireContext.avancerArret).
+  id?: number;
+  statut?: StatutLigneTournee;
 }
 
 export interface Tournee {

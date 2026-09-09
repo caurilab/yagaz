@@ -14,6 +14,7 @@ export default function LayoutDepot() {
     <DepotProvider>
       <Tabs
         screenOptions={{
+          headerShown: false,
           headerTintColor: couleurs.texte,
           tabBarActiveTintColor: couleurs.rouge,
           tabBarInactiveTintColor: couleurs.texteDoux,
@@ -55,6 +56,7 @@ export default function LayoutDepot() {
             tabBarIcon: ({ color }) => <Icone nom="reglages" couleur={color as string} />,
           }}
         />
+        <Tabs.Screen name="equipe" options={{ href: null }} />
       </Tabs>
     </DepotProvider>
   );

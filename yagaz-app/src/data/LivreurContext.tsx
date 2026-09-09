@@ -126,8 +126,8 @@ export function LivreurProvider({ children }: { children: ReactNode }) {
       }
       setMissions((precedent) => {
         const suivant = precedent.map((m) =>
-          m.livraison_id === livraisonId
-            ? { ...m, statut, a_recuperer: videsRecuperes ?? m.a_recuperer }
+          m.id === livraisonId
+            ? { ...m, statut, vides_recuperes: videsRecuperes ?? m.vides_recuperes }
             : m
         );
         ecrireCache(CLES_CACHE.livreurMissions, suivant);

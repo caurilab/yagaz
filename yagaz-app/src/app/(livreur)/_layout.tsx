@@ -14,6 +14,7 @@ export default function LayoutLivreur() {
     <LivreurProvider>
       <Tabs
         screenOptions={{
+          headerShown: false,
           headerTintColor: couleurs.texte,
           tabBarActiveTintColor: couleurs.rouge,
           tabBarInactiveTintColor: couleurs.texteDoux,

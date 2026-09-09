@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Bouton } from '../../components/Bouton';
+import { EnteteEcran } from '../../components/EnteteEcran';
 import { useDepot } from '../../data/DepotContext';
 import { useDialogue } from '../../data/DialogueContext';
 import { couleurs, espacements, rayons } from '../../../theme/couleurs';
@@ -35,17 +35,12 @@ export default function EcranPropositionsDepot() {
   }
 
   return (
-    <SafeAreaView style={styles.conteneur} edges={['top']}>
+    <View style={styles.conteneur}>
+      <EnteteEcran titre="Foyers en tension" sousTitre="« Votre bouteille est presque vide, on vous livre ? »" />
       <FlatList
         data={foyersEnTension}
         keyExtractor={(f) => f.site_uuid}
         contentContainerStyle={styles.liste}
-        ListHeaderComponent={
-          <>
-            <Text style={styles.titre}>Foyers en tension</Text>
-            <Text style={styles.sousTitre}>« Votre bouteille est presque vide, on vous livre ? »</Text>
-          </>
-        }
         ListEmptyComponent={
           <View style={styles.vide}>
             <Text style={styles.texteVide}>Aucun foyer en tension pour l'instant dans votre zone.</Text>
@@ -56,14 +51,16 @@ export default function EcranPropositionsDepot() {
             <Text style={styles.nomFoyer}>{item.nom}</Text>
             <Text style={styles.zoneFoyer}>{item.zone}</Text>
             <Text style={styles.detailsFoyer}>
-              {item.format.code} - {item.format.marque} · à {item.distance_km} km
+              {item.format ? `${item.format.code} - ${item.format.marque} · ` : ''}à {item.distance_km} km
             </Text>
-            <Bouton
-              titre="Proposer une livraison"
-              enCours={siteEnCours === item.site_uuid}
-              onPress={() => proposer(item)}
-              style={styles.boutonProposer}
-            />
+            {item.format ? (
+              <Bouton
+                titre="Proposer une livraison"
+                enCours={siteEnCours === item.site_uuid}
+                onPress={() => proposer(item)}
+                style={styles.boutonProposer}
+              />
+            ) : null}
           </View>
         )}
         ListFooterComponent={
@@ -73,7 +70,7 @@ export default function EcranPropositionsDepot() {
               {propositionsEnvoyees.map((item) => (
                 <View key={item.uuid} style={styles.cartePropostion}>
                   <Text style={styles.propositionDetails}>
-                    {item.format.code} · {item.quantite} bouteille(s)
+                    {item.format ? `${item.format.code} · ` : ''}{item.quantite} bouteille(s)
                   </Text>
                   <Text style={styles.propositionSite}>{item.site.nom}</Text>
                 </View>
@@ -82,7 +79,7 @@ export default function EcranPropositionsDepot() {
           ) : null
         }
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -95,17 +92,6 @@ const styles = StyleSheet.create({
     padding: espacements.lg,
     paddingBottom: espacements.xxl,
   },
-  titre: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: couleurs.texte,
-  },
-  sousTitre: {
-    fontSize: 14,
-    color: couleurs.texteDoux,
-    marginTop: espacements.xs,
-    marginBottom: espacements.lg,
-  },
   vide: {
     paddingVertical: espacements.xxl,
     alignItems: 'center',
@@ -117,12 +103,13 @@ const styles = StyleSheet.create({
   carteFoyer: {
     backgroundColor: couleurs.carte,
     borderRadius: rayons.lg,
-    borderWidth: 1,
-    borderColor: couleurs.bordure,
-    borderLeftWidth: 4,
-    borderLeftColor: couleurs.rouge,
     padding: espacements.lg,
     marginBottom: espacements.md,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   nomFoyer: {
     fontSize: 17,
@@ -153,12 +140,13 @@ const styles = StyleSheet.create({
   cartePropostion: {
     backgroundColor: couleurs.carte,
     borderRadius: rayons.md,
-    borderWidth: 1,
-    borderColor: couleurs.bordure,
-    borderLeftWidth: 4,
-    borderLeftColor: couleurs.ambre,
     padding: espacements.md,
     marginBottom: espacements.sm,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   propositionDetails: {
     fontSize: 15,

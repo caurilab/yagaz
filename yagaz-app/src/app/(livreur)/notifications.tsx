@@ -1,10 +1,10 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BandeauSync } from '../../components/BandeauSync';
 import { Bouton } from '../../components/Bouton';
+import { EnteteEcran } from '../../components/EnteteEcran';
 import { useLivreur } from '../../data/LivreurContext';
 import { couleurs, espacements, rayons } from '../../../theme/couleurs';
 import type { Notification } from '../../api/types';
@@ -34,10 +34,8 @@ export default function EcranNotificationsLivreur() {
   }
 
   return (
-    <SafeAreaView style={styles.conteneur} edges={['top']}>
-      <View style={styles.entete}>
-        <Text style={styles.titre}>Notifications</Text>
-      </View>
+    <View style={styles.conteneur}>
+      <EnteteEcran titre="Notifications" />
 
       <FlatList
         data={triees}
@@ -87,7 +85,7 @@ export default function EcranNotificationsLivreur() {
           </View>
         )}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -95,15 +93,6 @@ const styles = StyleSheet.create({
   conteneur: {
     flex: 1,
     backgroundColor: couleurs.fond,
-  },
-  entete: {
-    paddingHorizontal: espacements.lg,
-    paddingTop: espacements.md,
-  },
-  titre: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: couleurs.texte,
   },
   liste: {
     padding: espacements.lg,

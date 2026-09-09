@@ -27,6 +27,8 @@ import {
 } from '../api/demo';
 import type {
   CommandeDepot,
+  CompteProvisionne,
+  CorpsAjoutLivreur,
   CorpsAjustementStock,
   CorpsConfirmationReappro,
   CorpsCreationProposition,
@@ -58,6 +60,8 @@ interface ContexteDepotValeur {
   statutSync: StatutSync;
   rafraichir: () => Promise<void>;
   ajusterStock: (formatId: number, corps: CorpsAjustementStock) => Promise<void>;
+  /** Ajoute un livreur à l'équipe du dépôt (provisioning descendant). Renvoie le mot de passe temporaire éventuel. */
+  ajouterLivreur: (corps: CorpsAjoutLivreur) => Promise<CompteProvisionne>;
   preparerCommande: (uuid: string) => Promise<void>;
   affecterLivraison: (uuid: string, livreurUserId?: string) => Promise<void>;
   creerProposition: (corps: CorpsCreationProposition) => Promise<void>;
@@ -169,6 +173,19 @@ export function DepotProvider({ children }: { children: ReactNode }) {
     [orgUuid]
   );
 
+  const ajouterLivreur = useCallback(
+    async (corps: CorpsAjoutLivreur): Promise<CompteProvisionne> => {
+      if (!orgUuid) return { compte_cree: false, mot_de_passe_temporaire: null };
+      const reponse = await api.depotAjouterLivreur(orgUuid, corps);
+      setLivreurs((precedent) => {
+        const existe = precedent.some((l) => l.uuid === reponse.data.uuid);
+        return existe ? precedent : [...precedent, reponse.data];
+      });
+      return { compte_cree: reponse.compte_cree, mot_de_passe_temporaire: reponse.mot_de_passe_temporaire };
+    },
+    [orgUuid]
+  );
+
   const preparerCommande = useCallback(async (uuid: string) => {
     try {
       const { data } = await api.preparerCommande(uuid);
@@ -196,7 +213,7 @@ export function DepotProvider({ children }: { children: ReactNode }) {
         setCommandes((precedent) => precedent.map((c) => (c.uuid === uuid ? { ...c, livraison: data } : c)));
       } catch (erreur) {
         if (!MODE_DEMO) throw erreur;
-        const livreurChoisi = livreurs.find((l) => l.user_id === livreurUserId) ?? null;
+        const livreurChoisi = livreurs.find((l) => l.uuid === livreurUserId) ?? null;
         setCommandes((precedent) =>
           precedent.map((c) =>
             c.uuid === uuid
@@ -205,7 +222,7 @@ export function DepotProvider({ children }: { children: ReactNode }) {
                   livraison: {
                     id: Date.now(),
                     commande_uuid: uuid,
-                    livreur_user_id: livreurChoisi?.user_id ?? null,
+                    livreur_user_id: livreurChoisi?.uuid ?? null,
                     livreur_nom: livreurChoisi?.nom ?? null,
                     statut: 'affectee',
                     vides_recuperes: null,
@@ -268,8 +285,9 @@ export function DepotProvider({ children }: { children: ReactNode }) {
    */
   const proposerDepuisTension = useCallback(
     async (foyer: FoyerEnTension) => {
-      if (!orgUuid) return;
-      const corps: CorpsCreationProposition = { site_uuid: foyer.site_uuid, format_id: foyer.format.id, quantite: 1 };
+      if (!orgUuid || !foyer.format) return;
+      const format = foyer.format;
+      const corps: CorpsCreationProposition = { site_uuid: foyer.site_uuid, format_id: format.id, quantite: 1 };
       try {
         const { data } = await api.creerProposition(orgUuid, corps);
         setCommandes((precedent) => [
@@ -283,7 +301,7 @@ export function DepotProvider({ children }: { children: ReactNode }) {
             uuid: `proposition-locale-${Date.now()}`,
             site_uuid: foyer.site_uuid,
             site: { uuid: foyer.site_uuid, nom: foyer.nom, adresse: null },
-            format: foyer.format,
+            format,
             quantite: 1,
             depot_uuid: orgUuid,
             type: 'echange',
@@ -325,6 +343,7 @@ export function DepotProvider({ children }: { children: ReactNode }) {
       statutSync,
       rafraichir,
       ajusterStock,
+      ajouterLivreur,
       preparerCommande,
       affecterLivraison,
       creerProposition,
@@ -343,6 +362,7 @@ export function DepotProvider({ children }: { children: ReactNode }) {
       statutSync,
       rafraichir,
       ajusterStock,
+      ajouterLivreur,
       preparerCommande,
       affecterLivraison,
       creerProposition,

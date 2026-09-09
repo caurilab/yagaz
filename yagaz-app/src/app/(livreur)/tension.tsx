@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BandeauSync } from '../../components/BandeauSync';
 import { Bouton } from '../../components/Bouton';
+import { EnteteEcran } from '../../components/EnteteEcran';
 import { useDialogue } from '../../data/DialogueContext';
 import { useLivreur } from '../../data/LivreurContext';
 import { couleurs, espacements, rayons } from '../../../theme/couleurs';
@@ -37,20 +37,17 @@ export default function EcranTensionLivreur() {
   }
 
   return (
-    <SafeAreaView style={styles.conteneur} edges={['top']}>
+    <View style={styles.conteneur}>
+      <EnteteEcran titre="Foyers en tension" sousTitre="Vos foyers habituels qui ont besoin d'une recharge." />
       <FlatList
         data={foyersEnTension}
         keyExtractor={(f) => f.site_uuid}
         contentContainerStyle={styles.liste}
         refreshControl={<RefreshControl refreshing={false} onRefresh={rafraichir} tintColor={couleurs.rouge} />}
         ListHeaderComponent={
-          <>
-            <Text style={styles.titre}>Foyers en tension</Text>
-            <Text style={styles.sousTitre}>Vos foyers habituels qui ont besoin d'une recharge.</Text>
-            {statutSync === 'hors_ligne' ? (
-              <BandeauSync texte="Connexion indisponible - dernières valeurs connues affichées" />
-            ) : null}
-          </>
+          statutSync === 'hors_ligne' ? (
+            <BandeauSync texte="Connexion indisponible - dernières valeurs connues affichées" />
+          ) : null
         }
         ListEmptyComponent={
           <View style={styles.vide}>
@@ -61,19 +58,23 @@ export default function EcranTensionLivreur() {
           <View style={styles.carte}>
             <Text style={styles.nomFoyer}>{item.nom}</Text>
             <Text style={styles.zoneFoyer}>{item.zone}</Text>
-            <Text style={styles.details}>
-              {item.format.code} - {item.format.marque}
-            </Text>
-            <Bouton
-              titre="Proposer une livraison"
-              enCours={siteEnCours === item.site_uuid}
-              onPress={() => proposer(item)}
-              style={styles.boutonAction}
-            />
+            {item.format ? (
+              <Text style={styles.details}>
+                {item.format.code} - {item.format.marque}
+              </Text>
+            ) : null}
+            {item.format ? (
+              <Bouton
+                titre="Proposer une livraison"
+                enCours={siteEnCours === item.site_uuid}
+                onPress={() => proposer(item)}
+                style={styles.boutonAction}
+              />
+            ) : null}
           </View>
         )}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -86,17 +87,6 @@ const styles = StyleSheet.create({
     padding: espacements.lg,
     paddingBottom: espacements.xxl,
   },
-  titre: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: couleurs.texte,
-  },
-  sousTitre: {
-    fontSize: 14,
-    color: couleurs.texteDoux,
-    marginTop: espacements.xs,
-    marginBottom: espacements.lg,
-  },
   vide: {
     paddingVertical: espacements.xxl,
     alignItems: 'center',
@@ -108,12 +98,13 @@ const styles = StyleSheet.create({
   carte: {
     backgroundColor: couleurs.carte,
     borderRadius: rayons.lg,
-    borderWidth: 1,
-    borderColor: couleurs.bordure,
-    borderLeftWidth: 4,
-    borderLeftColor: couleurs.rouge,
     padding: espacements.lg,
     marginBottom: espacements.md,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   nomFoyer: {
     fontSize: 17,

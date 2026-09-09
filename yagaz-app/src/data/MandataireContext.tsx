@@ -24,10 +24,10 @@ import {
   mandataireTourneesDemo,
 } from '../api/demo';
 import type {
-  CorpsAjustementLigneTournee,
+  CompteProvisionne,
+  CorpsCreationDepot,
   DepotConsolide,
   ReapproMandataire,
-  StatutLigneTournee,
   Tournee,
 } from '../api/types';
 import { useEspace } from '../espace/EspaceContext';
@@ -51,8 +51,8 @@ interface ContexteMandataireValeur {
   chargementInitial: boolean;
   statutSync: StatutSync;
   rafraichir: () => Promise<void>;
-  /** Fait avancer d'un même geste toutes les lignes d'un arrêt (un dépôt) vers `statut`. */
-  avancerArret: (tourneeUuid: string, ligneIds: number[], statut: StatutLigneTournee) => Promise<void>;
+  /** Crée un dépôt (+ gérant optionnel) et rafraîchit la liste. Renvoie la méta gérant (mot de passe temporaire). */
+  creerDepot: (corps: CorpsCreationDepot) => Promise<(CompteProvisionne & { nom: string; telephone: string }) | null>;
 }
 
 const ContexteMandataire = createContext<ContexteMandataireValeur | null>(null);
@@ -135,30 +135,14 @@ export function MandataireProvider({ children }: { children: ReactNode }) {
     rafraichir();
   }, [orgUuid, rafraichir]);
 
-  const avancerArret = useCallback(
-    async (tourneeUuid: string, ligneIds: number[], statut: StatutLigneTournee) => {
-      const lignesCorps: CorpsAjustementLigneTournee[] = ligneIds.map((id) => ({ id, statut }));
-      try {
-        const { data } = await api.ajusterTournee(tourneeUuid, { lignes: lignesCorps });
-        setTournees((precedent) => {
-          const suivant = precedent.map((t) => (t.uuid === tourneeUuid ? { ...t, ...data } : t));
-          ecrireCache(CLES_CACHE.mandataireTournees, suivant);
-          return suivant;
-        });
-      } catch (erreur) {
-        if (!MODE_DEMO) throw erreur;
-        setTournees((precedent) => {
-          const suivant = precedent.map((t) =>
-            t.uuid === tourneeUuid
-              ? { ...t, lignes: t.lignes.map((l) => (ligneIds.includes(l.id) ? { ...l, statut } : l)) }
-              : t
-          );
-          ecrireCache(CLES_CACHE.mandataireTournees, suivant);
-          return suivant;
-        });
-      }
+  const creerDepot = useCallback(
+    async (corps: CorpsCreationDepot) => {
+      if (!orgUuid) return null;
+      const reponse = await api.mandataireCreerDepot(orgUuid, corps);
+      await rafraichir();
+      return reponse.gerant;
     },
-    []
+    [orgUuid, rafraichir]
   );
 
   const tourneeDuJour = useMemo(() => choisirTourneeDuJour(tournees), [tournees]);
@@ -174,20 +158,9 @@ export function MandataireProvider({ children }: { children: ReactNode }) {
       chargementInitial,
       statutSync,
       rafraichir,
-      avancerArret,
+      creerDepot,
     }),
-    [
-      orgUuid,
-      orgNom,
-      depots,
-      tournees,
-      reappros,
-      tourneeDuJour,
-      chargementInitial,
-      statutSync,
-      rafraichir,
-      avancerArret,
-    ]
+    [orgUuid, orgNom, depots, tournees, reappros, tourneeDuJour, chargementInitial, statutSync, rafraichir, creerDepot]
   );
 
   return <ContexteMandataire.Provider value={valeur}>{children}</ContexteMandataire.Provider>;

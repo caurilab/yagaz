@@ -9,13 +9,16 @@ import type {
   Bouteille,
   Commande,
   CommandeDepot,
+  CompteProvisionne,
   CorpsAffectationLivraison,
+  CorpsAjoutLivreur,
   CorpsAjustementStock,
   CorpsAjustementTournee,
   CorpsAnalyse,
   CorpsConnexion,
   CorpsCreationBouteille,
   CorpsCreationCommande,
+  CorpsCreationDepot,
   CorpsCreationEquipement,
   CorpsCreationProposition,
   CorpsCreationSite,
@@ -320,6 +323,14 @@ export function depotLivreurs(orgUuid: string) {
   return requeteApi<{ data: MembreLivreur[] }>(`/depots/${orgUuid}/livreurs`);
 }
 
+/** Le gérant ajoute un livreur à son dépôt (provisioning descendant). */
+export function depotAjouterLivreur(orgUuid: string, corps: CorpsAjoutLivreur) {
+  return requeteApi<{ data: MembreLivreur } & CompteProvisionne>(`/depots/${orgUuid}/livreurs`, {
+    methode: 'POST',
+    corps,
+  });
+}
+
 // --- Livreur - missions (contrat 10 §5) ---
 
 export function livreurMissions(statut?: StatutLivraison) {
@@ -349,6 +360,14 @@ export function livreurProposition(corps: CorpsPropositionLivreur) {
 
 export function mandataireDepots(orgUuid: string) {
   return requeteApi<{ data: DepotConsolide[] }>(`/mandataires/${orgUuid}/depots`);
+}
+
+/** Le mandataire crée un dépôt (+ gérant optionnel). La méta `gerant` porte le mot de passe temporaire. */
+export function mandataireCreerDepot(orgUuid: string, corps: CorpsCreationDepot) {
+  return requeteApi<{ data: DepotConsolide; gerant: (CompteProvisionne & { nom: string; telephone: string }) | null }>(
+    `/mandataires/${orgUuid}/depots`,
+    { methode: 'POST', corps }
+  );
 }
 
 export function mandataireTournees(orgUuid: string) {

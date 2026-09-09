@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BadgeStatutLivraison } from '../../components/BadgeStatut';
 import { BandeauSync } from '../../components/BandeauSync';
 import { Bouton } from '../../components/Bouton';
+import { EnteteEcran } from '../../components/EnteteEcran';
 import { useDialogue } from '../../data/DialogueContext';
 import { useLivreur } from '../../data/LivreurContext';
 import { couleurs, espacements, rayons } from '../../../theme/couleurs';
@@ -18,7 +18,7 @@ export default function EcranMissionsLivreur() {
   const [idEnCours, setIdEnCours] = useState<number | null>(null);
 
   const enCours = useMemo(
-    () => missions.filter((m) => m.statut !== 'vide_recupere').sort((a, b) => (a.created_at < b.created_at ? -1 : 1)),
+    () => missions.filter((m) => m.statut !== 'vide_recupere').sort((a, b) => a.id - b.id),
     [missions]
   );
   const terminees = useMemo(() => missions.filter((m) => m.statut === 'vide_recupere'), [missions]);
@@ -26,9 +26,9 @@ export default function EcranMissionsLivreur() {
   async function avancer(mission: MissionLivreur) {
     const suivant = statutLivraisonSuivant(mission.statut);
     if (!suivant) return;
-    setIdEnCours(mission.livraison_id);
+    setIdEnCours(mission.id);
     try {
-      await majStatut(mission.livraison_id, suivant, suivant === 'vide_recupere' ? mission.a_recuperer : undefined);
+      await majStatut(mission.id, suivant, suivant === 'vide_recupere' ? mission.vides_a_recuperer ?? undefined : undefined);
     } catch {
       void alerter({ titre: 'Action impossible', message: 'Impossible de mettre à jour cette mission pour le moment.' });
     } finally {
@@ -37,15 +37,12 @@ export default function EcranMissionsLivreur() {
   }
 
   return (
-    <SafeAreaView style={styles.conteneur} edges={['top']}>
-      <View style={styles.entete}>
-        <Text style={styles.titre}>Mes missions</Text>
-        <Text style={styles.sousTitre}>{enCours.length} en cours</Text>
-      </View>
+    <View style={styles.conteneur}>
+      <EnteteEcran titre="Mes missions" sousTitre={`${enCours.length} en cours`} />
 
       <FlatList
         data={enCours}
-        keyExtractor={(m) => String(m.livraison_id)}
+        keyExtractor={(m) => String(m.id)}
         contentContainerStyle={styles.liste}
         refreshControl={<RefreshControl refreshing={false} onRefresh={rafraichir} tintColor={couleurs.rouge} />}
         ListHeaderComponent={
@@ -61,7 +58,7 @@ export default function EcranMissionsLivreur() {
         renderItem={({ item }) => (
           <CarteMission
             mission={item}
-            enCours={idEnCours === item.livraison_id}
+            enCours={idEnCours === item.id}
             onAvancer={() => avancer(item)}
           />
         )}
@@ -70,13 +67,13 @@ export default function EcranMissionsLivreur() {
             <>
               <Text style={styles.titreSection}>Terminées</Text>
               {terminees.map((mission) => (
-                <CarteMission key={mission.livraison_id} mission={mission} enCours={false} onAvancer={() => {}} />
+                <CarteMission key={mission.id} mission={mission} enCours={false} onAvancer={() => {}} />
               ))}
             </>
           ) : null
         }
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -95,18 +92,20 @@ function CarteMission({
     <View style={[styles.carte, mission.statut === 'vide_recupere' && styles.carteTerminee]}>
       <View style={styles.ligneEntete}>
         <Text style={styles.nomSite} numberOfLines={1}>
-          {mission.site.nom}
+          {mission.site?.nom ?? 'Adresse inconnue'}
         </Text>
         <BadgeStatutLivraison statut={mission.statut} />
       </View>
-      {mission.site.adresse ? <Text style={styles.adresse}>{mission.site.adresse}</Text> : null}
+      {mission.site?.adresse ? <Text style={styles.adresse}>{mission.site.adresse}</Text> : null}
 
-      <Text style={styles.details}>
-        {mission.format.code} - {mission.format.marque} · {mission.quantite} bouteille(s)
-      </Text>
+      {mission.format ? (
+        <Text style={styles.details}>
+          {mission.format.code} - {mission.format.marque} · {mission.quantite ?? 0} bouteille(s)
+        </Text>
+      ) : null}
       <View style={styles.rangeeDepotRecup}>
-        <Text style={styles.texteDepotRecup}>À déposer : {mission.a_deposer}</Text>
-        <Text style={styles.texteDepotRecup}>À récupérer : {mission.a_recuperer}</Text>
+        <Text style={styles.texteDepotRecup}>À déposer : {mission.pleines_a_deposer}</Text>
+        <Text style={styles.texteDepotRecup}>À récupérer : {mission.vides_a_recuperer ?? 0}</Text>
       </View>
 
       {libelleAction ? (
@@ -120,20 +119,6 @@ const styles = StyleSheet.create({
   conteneur: {
     flex: 1,
     backgroundColor: couleurs.fond,
-  },
-  entete: {
-    paddingHorizontal: espacements.lg,
-    paddingTop: espacements.md,
-  },
-  titre: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: couleurs.texte,
-  },
-  sousTitre: {
-    fontSize: 14,
-    color: couleurs.texteDoux,
-    marginTop: espacements.xs,
   },
   liste: {
     padding: espacements.lg,

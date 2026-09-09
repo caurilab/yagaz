@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BadgeStatutCommande } from '../../components/BadgeStatut';
 import { BandeauSync } from '../../components/BandeauSync';
+import { EnteteEcran } from '../../components/EnteteEcran';
 import { useMandataire } from '../../data/MandataireContext';
 import { couleurs, espacements, rayons } from '../../../theme/couleurs';
 import type { ReapproMandataire } from '../../api/types';
@@ -49,22 +49,17 @@ export default function EcranReapprosMandataire() {
   const groupes = useMemo(() => grouperParDepot(reappros), [reappros]);
 
   return (
-    <SafeAreaView style={styles.conteneur} edges={['top']}>
+    <View style={styles.conteneur}>
+      <EnteteEcran titre="Réappros" sousTitre="Demandes de réappro des dépôts" />
       <FlatList
         data={groupes}
         keyExtractor={(g) => g.depotUuid}
         contentContainerStyle={styles.liste}
         refreshControl={<RefreshControl refreshing={false} onRefresh={rafraichir} tintColor={couleurs.rouge} />}
         ListHeaderComponent={
-          <>
-            <View style={styles.entete}>
-              <Text style={styles.titre}>Réappros</Text>
-              <Text style={styles.sousTitre}>Demandes de réappro des dépôts</Text>
-            </View>
-            {statutSync === 'hors_ligne' ? (
-              <BandeauSync texte="Connexion indisponible - dernières valeurs connues affichées" />
-            ) : null}
-          </>
+          statutSync === 'hors_ligne' ? (
+            <BandeauSync texte="Connexion indisponible - dernières valeurs connues affichées" />
+          ) : null
         }
         ListEmptyComponent={
           chargementInitial ? (
@@ -80,7 +75,7 @@ export default function EcranReapprosMandataire() {
         }
         renderItem={({ item }) => <CarteGroupeDepot groupe={item} />}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -124,20 +119,6 @@ const styles = StyleSheet.create({
   conteneur: {
     flex: 1,
     backgroundColor: couleurs.fond,
-  },
-  entete: {
-    paddingHorizontal: espacements.lg,
-    paddingTop: espacements.md,
-  },
-  titre: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: couleurs.texte,
-  },
-  sousTitre: {
-    fontSize: 14,
-    color: couleurs.texteDoux,
-    marginTop: espacements.xs,
   },
   liste: {
     padding: espacements.lg,

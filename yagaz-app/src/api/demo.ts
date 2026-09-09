@@ -409,8 +409,8 @@ export const depotStocksDemo: StockFormat[] = [
 ];
 
 export const depotLivreursDemo: MembreLivreur[] = [
-  { user_id: 'user-livreur-demo', nom: 'Moussa Ndiaye' },
-  { user_id: 'user-livreur-fatou', nom: 'Fatou Sarr' },
+  { uuid: 'user-livreur-demo', nom: 'Moussa Ndiaye' },
+  { uuid: 'user-livreur-fatou', nom: 'Fatou Sarr' },
 ];
 
 export const depotCommandesDemo: CommandeDepot[] = [
@@ -523,26 +523,26 @@ export const livreurFoyersEnTensionDemo: FoyerEnTensionLivreur[] = [
 
 export const missionsLivreurDemo: MissionLivreur[] = [
   {
-    livraison_id: 1001,
+    id: 1001,
     commande_uuid: 'commande-en-livraison',
     statut: 'en_route',
     format: formatsDemo[1],
     quantite: 1,
     site: { uuid: 'site-domicile', nom: 'Aïcha Diallo - Sacré-Cœur', adresse: 'Sacré-Cœur, Dakar' },
-    a_deposer: 1,
-    a_recuperer: 1,
-    created_at: ilYA(40),
+    pleines_a_deposer: 1,
+    vides_a_recuperer: 1,
+    vides_recuperes: null,
   },
   {
-    livraison_id: 1002,
+    id: 1002,
     commande_uuid: 'commande-a-livrer-diop',
     statut: 'affectee',
     format: formatsDemo[0],
     quantite: 1,
     site: { uuid: 'site-diop', nom: 'Famille Diop - Mermoz', adresse: 'Mermoz, Dakar' },
-    a_deposer: 1,
-    a_recuperer: 1,
-    created_at: ilYA(10),
+    pleines_a_deposer: 1,
+    vides_a_recuperer: 1,
+    vides_recuperes: null,
   },
 ];
 

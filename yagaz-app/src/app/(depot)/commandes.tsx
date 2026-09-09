@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BadgeStatutCommande } from '../../components/BadgeStatut';
 import { Bouton } from '../../components/Bouton';
+import { EnteteEcran } from '../../components/EnteteEcran';
 import { useDepot } from '../../data/DepotContext';
 import { useDialogue } from '../../data/DialogueContext';
 import { couleurs, espacements, rayons } from '../../../theme/couleurs';
@@ -43,7 +44,7 @@ export default function EcranCommandesDepot() {
     setCommandeAffectation(null);
     setUuidEnCours(uuid);
     try {
-      await affecterLivraison(uuid, livreur.user_id);
+      await affecterLivraison(uuid, livreur.uuid);
     } catch {
       void alerter({ titre: 'Action impossible', message: "Impossible d'affecter ce livreur pour le moment." });
     } finally {
@@ -52,11 +53,8 @@ export default function EcranCommandesDepot() {
   }
 
   return (
-    <SafeAreaView style={styles.conteneur} edges={['top']}>
-      <View style={styles.entete}>
-        <Text style={styles.titre}>Commandes</Text>
-        <Text style={styles.sousTitre}>{file.length} commande(s) en cours</Text>
-      </View>
+    <View style={styles.conteneur}>
+      <EnteteEcran titre="Commandes" sousTitre={`${file.length} commande(s) en cours`} />
 
       <FlatList
         data={file}
@@ -123,7 +121,7 @@ export default function EcranCommandesDepot() {
                 <Text style={styles.texteVide}>Aucun livreur rattaché à ce dépôt.</Text>
               ) : (
                 livreurs.map((livreur) => (
-                  <Pressable key={livreur.user_id} style={styles.ligneLivreur} onPress={() => affecter(livreur)}>
+                  <Pressable key={livreur.uuid} style={styles.ligneLivreur} onPress={() => affecter(livreur)}>
                     <Text style={styles.nomLivreur}>{livreur.nom}</Text>
                   </Pressable>
                 ))
@@ -132,7 +130,7 @@ export default function EcranCommandesDepot() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -140,20 +138,6 @@ const styles = StyleSheet.create({
   conteneur: {
     flex: 1,
     backgroundColor: couleurs.fond,
-  },
-  entete: {
-    paddingHorizontal: espacements.lg,
-    paddingTop: espacements.md,
-  },
-  titre: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: couleurs.texte,
-  },
-  sousTitre: {
-    fontSize: 14,
-    color: couleurs.texteDoux,
-    marginTop: espacements.xs,
   },
   liste: {
     padding: espacements.lg,

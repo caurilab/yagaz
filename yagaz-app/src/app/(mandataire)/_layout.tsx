@@ -15,6 +15,7 @@ export default function LayoutMandataire() {
     <MandataireProvider>
       <Tabs
         screenOptions={{
+          headerShown: false,
           headerTintColor: couleurs.texte,
           tabBarActiveTintColor: couleurs.rouge,
           tabBarInactiveTintColor: couleurs.texteDoux,
@@ -50,6 +51,7 @@ export default function LayoutMandataire() {
             tabBarIcon: ({ color }) => <Icone nom="reglages" couleur={color as string} />,
           }}
         />
+        <Tabs.Screen name="nouveau-depot" options={{ href: null }} />
       </Tabs>
     </MandataireProvider>
   );
