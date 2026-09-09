@@ -1,15 +1,17 @@
-/* Palette Yagaz - rouge corail + blanc */
+/* Palette Yagaz - orange chaud + blanc (identité alignée sur l'app mobile,
+   theme/couleurs.ts). Les variables gardent le nom `--rouge*` pour ne pas
+   casser les imports ; seules les valeurs passent du corail à l'orange. */
 :root {
-  --rouge: #ef4b4b;
-  --rouge-degrade-debut: #f76b6b;
-  --rouge-degrade-fin: #ef4b4b;
-  --rouge-clair: #fdecec;
+  --rouge: #f5741e;
+  --rouge-degrade-debut: #ff9d4d;
+  --rouge-degrade-fin: #ea580c;
+  --rouge-clair: #ffe7d1;
   --texte: #1f2430;
   --texte-doux: #6b7280;
-  --fond: #f7f7f9;
+  --fond: #f6f7f9;
   --carte: #ffffff;
-  --vert-ok: #34c77b;
-  --bordure: #ececf0;
+  --vert-ok: #22c55e;
+  --bordure: #f0e6dd;
 
   --rayon-carte: 16px;
   --rayon-controle: 10px;

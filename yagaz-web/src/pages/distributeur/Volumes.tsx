@@ -24,7 +24,7 @@ const GRANULARITES: Array<{ valeur: Granularite; label: string }> = [
   { valeur: 'mois', label: 'Mois' },
 ]
 
-const PALETTE = ['#ef4b4b', '#f7a56b', '#f7d06b', '#6b7280', '#34c77b', '#4b8bef']
+const PALETTE = ['#f5741e', '#f7a56b', '#f7d06b', '#6b7280', '#34c77b', '#4b8bef']
 
 export function DistributeurVolumes() {
   const { organisationCourante } = useAuth()
@@ -156,7 +156,7 @@ export function DistributeurVolumes() {
               <XAxis dataKey="zone" tick={{ fontSize: 12, fill: '#6b7280' }} />
               <YAxis tick={{ fontSize: 12, fill: '#6b7280' }} width={48} />
               <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #ececf0', fontSize: 13 }} />
-              <Bar dataKey="volume" fill="#ef4b4b" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="volume" fill="#f5741e" radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         )}

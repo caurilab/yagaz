@@ -122,11 +122,11 @@
 }
 
 .zones__barre--critique {
-  background: var(--degrade-accent);
+  background: linear-gradient(135deg, #f97316, #ef4444);
 }
 
 .zones__barre--eleve {
-  background: linear-gradient(135deg, #f7a56b, #ef4b4b);
+  background: var(--degrade-accent);
 }
 
 .zones__barre--modere {

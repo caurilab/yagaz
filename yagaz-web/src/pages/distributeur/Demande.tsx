@@ -16,7 +16,7 @@ const GRANULARITES: Array<{ valeur: Granularite; label: string }> = [
 
 type Dimension = 'zone' | 'format'
 
-const PALETTE = ['#ef4b4b', '#f7a56b', '#f7d06b', '#6b7280', '#34c77b', '#4b8bef', '#a55bd6']
+const PALETTE = ['#f5741e', '#f7a56b', '#f7d06b', '#6b7280', '#34c77b', '#4b8bef', '#a55bd6']
 
 export function DistributeurDemande() {
   const { organisationCourante } = useAuth()
