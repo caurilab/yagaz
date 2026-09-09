@@ -32,7 +32,10 @@ export function CalendrierHeatmap({ serie }: { serie: JourCuissonSerie[] }) {
   // Aligne la première case sur le bon jour de semaine (lundi = colonne 0),
   // comme un calendrier de type "streak".
   const premiereDate = new Date(`${serie[0].date}T00:00:00`);
-  const decalage = (premiereDate.getDay() + 6) % 7;
+  const jourSemaine = premiereDate.getDay();
+  // Garde anti-crash : une date mal formée donnerait `NaN`, et `Array(NaN)`
+  // lève une RangeError (l'app se ferme). On retombe alors sur 0 (pas de décalage).
+  const decalage = Number.isFinite(jourSemaine) ? (jourSemaine + 6) % 7 : 0;
   const cases: (JourCuissonSerie | null)[] = [...Array(decalage).fill(null), ...serie];
   const nbColonnes = Math.ceil(cases.length / 7);
   const largeur = nbColonnes * PAS;

@@ -624,8 +624,9 @@ export interface JoursCuisineAnalyse {
 }
 
 export interface PointSerieConsommation {
-  date: string;
-  valeur: number;
+  /** Libellé du seau temporel (jour `YYYY-MM-DD` ou mois `YYYY-MM`). */
+  periode: string;
+  consommation_kg: number;
 }
 
 export interface Analyse {

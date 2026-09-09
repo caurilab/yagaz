@@ -829,7 +829,7 @@ function serieConsommationJournaliereDemo(nbJours: number): PointSerieConsommati
   const points: PointSerieConsommation[] = [];
   for (let i = nbJours - 1; i >= 0; i--) {
     const base = 0.35 + ((nbJours - i) % 4) * 0.18;
-    points.push({ date: jourISO(i), valeur: Math.round(base * 100) / 100 });
+    points.push({ periode: jourISO(i), consommation_kg: Math.round(base * 100) / 100 });
   }
   return points;
 }
@@ -841,7 +841,7 @@ function serieConsommationMensuelleDemo(): PointSerieConsommation[] {
     const d = new Date(maintenant);
     d.setMonth(d.getMonth() - i, 1);
     const base = 9 + (i % 5);
-    points.push({ date: d.toISOString().slice(0, 10), valeur: base });
+    points.push({ periode: d.toISOString().slice(0, 7), consommation_kg: base });
   }
   return points;
 }
