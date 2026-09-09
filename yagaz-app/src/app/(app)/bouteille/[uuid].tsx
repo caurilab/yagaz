@@ -16,7 +16,7 @@ import { useDonnees } from '../../../data/DonneesContext';
 import { useTemperatureSite } from '../../../data/useTemperatureSite';
 import { couleurs, espacements, rayons } from '../../../../theme/couleurs';
 import { formaterAutonomie } from '../../../utils/niveau';
-import { couleurPourFormat, teinteMarque } from '../../../utils/marque';
+import { couleurPourFormat } from '../../../utils/marque';
 import type { CorpsMajBouteille, Format, RoleBouteille } from '../../../api/types';
 
 const PAS_SEUIL = 5;
@@ -32,6 +32,12 @@ export default function EcranDetailBouteille() {
   const { temperature } = useTemperatureSite(bouteille?.site_uuid);
 
   const [modeEdition, setModeEdition] = useState(false);
+  // Sécurité : on quitte toujours le mode édition en changeant de bouteille
+  // (l'écran peut être réutilisé par le routeur sans être démonté).
+  useEffect(() => {
+    setModeEdition(false);
+    setEnCours(false);
+  }, [uuid]);
   const [roleEdit, setRoleEdit] = useState<RoleBouteille>(bouteille?.role_bouteille ?? 'active');
   const [seuilEdit, setSeuilEdit] = useState(bouteille?.seuil_bas_pct ?? 20);
   const [tareTexte, setTareTexte] = useState(bouteille?.tare_g != null ? String(bouteille.tare_g) : '');
@@ -194,7 +200,7 @@ export default function EcranDetailBouteille() {
   return (
     <SafeAreaView style={styles.conteneur} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.contenu}>
-        <View style={[styles.enTete, { backgroundColor: teinteMarque(couleurBouteille, 0.12) }]}>
+        <View style={styles.enTete}>
           <View style={styles.enTeteFormat}>
             <View style={[styles.pastille, { backgroundColor: couleurBouteille }]} />
             <Text style={styles.format}>
@@ -425,6 +431,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    backgroundColor: couleurs.carte,
     borderRadius: rayons.md,
     paddingHorizontal: espacements.md,
     paddingVertical: espacements.sm,

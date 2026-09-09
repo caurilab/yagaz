@@ -79,6 +79,22 @@ export function BouteilleGaz3D({ couleur, taille, fallback }: Props) {
   const contexteCree = useRef(false);
   const rotationY = useRef(0);
   const groupeRef = useRef<any>(null);
+  const rafRef = useRef<number | null>(null);
+  const monteRef = useRef(true);
+
+  // Arrête la boucle de rendu au démontage : sans ça, `requestAnimationFrame`
+  // continue d'appeler le renderer sur un contexte GL mort et la surface 3D
+  // « persiste » par-dessus les écrans suivants.
+  useEffect(() => {
+    monteRef.current = true;
+    return () => {
+      monteRef.current = false;
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+    };
+  }, []);
 
   // Si le contexte GL ne se crée pas rapidement (module natif absent en Expo
   // Go), on bascule sur le repli plutôt que de laisser une zone vide.
@@ -141,7 +157,8 @@ export function BouteilleGaz3D({ couleur, taille, fallback }: Props) {
             scene.add(bouteille);
 
             const boucle = () => {
-              requestAnimationFrame(boucle);
+              if (!monteRef.current) return; // écran démonté : on stoppe la boucle
+              rafRef.current = requestAnimationFrame(boucle);
               // rotation lente auto + rotation manuelle (via rotationY courant)
               bouteille.rotation.y += 0.006;
               rotationY.current = bouteille.rotation.y;
