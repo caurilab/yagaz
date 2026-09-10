@@ -127,7 +127,7 @@ export default function EcranAccueilFoyer() {
                   <Text style={styles.pillTexte}>Bouteille active</Text>
                 </View>
                 <Text style={styles.pillDescription} numberOfLines={1}>
-                  {bouteilleActive.format.code} - {bouteilleActive.format.marque} -{' '}
+                  {bouteilleActive.format.code} · {bouteilleActive.format.marque} ·{' '}
                   {etatLisible(bouteilleActive.niveau.etat)}
                 </Text>
               </View>
@@ -155,8 +155,16 @@ export default function EcranAccueilFoyer() {
 
             <CarteBouteilleActive bouteille={bouteilleActive} marques={marques} aBalance={aBalance} />
 
-            <Pressable style={styles.lienGererBouteilles} onPress={() => router.push('/bouteilles')}>
-              <Text style={styles.texteLienGererBouteilles}>Gérer mes bouteilles</Text>
+            <Pressable
+              style={styles.lienGerer}
+              onPress={() => router.push('/bouteilles')}
+              accessibilityRole="button">
+              <View style={styles.lienGererGauche}>
+                <View style={styles.lienGererIcone}>
+                  <Icone nom="bouteille" taille={18} couleur={couleurs.rouge} />
+                </View>
+                <Text style={styles.lienGererTexte}>Gérer mes bouteilles</Text>
+              </View>
               <Icone nom="chevron" taille={18} couleur={couleurs.rouge} />
             </Pressable>
 
@@ -291,7 +299,7 @@ function CarteBouteilleActive({
           <View style={styles.chipMarque}>
             <View style={[styles.pointMarque, { backgroundColor: couleurMarqueBouteille }]} />
             <Text style={styles.texteChipMarque} numberOfLines={1}>
-              {bouteille.format.marque} - {bouteille.format.code}
+              {bouteille.format.marque} · {bouteille.format.code}
             </Text>
           </View>
 
@@ -611,27 +619,48 @@ const styles = StyleSheet.create({
     color: couleurs.texte,
     marginTop: 2,
   },
-  lienGererBouteilles: {
+  lienGerer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: espacements.xs,
+    justifyContent: 'space-between',
+    backgroundColor: couleurs.carte,
+    borderRadius: rayons.lg,
+    paddingVertical: espacements.sm + 2,
+    paddingHorizontal: espacements.md,
     marginTop: espacements.md,
-    paddingVertical: espacements.sm,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
-  texteLienGererBouteilles: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: couleurs.rouge,
+  lienGererGauche: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espacements.sm,
+  },
+  lienGererIcone: {
+    width: 34,
+    height: 34,
+    borderRadius: rayons.rond,
+    backgroundColor: couleurs.rougeClair,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  lienGererTexte: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: couleurs.texte,
   },
   blocTemperature: {
-    marginTop: espacements.md,
+    marginTop: espacements.lg,
   },
   titreSection: {
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: '800',
     color: couleurs.texte,
-    marginTop: espacements.xl,
+    letterSpacing: -0.3,
+    marginTop: espacements.lg,
     marginBottom: espacements.md,
   },
   rangeeAutresBouteilles: {
