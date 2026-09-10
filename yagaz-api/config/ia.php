@@ -7,6 +7,22 @@
 // aux contrôleurs ni aux services métier.
 return [
 
+    // Sélecteur de haut niveau (prioritaire sur `provider` ci-dessous) :
+    // `laravel_ai` route toute l'IA par le package `laravel/ai` (SDK unifié,
+    // provider/modèle lus dans le bloc `laravel_ai`). Vide/null : on retombe
+    // sur `provider` (simulateur|claude), le comportement historique. Non
+    // défini en test/CI -> simulateur, aucun appel réseau.
+    'driver' => env('IA_DRIVER'),
+
+    // Réglages du driver `laravel/ai` (package `laravel/ai`). Le provider
+    // (`anthropic`) et sa clé (`ANTHROPIC_API_KEY`) sont définis dans le
+    // `config/ai.php` du package ; ici on choisit le provider et le modèle à
+    // utiliser pour la génération de texte de l'app.
+    'laravel_ai' => [
+        'provider' => env('AI_PROVIDER', 'anthropic'),
+        'model' => env('AI_MODEL', 'claude-opus-5'),
+    ],
+
     // Implémentation liée par `AppServiceProvider` : `simulateur` (défaut,
     // aucun appel réseau réel) tant qu'aucune clé Claude n'est disponible ;
     // l'application, les tests et la CI tournent sans clé.

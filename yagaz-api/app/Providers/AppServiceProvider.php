@@ -6,6 +6,7 @@ use App\Contracts\Ia\IaProvider;
 use App\Contracts\Notification\CanalNotification;
 use App\Contracts\Payment\PaymentProvider;
 use App\Services\Ia\ClaudeProvider;
+use App\Services\Ia\LaravelAiProvider;
 use App\Services\Ia\SimulateurIa;
 use App\Services\Notification\CanalLog;
 use App\Services\Payment\AgregateurPaiement;
@@ -39,14 +40,14 @@ class AppServiceProvider extends ServiceProvider
             default => SimulateurPaiement::class,
         });
 
-        // Provider IA par défaut (ADR 0013, brique 1) : `simulateur` (aucun
-        // appel réseau réel) tant qu'aucune clé Claude n'est disponible.
-        // `ClaudeProvider` (API Anthropic Messages) est prêt à activer via
-        // `IA_PROVIDER=claude` une fois `IA_CLAUDE_API_KEY` renseignée
-        // (`config/ia.php`) — sans toucher aux contrôleurs ni aux services
-        // métier.
-        $this->app->bind(IaProvider::class, match (config('ia.provider')) {
-            'claude' => ClaudeProvider::class,
+        // Provider IA (ADR 0013, brique 1). `IA_DRIVER=laravel_ai` route par le
+        // SDK unifié `laravel/ai` (`LaravelAiProvider`, provider/modèle dans
+        // `config/ia.laravel_ai`). Sinon on garde le comportement historique
+        // (`IA_PROVIDER=claude` -> `ClaudeProvider`, défaut `simulateur`, aucun
+        // appel réseau) — tests/CI sans clé restent hors-ligne.
+        $this->app->bind(IaProvider::class, match (true) {
+            config('ia.driver') === 'laravel_ai' => LaravelAiProvider::class,
+            config('ia.provider') === 'claude' => ClaudeProvider::class,
             default => SimulateurIa::class,
         });
     }
