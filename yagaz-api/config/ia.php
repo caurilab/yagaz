@@ -20,7 +20,10 @@ return [
     // utiliser pour la génération de texte de l'app.
     'laravel_ai' => [
         'provider' => env('AI_PROVIDER', 'anthropic'),
-        'model' => env('AI_MODEL', 'claude-opus-5'),
+        // Défaut `claude-sonnet-5` : coût nettement moindre qu'Opus pour les
+        // insights foyer (courts, fréquents), qualité très proche. Surchargé
+        // par `AI_MODEL` si besoin d'un autre modèle.
+        'model' => env('AI_MODEL', 'claude-sonnet-5'),
     ],
 
     // Implémentation liée par `AppServiceProvider` : `simulateur` (défaut,
